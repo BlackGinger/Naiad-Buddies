@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#include <GEO/GEO_AttributeHandle.h>
+
 #include <Ni.h>
 #include <NgBody.h>
 #include <NgEmp.h>
@@ -135,8 +137,16 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 	//We have a valid particle shape. Start copying particle data over to the GDP
 	int64_t size = pShape->size();
 	int channelCount = pShape->channelCount();
+	int positionChannelIndex = 0;
 	GEO_Point *ppt;
+	GEO_AttributeHandle attr;
 	std::vector<std::string> houdiniNames; //houdini names that correspond to naiad channels.
+	//Default values for attributes
+	float zero3f[3] = {0,0,0};
+	float zero1f = 0;
+	int zero3i[3] = {0,0,0};
+	int zero1i = 0;
+
 	
 	//std::cout << "Size: " << size << std::endl;
 	//std::cout << "Channel count: " << channelCount << std::endl;
@@ -147,11 +157,73 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 		const Ng::ChannelCPtr& chan = pShape->channel(i);
 
 		if ( chan->name() == "position" )	
+		{
 			houdiniNames.push_back("P");
+			positionChannelIndex = i;
+			//std::cout << "Setting position channel index: " << i << std::endl;
+			//GDPs always have a P attribute, so no need to create on explicitly.
+		}
 		else if (chan->name() == "velocity" )
+		{
 			houdiniNames.push_back("v");
+			attr = gdp.getPointAttribute("v");
+			if ( !attr.isAttributeValid() )
+			{
+				gdp.addPointAttrib( "v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f );
+				attr = gdp.getPointAttribute( "v" );
+			}
+		}
 		else
+		{
 			houdiniNames.push_back( chan->name() );
+			attr = gdp.getPointAttribute( chan->name().c_str() );
+			if ( !attr.isAttributeValid() )
+			{
+				//If the attribute doesn't exist yet, then create a new one based on the Naiad type. 
+				//(Hopefully we don't have name clashes!!)
+
+				int size;
+				GB_AttribType type;
+				void* data;
+
+				switch ( chan->type() )
+				{
+					case Ng::ValueBase::FloatType:
+						//Create a single float attribute.
+						size = sizeof(float);
+						type = GB_ATTRIB_FLOAT;
+						data = &zero1f;
+						break;
+					case Ng::ValueBase::IntType:
+						//Create a single float attribute.
+						size = sizeof(int);
+						type = GB_ATTRIB_INT;
+						data = &zero1i;
+						break;
+					case Ng::ValueBase::Vec3fType:
+						//Create a tuple of 3 floats.
+						size = sizeof(float)*3;
+						type = GB_ATTRIB_FLOAT;
+						data = zero3f;
+						break;
+					case Ng::ValueBase::Vec3iType:
+						//Create a tuple of 3 ints.
+						size = sizeof(int)*3;
+						type = GB_ATTRIB_FLOAT;
+						data = zero3i;
+						break;
+
+					default:
+						//Unsupported type...now what??
+						break;
+
+				}
+
+				gdp.addPointAttrib( chan->name().c_str(), size, type, data );
+				attr = gdp.getPointAttribute( chan->name().c_str() );
+			}
+
+		}
 
 		//std::cout << "channel: " << chan->name() << " size: " << chan->size() << std::endl;
 	}	
@@ -168,18 +240,92 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 		//Get a single block from the position blocks
 		const em::block3vec3f& posBlock = positionBlocks(blockIndex);
 
-		//std::cout << "pos block index: " << blockIndex << " size: " << posBlock.size() << std::endl;
-		//Iterate over all the points in the position block
-		for (int i = 0; i < posBlock.size(); i++)
+		//std::cout << "taking block from positions..." << blockIndex << std::endl;
+		//std::cout << "block size:" << posBlock.size() << std::endl;
+		//Iterate over all the points/particles in the position block
+		for (int ptNum = 0; ptNum < posBlock.size(); ptNum++)
 		{
 			ppt = gdp.appendPoint();
 			//std::cout << "pos: " << i << " " << posBlock(i)[0] << posBlock(i)[1] << std::endl;
-			ppt->setPos( UT_Vector3( posBlock(i)[0], posBlock(i)[1], posBlock(i)[2] ) );
+			ppt->setPos( UT_Vector3( posBlock(ptNum)[0], posBlock(ptNum)[1], posBlock(ptNum)[2] ) );
+
+			//Loop over the channels and add the attributes
+			for (int channelIndex = 0; channelIndex < channelCount; channelIndex++)
+			{
+				//std::cout << "processing channel index: " << channelIndex << std::endl;
+				if (channelIndex == positionChannelIndex)
+					//Skip special case channels. Currently, the only special case channel is positions.
+					continue;
+
+				//TODO: normals and velocities should be added as VECTORS, not FLOATS
+
+				const Ng::ChannelCPtr& chan = pShape->channel(channelIndex);
+				//std::cout << "inspecting channel: " << channelIndex << ":" << chan->name() << std::endl;
+				//Fill the attributes data in the Houdini GDP. (The attributes have been created in the first channel loop).
+				switch ( chan->type() )
+				{
+					case Ng::ValueBase::FloatType:
+					{
+						//std::cout << "got float attrib: " << chan->name() << std::endl;
+						//Get the created channel data
+						const em::block3f& channelData( pShape->constBlocks1f(chan->name())(blockIndex) );
+						//Get the Houdini point attribute using the name list we built earlier.
+						attr = gdp.getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr.setElement(ppt);
+
+					}
+					break;
+					case Ng::ValueBase::IntType:
+					{
+						//std::cout << "got int attrib: " << chan->name() << std::endl;
+						//Get the created channel data
+						const em::block3f& channelData( pShape->constBlocks1f(chan->name())(blockIndex) );
+						//Get the Houdini point attribute using the name list we built earlier.
+						attr = gdp.getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr.setElement(ppt);
+
+					}
+					break;
+					case Ng::ValueBase::Vec3fType:
+					{
+						//std::cout << "got float3 attrib: " << chan->name() << std::endl;
+						//Get the created channel data
+						const em::block3vec3f& channelData( pShape->constBlocks3f(channelIndex)(blockIndex) );
+						//Get the Houdini point attribute using the name list we built earlier.
+						attr = gdp.getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr.setElement(ppt);
+						attr.setV3( UT_Vector3( channelData(ptNum)[0], channelData(ptNum)[1], channelData(ptNum)[2]  ) );
+
+					}
+					break;
+					case Ng::ValueBase::Vec3iType:
+					{
+						//std::cout << "got int3 attrib: " << chan->name() << std::endl;
+						//Get the created channel data
+						const em::block3vec3i& channelData( pShape->constBlocks3i(chan->name())(blockIndex) );
+						//Get the Houdini point attribute using the name list we built earlier.
+						attr = gdp.getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr.setElement(ppt);
+
+					}
+					break;
+
+					default:
+						//std::cout << "got non-float attrib." << chan->name() << std::endl;
+						break;
+
+
+
+				}
+
+			}
+
 		}
 
 		
 	}
 
+	//std::cout << "all done. " << std::endl;
 	return 0;
 }
 
