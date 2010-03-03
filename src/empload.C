@@ -24,9 +24,11 @@ int loadEmpBodies(std::string filen, GU_Detail& gdp)
 {
 	Ng::EmpReader* empReader = NULL;	
 
+	NiBegin(NI_BODY_ONLY);
+
 	std::cout << "loading emp bodies from: " << filen << std::endl;
 
-	int numBodies = 0;
+	unsigned int numBodies = 0;
 	try
 	{
 		std::cout << "Create new emp reader." << std::endl;
@@ -54,6 +56,8 @@ int loadEmpBodies(std::string filen, GU_Detail& gdp)
 		std::cout << i << ":" << pBody->name() << std::endl;
 
 	}
+
+	NiEnd();
 
 
 	//Return success

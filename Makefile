@@ -30,7 +30,7 @@ LIBDIRS= -L$(HFS)/python/lib/ -L $(NAIAD_PATH)/lib
 INCDIRS=-I$(HFS)/toolkit/include $(NAIAD_INC)
 LIBS= $(NAIAD_LIBS)
 #CXXFLAGS=-frounding-math
-APPNAME=geo2emp
+APPNAME=bin/geo2emp
 SOURCES=src/geo2emp.C src/empload.C src/empsave.C
 
 #Include a locally modified makefile
