@@ -1,0 +1,1 @@
+.emp "geo2emp %s stdout.bgeo" "geo2emp stdin.bgeo %s"

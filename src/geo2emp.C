@@ -85,11 +85,11 @@ int main(int argc, char *argv[])
 
 	if (!strcmp(inputname.fileExtension(), ".emp"))
 	{
-		std::cout << "Loading emp: " << inputname << std::endl;
+		//std::cout << "Loading emp: " << inputname << std::endl;
 		// Convert from emp
 		loadEmpBodies(inputname.toStdString(), gdp);
 		
-		std::cout << "Writing file: " << outputname << std::endl;
+		//std::cout << "Writing file: " << outputname << std::endl;
 		// Save our result.
 		gdp.save((const char *) outputname, 0, 0);
   }
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 		// Convert to emp.
 		gdp.load((const char *) inputname, 0);
 
-		std::cout << "Writing file: " << outputname << std::endl;
+		//std::cout << "Writing file: " << outputname << std::endl;
 		saveEmpBodies(outputname.toStdString(), gdp);
    }
    return 0;
