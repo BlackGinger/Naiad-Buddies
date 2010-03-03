@@ -1,0 +1,20 @@
+#!/bin/bash
+#This script is used to setup the environment for the bgeo2emp tool.
+#Houdini environment needs to be initialised before running this script.
+
+#### START OF CONFIG ####
+
+#Configure the path to point to your Naiad installation.
+NAIAD_PATH=NAIAD_PATH_GOES_HERE
+
+#### END OF CONFIG ####
+
+#WARNING: Force the applications to pick up the libstdc++ in the /usr/lib directory first. Houdini doesn't work properly with Naiad's libstdc++.
+
+if [ "$LD_LIBRARY_PATH" = "" ]; then
+	#Empty LD_LIBRARY_PATH
+	export LD_LIBRARY_PATH=/usr/lib:$HFS/python/lib:$NAIAD_PATH/lib
+else
+	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib:$HFS/python/lib:$NAIAD_PATH/lib
+fi
+geo2emp.bin $*

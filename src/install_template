@@ -1,0 +1,6 @@
+#!/bin/bash
+
+if [ ! "$1"  == "" ]; then
+	cp geo2emp_template ../bin/geo2emp
+	sed -i -e "s/NAIAD_PATH_GOES_HERE/$(echo $1 | sed -e 's/\\/\\\\/g' -e 's/\//\\\//g' -e 's/&/\\\&/g')/" ../bin/geo2emp
+fi
