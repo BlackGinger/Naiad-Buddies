@@ -45,7 +45,6 @@
 
 #include <CMD/CMD_Args.h>
 
-
 static void
 usage(const char *program)
 {
