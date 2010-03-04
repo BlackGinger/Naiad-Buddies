@@ -42,14 +42,8 @@
 
 #include <stdio.h>
 #include <iostream>
+
 #include <CMD/CMD_Args.h>
-#include <UT/UT_Assert.h>
-#include <UT/UT_Vector3.h>
-#include <GEO/GEO_AttributeHandle.h>
-#include <GEO/GEO_Point.h>
-#include <GEO/GEO_PrimPart.h>
-#include <GU/GU_Detail.h>
-#include <GU/GU_PrimPoly.h>
 
 
 static void
