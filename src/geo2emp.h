@@ -6,6 +6,10 @@
 #ifndef __GEO2EMP_H__
 #define __GEO2EMP_H__
 
+// To fix issues with gcc and GB_GenericData.h with inline templated function specialisation storage
+// This is needed with GCC 4.1, but not with GCC 4.3
+#define NEED_SPECIALIZATION_STORAGE
+
 #include <iostream>
 
 #include <GU/GU_Detail.h>
