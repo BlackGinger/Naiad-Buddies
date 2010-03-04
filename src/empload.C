@@ -141,6 +141,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 	GEO_Point *ppt;
 	GEO_AttributeHandle attr;
 	std::vector<std::string> houdiniNames; //houdini names that correspond to naiad channels.
+	std::vector<GB_AttribType> houdiniTypes; //houdini types for the naiad channels.
 	//Default values for attributes
 	float zero3f[3] = {0,0,0};
 	float zero1f = 0;
@@ -159,6 +160,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 		if ( chan->name() == "position" )	
 		{
 			houdiniNames.push_back("P");
+			houdiniTypes.push_back(GB_ATTRIB_FLOAT);
 			positionChannelIndex = i;
 			//std::cout << "Setting position channel index: " << i << std::endl;
 			//GDPs always have a P attribute, so no need to create on explicitly.
@@ -166,6 +168,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 		else if (chan->name() == "velocity" )
 		{
 			houdiniNames.push_back("v");
+			houdiniTypes.push_back(GB_ATTRIB_VECTOR);
 			attr = gdp.getPointAttribute("v");
 			if ( !attr.isAttributeValid() )
 			{
@@ -175,7 +178,6 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 		}
 		else
 		{
-			houdiniNames.push_back( chan->name() );
 			attr = gdp.getPointAttribute( chan->name().c_str() );
 			if ( !attr.isAttributeValid() )
 			{
@@ -209,7 +211,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 					case Ng::ValueBase::Vec3iType:
 						//Create a tuple of 3 ints.
 						size = sizeof(int)*3;
-						type = GB_ATTRIB_FLOAT;
+						type = GB_ATTRIB_INT;
 						data = zero3i;
 						break;
 
@@ -219,8 +221,12 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 
 				}
 
+				houdiniNames.push_back( chan->name() );
+				houdiniTypes.push_back(GB_ATTRIB_FLOAT);
+
 				gdp.addPointAttrib( chan->name().c_str(), size, type, data );
 				attr = gdp.getPointAttribute( chan->name().c_str() );
+				//std::cout << "added attribute: " << chan->name() << " valid: " << attr.isAttributeValid() << std::endl;
 			}
 
 		}
@@ -260,6 +266,11 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 				//TODO: normals and velocities should be added as VECTORS, not FLOATS
 
 				const Ng::ChannelCPtr& chan = pShape->channel(channelIndex);
+
+				if (chan->size() == 0)
+					//There is no channel data to be retrieved. 
+					continue;
+
 				//std::cout << "inspecting channel: " << channelIndex << ":" << chan->name() << std::endl;
 				//Fill the attributes data in the Houdini GDP. (The attributes have been created in the first channel loop).
 				switch ( chan->type() )
@@ -272,6 +283,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 						//Get the Houdini point attribute using the name list we built earlier.
 						attr = gdp.getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
+						attr.setF( channelData(ptNum) );
 
 					}
 					break;
@@ -288,13 +300,26 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 					break;
 					case Ng::ValueBase::Vec3fType:
 					{
-						//std::cout << "got float3 attrib: " << chan->name() << std::endl;
+						//std::cout << "got float3 attrib: " << chan->name() << " " << houdiniNames[channelIndex].c_str() << std::endl;
 						//Get the created channel data
 						const em::block3vec3f& channelData( pShape->constBlocks3f(channelIndex)(blockIndex) );
 						//Get the Houdini point attribute using the name list we built earlier.
 						attr = gdp.getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
-						attr.setV3( UT_Vector3( channelData(ptNum)[0], channelData(ptNum)[1], channelData(ptNum)[2]  ) );
+						//std::cout << "setting v3" << std::endl;
+						if (houdiniTypes[channelIndex] == GB_ATTRIB_VECTOR)
+						{
+							//std::cout << "setting vector" << std::endl;
+							attr.setV3( UT_Vector3( channelData(ptNum)[0], channelData(ptNum)[1], channelData(ptNum)[2]  ) );
+						}
+						else
+						{
+							//std::cout << "setting floats" << ptNum << std::endl;
+							attr.setF( channelData(ptNum)[0], 0 );
+							attr.setF( channelData(ptNum)[1], 1 );
+							attr.setF( channelData(ptNum)[2], 2 );
+						}
+						//std::cout << "done setting v3" << std::endl;
 
 					}
 					break;
@@ -306,6 +331,18 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 						//Get the Houdini point attribute using the name list we built earlier.
 						attr = gdp.getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
+						if (houdiniTypes[channelIndex] == GB_ATTRIB_VECTOR)
+						{
+							//std::cout << "setting vector" << std::endl;
+							attr.setV3( UT_Vector3( channelData(ptNum)[0], channelData(ptNum)[1], channelData(ptNum)[2]  ) );
+						}
+						else
+						{
+							//std::cout << "setting floats" << ptNum << std::endl;
+							attr.setI( channelData(ptNum)[0], 0 );
+							attr.setI( channelData(ptNum)[1], 1 );
+							attr.setI( channelData(ptNum)[2], 2 );
+						}
 
 					}
 					break;
