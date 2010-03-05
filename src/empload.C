@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include <GEO/GEO_AttributeHandle.h>
+#include <GU/GU_PrimPoly.h>
 
 #include <Ni.h>
 #include <NgBody.h>
@@ -13,9 +14,9 @@
 /** 
  * Process a mesh-type naiad body
  */
-int loadMeshShape(GU_Detail& gdp, Ng::ShapeCPtr pShape);
+int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody);
 int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody);
-int loadFieldShape(GU_Detail& gdp, Ng::ShapeCPtr pShape);
+int loadFieldShape(GU_Detail& gdp, const Ng::Body* pBody);
 
 
 /*************************************************************************************************/
@@ -60,28 +61,29 @@ int loadEmpBodies(std::string filen, GU_Detail& gdp)
 		pBody = empReader->constBody(i);
 		//std::cout << i << ":" << pBody->name() << std::endl;
 		//std::cout << "number of shapes: " << pBody->shape_count() << std::endl;
+		/*	
+		std::cout << "body Mesh: " << pBody->matches("Mesh") << std::endl;
+		std::cout << "body Particle: " << pBody->matches("Particle") << std::endl;
+		std::cout << "body Particle-Liquid: " << pBody->matches("Particle-Liquid") << std::endl;
+		std::cout << "body Field: " << pBody->matches("Field") << std::endl;
+		std::cout << "body Volume: " << pBody->matches("Volume") << std::endl;
+		*/
 
-		//Iterate over the shapes for this body.
-		for (shapeIt = pBody->beginShapes(); shapeIt != pBody->endShapes(); shapeIt++)
+		//Inspect the body singature and call the appropriate loader.
+		
+		if ( pBody->matches("Particle") )
 		{
-			//std::cout << "Shape type: " << shapeIt->first << std::endl;
-			if (shapeIt->first == "Particle")
-			{
-				loadParticleShape(gdp, pBody);
-			}
-			else if (shapeIt->first == "Field")
-			{
-				loadFieldShape(gdp, shapeIt->second);
-			}
-			else if (shapeIt->first == "Mesh")
-			{
-				loadMeshShape(gdp, shapeIt->second);
-			}
-			else
-			{
-				//std::cout << "Found unsupported shape type: " << shapeIt->first << std::endl;
-			}
+			loadParticleShape(gdp, pBody);
 		}
+		if (pBody->matches("Field") )
+		{
+			loadFieldShape(gdp, pBody);
+		}
+		if ( pBody->matches("Mesh") )
+		{
+			loadMeshShape(gdp, pBody);
+		}
+		
 
 	}
 
@@ -93,10 +95,79 @@ int loadEmpBodies(std::string filen, GU_Detail& gdp)
 
 /*************************************************************************************************/
 
-int loadMeshShape(GU_Detail& gdp, Ng::ShapeCPtr pShape)
+int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody)
 {
-	//std::cout << "============= Loading mesh shape ===============" << std::endl;
+	std::cout << "============= Loading mesh shape ===============" << std::endl;
+	
+	std::cout << "has triangle shape: "<< pBody->hasShape( "Triangle" );
+	
+	const Ng::TriangleShape* pShape;
 
+	std::cout << "getting tri shape" << std::endl;
+	pShape = pBody->queryConstTriangleShape();
+	std::cout << "got it: " << pShape << std::endl;
+	if (!pShape)
+	{
+		//NULL mesh shape, so return right now.
+		return 1;
+	}
+
+	//Fore now, let's just hardcode the imports to get some base functionality. It can be generified at a later stage.
+
+	//Get access to shapes we need to loading a mesh (point and triangle)
+	const Ng::TriangleShape& triShape = pBody->constTriangleShape();
+	const Ng::PointShape& ptShape = pBody->constPointShape();
+
+	//Get the position and velocity buffers from the point shape and the index buffer from the triangle shape
+	const Ng::Buffer3f& bufPos = ptShape.constBuffer3f("position");
+	const Ng::Buffer3f& bufVel = ptShape.constBuffer3f("velocity");
+	std::cout << "getting index buffer" << std::endl;
+	const Ng::Buffer3i& bufIndex = triShape.constBuffer3i("index");
+	std::cout << "got it" << std::endl;
+	std::cout << "channel count:" << triShape.channelCount() << std::endl;
+	std::cout << "channel index:" << triShape.channelIndex("index") << std::endl;
+	std::cout << "bufIndex size:" << triShape.size() << std::endl;
+
+	//Default values for attributes
+	float zero3f[3] = {0,0,0};
+	float zero1f = 0;
+	int zero3i[3] = {0,0,0};
+	int zero1i = 0;
+
+	//If GDP doesn't have a velocity attribute, create one.
+	GEO_AttributeHandle attr_v = gdp.getPointAttribute("v");
+	if ( !attr_v.isAttributeValid() )
+	{
+		gdp.addPointAttrib("v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f);
+		attr_v = gdp.getPointAttribute("v");
+	}
+
+	GEO_Point *ppt;
+	//Now, copy all the points into the GDP.
+	for (int ptNum = 0; ptNum < ptShape.size(); ptNum ++)
+	{
+		ppt = gdp.appendPoint();
+		ppt->setPos( UT_Vector3( bufPos(ptNum)[0], bufPos(ptNum)[1], bufPos(ptNum)[2] ) );
+	}
+
+	std::cout << "getting tri shape size..." << std::endl;
+	std::cout << "tri shape size: " << triShape.size() << std::endl;
+
+	//Now that all the points are in the GDP, build the triangles
+	GU_PrimPoly *pPrim;
+	for (int tri = 0; tri < triShape.size(); tri++)
+	{
+		//pPrim = GU_PrimPoly::build(&gdp, 3, GU_POLY_CLOSED, 0); //Build a closed poly with 3 points, but don't add them to the GDP.
+		//Set the three vertices of the triangle
+		for (int i = 0; i < 3; i++ )
+		{
+			//pPrim->setVertex(i, gdp.points()[ bufIndex(tri)[i] ] );
+		}
+
+	}
+
+
+	std::cout << "returning from mesh load!" << std::endl;
 	return 0;
 }
 
@@ -120,6 +191,8 @@ void processPointChannel(GU_Detail& gdp, GEO_Point* ppt, const Ng::ChannelCPtr& 
 
 	
 }
+
+/*************************************************************************************************/
 
 int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 {
@@ -155,6 +228,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 	//Iterate over the channels and create the corresponding attributes in the GDP
 	for (int i = 0; i < channelCount; i++)
 	{
+		//std::cout << "channel: " << i << std::endl;
 		const Ng::ChannelCPtr& chan = pShape->channel(i);
 
 		if ( chan->name() == "position" )	
@@ -236,7 +310,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 
 	//The channel values for particle shapes are stored in blocks/tiles.
 	const Ng::TileLayout& layout = pBody->constLayout();
-	unsigned int numBlocks = layout.tileCount();
+	unsigned int numBlocks = layout.fineTileCount();
 
 	//Get the block array for the positions channel
 	const em::block3_array3f& positionBlocks( pShape->constBlocks3f("position") );	
@@ -351,8 +425,6 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 						//std::cout << "got non-float attrib." << chan->name() << std::endl;
 						break;
 
-
-
 				}
 
 			}
@@ -368,7 +440,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 
 /*************************************************************************************************/
 
-int loadFieldShape(GU_Detail& gdp, Ng::ShapeCPtr pShape)
+int loadFieldShape(GU_Detail& gdp, const Ng::Body* pBody)
 {
 	//std::cout << "============= Loading field shape ===============" << std::endl;
 
