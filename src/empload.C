@@ -97,15 +97,13 @@ int loadEmpBodies(std::string filen, GU_Detail& gdp)
 
 int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody)
 {
-	std::cout << "============= Loading mesh shape ===============" << std::endl;
+//	std::cout << "============= Loading mesh shape ===============" << std::endl;
 	
-	std::cout << "has triangle shape: "<< pBody->hasShape( "Triangle" );
 	
 	const Ng::TriangleShape* pShape;
 
-	std::cout << "getting tri shape" << std::endl;
 	pShape = pBody->queryConstTriangleShape();
-	std::cout << "got it: " << pShape << std::endl;
+
 	if (!pShape)
 	{
 		//NULL mesh shape, so return right now.
@@ -120,13 +118,15 @@ int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody)
 
 	//Get the position and velocity buffers from the point shape and the index buffer from the triangle shape
 	const Ng::Buffer3f& bufPos = ptShape.constBuffer3f("position");
-	const Ng::Buffer3f& bufVel = ptShape.constBuffer3f("velocity");
-	std::cout << "getting index buffer" << std::endl;
-	const Ng::Buffer3i& bufIndex = triShape.constBuffer3i("index");
-	std::cout << "got it" << std::endl;
-	std::cout << "channel count:" << triShape.channelCount() << std::endl;
-	std::cout << "channel index:" << triShape.channelIndex("index") << std::endl;
-	std::cout << "bufIndex size:" << triShape.size() << std::endl;
+	const Ng::Buffer3i& bufIndex ( triShape.constBuffer3i("index") );
+
+	const Ng::Buffer3f* bufVel = 0;
+	bool emp_has_v = ptShape.hasChannels3f("velocity");
+
+
+
+	int indexChannelNum = triShape.channelIndex("index"); //Store the channel number for the "index" channel
+	//Invoking triShape.size() directly possibly tries to read the size from the "position" attribute...Shoudl it??
 
 	//Default values for attributes
 	float zero3f[3] = {0,0,0};
@@ -134,12 +134,16 @@ int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody)
 	int zero3i[3] = {0,0,0};
 	int zero1i = 0;
 
-	//If GDP doesn't have a velocity attribute, create one.
-	GEO_AttributeHandle attr_v = gdp.getPointAttribute("v");
-	if ( !attr_v.isAttributeValid() )
+	if (emp_has_v)
 	{
-		gdp.addPointAttrib("v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f);
-		attr_v = gdp.getPointAttribute("v");
+		bufVel = &(ptShape.constBuffer3f("velocity"));
+		//If GDP doesn't have a velocity attribute, create one.
+		GEO_AttributeHandle attr_v = gdp.getPointAttribute("v");
+		if ( !attr_v.isAttributeValid() )
+		{
+			gdp.addPointAttrib("v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f);
+			attr_v = gdp.getPointAttribute("v");
+		}
 	}
 
 	GEO_Point *ppt;
@@ -150,24 +154,19 @@ int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody)
 		ppt->setPos( UT_Vector3( bufPos(ptNum)[0], bufPos(ptNum)[1], bufPos(ptNum)[2] ) );
 	}
 
-	std::cout << "getting tri shape size..." << std::endl;
-	std::cout << "tri shape size: " << triShape.size() << std::endl;
-
 	//Now that all the points are in the GDP, build the triangles
 	GU_PrimPoly *pPrim;
-	for (int tri = 0; tri < triShape.size(); tri++)
+	for (int tri = 0; tri < triShape.channel(indexChannelNum)->size(); tri++)
 	{
-		//pPrim = GU_PrimPoly::build(&gdp, 3, GU_POLY_CLOSED, 0); //Build a closed poly with 3 points, but don't add them to the GDP.
+		pPrim = GU_PrimPoly::build(&gdp, 3, GU_POLY_CLOSED, 0); //Build a closed poly with 3 points, but don't add them to the GDP.
 		//Set the three vertices of the triangle
 		for (int i = 0; i < 3; i++ )
 		{
-			//pPrim->setVertex(i, gdp.points()[ bufIndex(tri)[i] ] );
+			pPrim->setVertex(i, gdp.points()[ bufIndex(tri)[i] ] );
 		}
-
 	}
 
 
-	std::cout << "returning from mesh load!" << std::endl;
 	return 0;
 }
 
