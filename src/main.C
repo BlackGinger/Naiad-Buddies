@@ -43,26 +43,70 @@
 #include <stdio.h>
 #include <iostream>
 
-/**************************************************************************************************/
+#include <CMD/CMD_Args.h>
 
-Geo2Emp::Geo2Emp() :
-	_out(std::cout),
-	_logLevel = LL_SILENCE
+static void
+usage(const char *program)
 {
-
+    cerr << "Usage: " << program << " sourcefile dstfile\n";
+    cerr << "The extension of the source/dest will be used to determine" << endl;
+    cerr << "how the conversion is done.  Supported extensions are .emp" << endl;
+    cerr << "and .bgeo" << endl;
 }
 
 /**************************************************************************************************/
 
-Geo2Emp::~Geo2Emp()
+int main(int argc, char *argv[])
 {
+	std::cout << "creating new object and redirecting output..." << std::endl;
+	Geo2Emp geo2emp;
 
+	//geo2emp._out << "loggin throught default stream..." << std::endl;
+	//geo2emp.redirect( std::cerr );
+	//geo2emp._out << "loggin throught redirected stream..." << std::endl;
+
+	return 0;
 }
 
 /**************************************************************************************************/
 
-void Geo2Emp::redirect(ostream &os)
+int main_old(int argc, char *argv[])
 {
- _out.rdbuf( os.rdbuf() );
-}
+	CMD_Args		 args;
+	GU_Detail		 gdp;
+	
+	args.initialize(argc, argv);
 
+	if (args.argc() != 3)
+	{
+		usage(argv[0]);
+		return 1;
+	}
+
+	UT_String	inputname, outputname;
+
+	inputname.harden(argv[1]);
+	outputname.harden(argv[2]);
+	
+// 	std::cout << "args: " << inputname << "," << outputname << std::endl;
+
+	if (!strcmp(inputname.fileExtension(), ".emp"))
+	{
+		//std::cout << "Loading emp: " << inputname << std::endl;
+		// Convert from emp
+		loadEmpBodies(inputname.toStdString(), gdp);
+		
+		//std::cout << "Writing file: " << outputname << std::endl;
+		// Save our result.
+		gdp.save((const char *) outputname, 0, 0);
+  }
+  else
+  {
+		// Convert to emp.
+		gdp.load((const char *) inputname, 0);
+
+		//std::cout << "Writing file: " << outputname << std::endl;
+		saveEmpBodies(outputname.toStdString(), gdp);
+   }
+   return 0;
+}

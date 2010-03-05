@@ -425,12 +425,8 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 						break;
 
 				}
-
 			}
-
-		}
-
-		
+		}	
 	}
 
 	//std::cout << "all done. " << std::endl;
