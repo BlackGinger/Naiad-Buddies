@@ -58,22 +58,12 @@ usage(const char *program)
 
 int main(int argc, char *argv[])
 {
-	std::cout << "creating new object and redirecting output..." << std::endl;
 	Geo2Emp geo2emp;
-
-	//geo2emp._out << "loggin throught default stream..." << std::endl;
-	//geo2emp.redirect( std::cerr );
-	//geo2emp._out << "loggin throught redirected stream..." << std::endl;
-
-	return 0;
-}
-
-/**************************************************************************************************/
-
-int main_old(int argc, char *argv[])
-{
 	CMD_Args		 args;
 	GU_Detail		 gdp;
+
+	geo2emp.setGdpIn(&gdp);
+	geo2emp.setGdpOut(&gdp);
 	
 	args.initialize(argc, argv);
 
@@ -83,19 +73,24 @@ int main_old(int argc, char *argv[])
 		return 1;
 	}
 
+	//By default, send output to std::cerr and use LL_INFO log level.
+	geo2emp.setLogLevel(Geo2Emp::LL_INFO);
+	geo2emp.redirect( std::cerr );
+	//TODO: parse command line options to manipulate the loglevel and default log output stream. 
+
 	UT_String	inputname, outputname;
 
 	inputname.harden(argv[1]);
 	outputname.harden(argv[2]);
 	
-// 	std::cout << "args: " << inputname << "," << outputname << std::endl;
-
+	
 	if (!strcmp(inputname.fileExtension(), ".emp"))
 	{
-		//std::cout << "Loading emp: " << inputname << std::endl;
-		// Convert from emp
-		loadEmpBodies(inputname.toStdString(), gdp);
-		
+		geo2emp.LogInfo() << "Loading EMP: " << inputname << std::endl;
+		// Convert from emp (by default, convert all naiad body types to bgeo)
+		geo2emp.loadEmpBodies( inputname.toStdString() );
+	
+		geo2emp.LogInfo() << "Saving GDP: " << outputname << std::endl;
 		//std::cout << "Writing file: " << outputname << std::endl;
 		// Save our result.
 		gdp.save((const char *) outputname, 0, 0);
@@ -103,10 +98,14 @@ int main_old(int argc, char *argv[])
   else
   {
 		// Convert to emp.
+		geo2emp.LogInfo() << "Loading GDP: " << inputname << std::endl;
 		gdp.load((const char *) inputname, 0);
 
-		//std::cout << "Writing file: " << outputname << std::endl;
-		saveEmpBodies(outputname.toStdString(), gdp);
+		geo2emp.LogInfo() << "Saving EMP: " << outputname << std::endl;
+		geo2emp.saveEmpBodies(outputname.toStdString());
    }
    return 0;
+
+	return 0;
 }
+
