@@ -3,3 +3,4 @@
 *.backup
 *.bgeo
 bin/geo2emp
+tags

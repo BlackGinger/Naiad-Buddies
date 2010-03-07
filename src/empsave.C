@@ -1,97 +1,46 @@
-
+/*
+ * empsave.C
+ *
+ * .bgeo to .emp converter
+ *
+ * Copyright (c) 2010 Van Aarde Krynauw.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 
 #include "geo2emp.h"
 
 #include <GEO/GEO_AttributeHandle.h>
 #include <GEO/GEO_TriMesh.h>
 
-#include <Ni.h>
-#include <NgBody.h>
 #include <NgEmp.h>
 #include <NgString.h>
 
 
-Ng::Body* saveMeshShape(GU_Detail& gdp);
+/**************************************************************************************************/
 
-
-/**
- * Write Houdini GDP data into an EMP stream
- *
- * For now, simply save out trimesh data. When this tool gets converted to a SOP, we can add more options for particle exports.
- */
-int saveEmpBodies(std::string empfile, GU_Detail& gdp)
-{
-//std::cout << "save emp bodies" << std::endl;
-
-//	std::cout << "particle count: " << gdp.particleCount() << std::endl;
-//	std::cout << "paste count: " << gdp.pasteCount() << std::endl;
-//	std::cout << "quadric count: " << gdp.quadricCount() << std::endl;
-
-	NiBegin(NI_BODY_ONLY);
-
-	//Construct the EMP Writer and add bodies as they get processed.
-	Ng::EmpWriter empWriter(empfile, 1.0);
-		
-
-	if ( gdp.primitives().entries() > gdp.particleCount() )
-	{
-		//If we have more than just particle primitives it means that we most likely have a mesh that we're dealing with
-		Ng::Body* pBody = saveMeshShape(gdp);
-		if (pBody)
-		{
-			//Make sure all the particles are sorted into the correct blocks
-			pBody->update();
-			empWriter.write(pBody, Ng::String("*/*"));
-
-			//Question: Can the bodies be deleted directly after a write, or does the writer need to be closed first?
-			delete pBody;
-			pBody = 0;
-
-		}
-	}
-
-	//Create a single Naiad mesh body for the triangulated meshes.
-	Ng::Body* pMeshBody = NULL;
-
-	//This is just a random default name with significance whatsoever...meaning I made it up.
-	//One day when this tool turns into a SOP, the name can be specified some edit box. Or even use (slow) group names.
-	//But for now, just stuff all the triangles into on mesh.
-	//pMeshBody = new Ng::Body("trimesh"); 	
-	//pMeshBody->match("Mesh");
-
-	//get the mutable shapes for the mesh body.
-	//Ng::TriangleShape& triShape( pMeshBody->mutableTriangleShape() );
-	//Ng::PointShape& ptShape( pMeshBody->mutablePointShape() );
-
-	//All done
-	empWriter.close();
-	
-	NiEnd();
-
-	//First, copy all the points over to the gdp.
-/*
-	for (pprim = gdp->primitives().head(); pprim; pprim = gdp->primitives().next(pprim) )
-	{
-		//const GEO_PrimParticle* prim_part = dynamic_cast<const GEO_PrimParticle*>(pprim);
-		const GEO_TriMesh* prim_mesh = dynamic_cast<const GEO_TriMesh*>(pprim);
-
-		if ( prim_part )
-		{
-
-			
-		}
-
-	}
-*/
-	//Return success
-	return 0;
-}
-
-Ng::Body* saveMeshShape(GU_Detail& gdp)
+Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(Ng::Body*& pMeshBody)
 {
 	//Create a Naiad mesh body
 	
-	Ng::Body* pMeshBody = new Ng::Body("trimesh"); 	
+	//Ng::Body* pMeshBody = new Ng::Body("trimesh"); 	
+	pMeshBody = new Ng::Body("trimesh"); 	
 	pMeshBody->match("Mesh");
 	
 	//get the mutable shapes for the mesh body.
@@ -100,8 +49,8 @@ Ng::Body* saveMeshShape(GU_Detail& gdp)
 
 	//For the sake of simplicity, copy ALL the points in the GDP across.
 	//It will be much slower if we have to filter out all the non-mesh vertices and then remap the vertices to new point numbers.
-	const GEO_PointList& ptlist = gdp.points();
-	const GEO_PrimList& primlist = gdp.primitives();
+	const GEO_PointList& ptlist = _gdpOut->points();
+	const GEO_PrimList& primlist = _gdpOut->primitives();
 	const GEO_Point* ppt;
 	const GEO_Primitive* pprim;
 	UT_Vector3 pos, v3;
@@ -112,8 +61,8 @@ Ng::Body* saveMeshShape(GU_Detail& gdp)
 	Ng::Buffer3f* pNormBuffer = 0;
 	Ng::Buffer3f* pVelBuffer = 0;
 
-	attr_v = gdp.getPointAttribute("v");
-	attr_N = gdp.getPointAttribute("N");
+	attr_v = _gdpOut->getPointAttribute("v");
+	attr_N = _gdpOut->getPointAttribute("N");
 
 	attr_v_valid = attr_v.isAttributeValid();
 	attr_N_valid = attr_N.isAttributeValid();
@@ -186,9 +135,9 @@ Ng::Body* saveMeshShape(GU_Detail& gdp)
 		}
 	}
 
-
-	return pMeshBody;
+	return EC_SUCCESS;
 }
 
+/**************************************************************************************************/
 
 

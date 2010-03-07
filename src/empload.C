@@ -1,3 +1,28 @@
+/*
+ * empload.C
+ *
+ * .bgeo to .emp converter
+ *
+ * Copyright (c) 2010 Van Aarde Krynauw.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 
 #include "geo2emp.h"
 
@@ -11,95 +36,17 @@
 #include <NgEmp.h>
 #include <NgString.h>
 
-/** 
- * Process a mesh-type naiad body
- */
-int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody);
-int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody);
-int loadFieldShape(GU_Detail& gdp, const Ng::Body* pBody);
 
+/**************************************************************************************************/
 
-/*************************************************************************************************/
-
-/** 
- * Load all the Naiad bodies from the EMP file into the Houdini GDP
- *
- */
-int loadEmpBodies(std::string filen, GU_Detail& gdp)
-{
-	Ng::EmpReader* empReader = NULL;	
-
-	NiBegin(NI_BODY_ONLY);
-
-	//std::cout << "loading emp bodies from: " << filen << std::endl;
-
-	unsigned int numBodies = 0;
-	try
+Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
+{	
+	if (!_gdpIn)
 	{
-		//std::cout << "Create new emp reader." << std::endl;
-		Ng::String ngfilen = Ng::String(filen);
-		empReader = new Ng::EmpReader( ngfilen );
-		//std::cout << "getting body count..." << std::endl;
-		//std::cout << "body count: " << empReader->bodyCount() << std::endl;
-		numBodies = empReader->bodyCount();
-		//std::cout << "Found " << numBodies << " bodies in emp file " << std::endl;
-
-	}
-	catch( std::exception& e )
-	{
-		//TODO: generate a proper error / exit code for Houdini. 
-		// return exit code?
-		//std::cout << "exception! " << e.what() << std::endl;
-		return 1;
+		//If we don't have a GDP for writing data into Houdini, return error.
+		return EC_NULL_WRITE_GDP;
 	}
 
-	//Run through each body and process them according to their shape type.
-	const Ng::Body* pBody = 0;
-	Ng::Body::ConstShapeMapIter shapeIt;
-	for (int i = 0; i < numBodies; i++)
-	{
-		pBody = empReader->constBody(i);
-		//std::cout << i << ":" << pBody->name() << std::endl;
-		//std::cout << "number of shapes: " << pBody->shape_count() << std::endl;
-		/*	
-		std::cout << "body Mesh: " << pBody->matches("Mesh") << std::endl;
-		std::cout << "body Particle: " << pBody->matches("Particle") << std::endl;
-		std::cout << "body Particle-Liquid: " << pBody->matches("Particle-Liquid") << std::endl;
-		std::cout << "body Field: " << pBody->matches("Field") << std::endl;
-		std::cout << "body Volume: " << pBody->matches("Volume") << std::endl;
-		*/
-
-		//Inspect the body singature and call the appropriate loader.
-		
-		if ( pBody->matches("Particle") )
-		{
-			loadParticleShape(gdp, pBody);
-		}
-		if (pBody->matches("Field") )
-		{
-			loadFieldShape(gdp, pBody);
-		}
-		if ( pBody->matches("Mesh") )
-		{
-			loadMeshShape(gdp, pBody);
-		}
-		
-
-	}
-
-	NiEnd();
-
-	//Return success
-	return 0;
-}
-
-/*************************************************************************************************/
-
-int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody)
-{
-//	std::cout << "============= Loading mesh shape ===============" << std::endl;
-	
-	
 	const Ng::TriangleShape* pShape;
 
 	pShape = pBody->queryConstTriangleShape();
@@ -107,7 +54,7 @@ int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody)
 	if (!pShape)
 	{
 		//NULL mesh shape, so return right now.
-		return 1;
+		return EC_NO_TRIANGLE_SHAPE;
 	}
 
 	//Fore now, let's just hardcode the imports to get some base functionality. It can be generified at a later stage.
@@ -123,8 +70,6 @@ int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody)
 	const Ng::Buffer3f* bufVel = 0;
 	bool emp_has_v = ptShape.hasChannels3f("velocity");
 
-
-
 	int indexChannelNum = triShape.channelIndex("index"); //Store the channel number for the "index" channel
 	//Invoking triShape.size() directly possibly tries to read the size from the "position" attribute...Shoudl it??
 
@@ -138,11 +83,11 @@ int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody)
 	{
 		bufVel = &(ptShape.constBuffer3f("velocity"));
 		//If GDP doesn't have a velocity attribute, create one.
-		GEO_AttributeHandle attr_v = gdp.getPointAttribute("v");
+		GEO_AttributeHandle attr_v = _gdpIn->getPointAttribute("v");
 		if ( !attr_v.isAttributeValid() )
 		{
-			gdp.addPointAttrib("v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f);
-			attr_v = gdp.getPointAttribute("v");
+			_gdpIn->addPointAttrib("v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f);
+			attr_v = _gdpIn->getPointAttribute("v");
 		}
 	}
 
@@ -150,7 +95,7 @@ int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody)
 	//Now, copy all the points into the GDP.
 	for (int ptNum = 0; ptNum < ptShape.size(); ptNum ++)
 	{
-		ppt = gdp.appendPoint();
+		ppt = _gdpIn->appendPoint();
 		ppt->setPos( UT_Vector3( bufPos(ptNum)[0], bufPos(ptNum)[1], bufPos(ptNum)[2] ) );
 	}
 
@@ -158,52 +103,33 @@ int loadMeshShape(GU_Detail& gdp, const Ng::Body* pBody)
 	GU_PrimPoly *pPrim;
 	for (int tri = 0; tri < triShape.channel(indexChannelNum)->size(); tri++)
 	{
-		pPrim = GU_PrimPoly::build(&gdp, 3, GU_POLY_CLOSED, 0); //Build a closed poly with 3 points, but don't add them to the GDP.
+		pPrim = GU_PrimPoly::build(_gdpIn, 3, GU_POLY_CLOSED, 0); //Build a closed poly with 3 points, but don't add them to the GDP.
 		//Set the three vertices of the triangle
 		for (int i = 0; i < 3; i++ )
 		{
-			pPrim->setVertex(i, gdp.points()[ bufIndex(tri)[i] ] );
+			pPrim->setVertex(i, _gdpIn->points()[ bufIndex(tri)[i] ] );
 		}
 	}
 
 
-	return 0;
+	return EC_SUCCESS;
 }
 
-/*************************************************************************************************/
 
-/**
- * Process a Naiad channel and add the attribute to the point
- */
-void processPointChannel(GU_Detail& gdp, GEO_Point* ppt, const Ng::ChannelCPtr& chan)
-{
-	/**
-	 * If the channel does not exist, then create it
-	 */
+/**************************************************************************************************/
 
-	if (chan->name() == "position")
-	{
-		//Set the point position
-		//const Ng::ParticleChannel3f &chanPos = chan->constChannel3f( ppt->getNum() );
-		//ppt->setPos( chanPos[0], chanPos[1], chanPos[2] );
-	}
-
-	
-}
-
-/*************************************************************************************************/
-
-int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
+Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 {
 	const Ng::ParticleShape* pShape;
-	//std::cout << "============= Loading particle shape ===============" << std::endl;
+
+	LogInfo() << "=============== Loading particle shape ===============" << std::endl; 
 
 	pShape = pBody->queryConstParticleShape();
 
 	if (!pShape)
 	{
 		//std::cout << "Received NULL particle shape!" << std::endl;
-		return 1;
+		return EC_NO_PARTICLE_SHAPE;
 	}
 
 	//We have a valid particle shape. Start copying particle data over to the GDP
@@ -232,6 +158,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 
 		if ( chan->name() == "position" )	
 		{
+			LogVerbose() << "Processing position attribute" << std::endl;
 			houdiniNames.push_back("P");
 			houdiniTypes.push_back(GB_ATTRIB_FLOAT);
 			positionChannelIndex = i;
@@ -240,18 +167,20 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 		}
 		else if (chan->name() == "velocity" )
 		{
+			LogVerbose() << "Processing velocity attribute" << std::endl;
 			houdiniNames.push_back("v");
 			houdiniTypes.push_back(GB_ATTRIB_VECTOR);
-			attr = gdp.getPointAttribute("v");
+			attr = _gdpIn->getPointAttribute("v");
 			if ( !attr.isAttributeValid() )
 			{
-				gdp.addPointAttrib( "v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f );
-				attr = gdp.getPointAttribute( "v" );
+				LogVerbose() << "Creating velocity attribute" << std::endl;
+				_gdpIn->addPointAttrib( "v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f );
+				attr = _gdpIn->getPointAttribute( "v" );
 			}
 		}
 		else
 		{
-			attr = gdp.getPointAttribute( chan->name().c_str() );
+			attr = _gdpIn->getPointAttribute( chan->name().c_str() );
 			if ( !attr.isAttributeValid() )
 			{
 				//If the attribute doesn't exist yet, then create a new one based on the Naiad type. 
@@ -297,8 +226,9 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 				houdiniNames.push_back( chan->name() );
 				houdiniTypes.push_back(GB_ATTRIB_FLOAT);
 
-				gdp.addPointAttrib( chan->name().c_str(), size, type, data );
-				attr = gdp.getPointAttribute( chan->name().c_str() );
+				_gdpIn->addPointAttrib( chan->name().c_str(), size, type, data );
+				attr = _gdpIn->getPointAttribute( chan->name().c_str() );
+				LogVerbose() << "Created generic point attribute: " << chan->name() << std::endl;
 				//std::cout << "added attribute: " << chan->name() << " valid: " << attr.isAttributeValid() << std::endl;
 			}
 
@@ -324,7 +254,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 		//Iterate over all the points/particles in the position block
 		for (int ptNum = 0; ptNum < posBlock.size(); ptNum++)
 		{
-			ppt = gdp.appendPoint();
+			ppt = _gdpIn->appendPoint();
 			//std::cout << "pos: " << i << " " << posBlock(i)[0] << posBlock(i)[1] << std::endl;
 			ppt->setPos( UT_Vector3( posBlock(ptNum)[0], posBlock(ptNum)[1], posBlock(ptNum)[2] ) );
 
@@ -354,7 +284,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 						//Get the created channel data
 						const em::block3f& channelData( pShape->constBlocks1f(chan->name())(blockIndex) );
 						//Get the Houdini point attribute using the name list we built earlier.
-						attr = gdp.getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr = _gdpIn->getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
 						attr.setF( channelData(ptNum) );
 
@@ -366,7 +296,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 						//Get the created channel data
 						const em::block3f& channelData( pShape->constBlocks1f(chan->name())(blockIndex) );
 						//Get the Houdini point attribute using the name list we built earlier.
-						attr = gdp.getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr = _gdpIn->getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
 
 					}
@@ -377,7 +307,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 						//Get the created channel data
 						const em::block3vec3f& channelData( pShape->constBlocks3f(channelIndex)(blockIndex) );
 						//Get the Houdini point attribute using the name list we built earlier.
-						attr = gdp.getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr = _gdpIn->getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
 						//std::cout << "setting v3" << std::endl;
 						if (houdiniTypes[channelIndex] == GB_ATTRIB_VECTOR)
@@ -402,7 +332,7 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 						//Get the created channel data
 						const em::block3vec3i& channelData( pShape->constBlocks3i(chan->name())(blockIndex) );
 						//Get the Houdini point attribute using the name list we built earlier.
-						attr = gdp.getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr = _gdpIn->getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
 						if (houdiniTypes[channelIndex] == GB_ATTRIB_VECTOR)
 						{
@@ -430,18 +360,16 @@ int loadParticleShape(GU_Detail& gdp, const Ng::Body* pBody)
 	}
 
 	//std::cout << "all done. " << std::endl;
-	return 0;
+	return EC_SUCCESS;
 }
 
-/*************************************************************************************************/
+/**************************************************************************************************/
 
-int loadFieldShape(GU_Detail& gdp, const Ng::Body* pBody)
+Geo2Emp::ErrorCode Geo2Emp::loadFieldShape( const Ng::Body* pBody )
 {
-	//std::cout << "============= Loading field shape ===============" << std::endl;
 
-	return 0;
+	return EC_NOT_YET_IMPLEMENTED;
 }
 
-/*************************************************************************************************/
-
+/**************************************************************************************************/
 

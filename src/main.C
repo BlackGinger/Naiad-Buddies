@@ -1,49 +1,38 @@
-// -----------------------------------------------------------------------------
-//
-// bgeo2emp.cc
-//
-// .bgeo to .emp converter
-//
-// Copyright (c) 2009 BlackGinger.  All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-// * Redistributions of source code must retain the above copyright notice,
-//    this list of conditions and the following disclaimer.
-//
-// * Redistributions in binary form must reproduce the above copyright notice,
-//   this list of conditions and the following disclaimer in the documentation
-//   and/or other materials provided with the distribution.
-//
-// * Neither the name of BlackGinger nor its contributors may be used to
-//   endorse or promote products derived from this software without specific 
-//   prior written permission. 
-// 
-//    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
-//    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT 
-//    LIMITED TO,  THE IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS
-//    FOR  A  PARTICULAR  PURPOSE  ARE DISCLAIMED.  IN NO EVENT SHALL THE
-//    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-//    BUT  NOT LIMITED TO,  PROCUREMENT OF SUBSTITUTE GOODS  OR  SERVICES; 
-//    LOSS OF USE,  DATA,  OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER
-//    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT
-//    LIABILITY,  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)  ARISING IN
-//    ANY  WAY OUT OF THE USE OF  THIS SOFTWARE,  EVEN IF ADVISED OF  THE
-//    POSSIBILITY OF SUCH DAMAGE.
-//
-//
-// -----------------------------------------------------------------------------
-
+/*
+ * main.C
+ *
+ * command line frontend to the .bgeo to .emp converter
+ *
+ * Copyright (c) 2010 Van Aarde Krynauw.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 
 #include "geo2emp.h"
+#include "anyoption.h"
 
 #include <stdio.h>
 #include <iostream>
 
 #include <CMD/CMD_Args.h>
+
+/**************************************************************************************************/
 
 static void
 usage(const char *program)
@@ -56,39 +45,121 @@ usage(const char *program)
 
 /**************************************************************************************************/
 
+/*
+ * Initialise the commandline option parser
+ */
+
+/**************************************************************************************************/
+
+/*
+ * Initialise the commandline option parser
+ */
+void processOpts(AnyOption& opt)
+{
+	
+	opt.addUsage("Usage: geo2emp [options] input output");
+	opt.addUsage("");
+	opt.addUsage("\t-h\t--help\t\t Prints this help");
+	opt.addUsage("\t-v\t--verbose [lvl]\t Verbosity level:");
+	opt.addUsage("\t\t\t\t     0 - Stealth mode");
+	opt.addUsage("\t\t\t\t     1 - Informative");
+	opt.addUsage("\t\t\t\t     2 - Talkative");
+	opt.addUsage("\t\t\t\t     3 - Debug");
+	opt.addUsage("\t-p\t--particles\t Load particle shape");
+	opt.addUsage("\t-m\t--mesh\t\t Load mesh shape");
+	opt.addUsage("\t-f\t--field\t\t Load field shape");
+	opt.addUsage("");
+
+
+	//opt->setOption( "verbose", 'v' );
+
+	/* by default all  options  will be checked on the command line and from option/resource file */
+  opt.setFlag(  "help", 'h' );   /* a flag (takes no argument), supporting long and short form */ 
+	opt.setOption( "verbose", 'v' );
+	opt.setFlag( "particles", 'p' ); 
+	opt.setFlag( "mesh", 'm' ); 
+	opt.setFlag( "field", 'f' );
+	opt.setFlag( "allshapes", 'a' );
+
+        
+}
+/**************************************************************************************************/
+
 int main(int argc, char *argv[])
 {
 	Geo2Emp geo2emp;
-	CMD_Args		 args;
-	GU_Detail		 gdp;
+	AnyOption opt;
+	GU_Detail gdp;
+	int shapeMask = 0;
+	bool loadAllShapes = true;
 
 	geo2emp.setGdpIn(&gdp);
 	geo2emp.setGdpOut(&gdp);
 	
-	args.initialize(argc, argv);
+	processOpts(opt);
 
-	if (args.argc() != 3)
+	opt.processCommandArgs(argc, argv);
+	
+	//If we don't have exactly two args (input & output file name) then bug out.
+	if (! opt.hasOptions() || opt.getArgc() != 2) 
+	{ 
+		/* print usage if no options */
+ 		opt.printUsage();
+		return 0;
+	}
+	
+	if( opt.getFlag( "help" ) || opt.getFlag( 'h' ) ) 
 	{
-		usage(argv[0]);
-		return 1;
+		opt.printUsage();
 	}
 
-	//By default, send output to std::cerr and use LL_INFO log level.
-	geo2emp.setLogLevel(Geo2Emp::LL_INFO);
+	if ( opt.getValue("verbose") != NULL || opt.getValue( 'v' ) != NULL )
+	{
+		istringstream intstream( opt.getValue('v') );
+		int i;
+		if (intstream >> i)
+		{
+			geo2emp.setLogLevel( (Geo2Emp::LogLevel)i );
+		}
+	}
+
+
+	if ( opt.getValue("particle") != NULL || opt.getValue( 'p' ) != NULL )
+	{
+		loadAllShapes = false;
+		shapeMask |= Geo2Emp::BT_PARTICLE;
+	}
+
+
+	if ( opt.getValue("mesh") != NULL || opt.getValue( 'm' ) != NULL )
+	{
+		loadAllShapes = false;
+		shapeMask |= Geo2Emp::BT_MESH;
+	}
+
+	if ( opt.getValue("field") != NULL || opt.getValue( 'f' ) != NULL )
+	{
+		loadAllShapes = false;
+		shapeMask |= Geo2Emp::BT_FIELD;
+	}
+
 	geo2emp.redirect( std::cerr );
-	//TODO: parse command line options to manipulate the loglevel and default log output stream. 
 
 	UT_String	inputname, outputname;
 
-	inputname.harden(argv[1]);
-	outputname.harden(argv[2]);
-	
-	
+	inputname.harden(opt.getArgv(0));
+	outputname.harden(opt.getArgv(1));
+
+	if (loadAllShapes)
+	{
+		shapeMask = 0xFFFFFFFF;
+	}
+		
 	if (!strcmp(inputname.fileExtension(), ".emp"))
 	{
 		geo2emp.LogInfo() << "Loading EMP: " << inputname << std::endl;
 		// Convert from emp (by default, convert all naiad body types to bgeo)
-		geo2emp.loadEmpBodies( inputname.toStdString() );
+		geo2emp.loadEmpBodies( inputname.toStdString(), shapeMask );
 	
 		geo2emp.LogInfo() << "Saving GDP: " << outputname << std::endl;
 		//std::cout << "Writing file: " << outputname << std::endl;
@@ -102,7 +173,7 @@ int main(int argc, char *argv[])
 		gdp.load((const char *) inputname, 0);
 
 		geo2emp.LogInfo() << "Saving EMP: " << outputname << std::endl;
-		geo2emp.saveEmpBodies(outputname.toStdString());
+		geo2emp.saveEmpBodies(outputname.toStdString(), shapeMask);
    }
    return 0;
 
