@@ -1,10 +1,11 @@
-Open source BGEO/EMP converter tool for Houdini 10
---------------------------------------------------
+Naiad Buddy for Houdini toolkit
+-------------------------------
 
 The project home can be found at: http://code.google.com/p/geo2emp/
 
-This library has been tested with:
+The source has been tested with:
 Gentoo 64bit, GCC 4.3.3
+Ubuntu 9.04 64bit, GCC 4.1.3
 Houdini 10.0.465 (www.sidefx.com)
 Naiad 0.93b (www.exoticmatter.com)
 
@@ -16,9 +17,14 @@ This tool converts Houdini's .bgeo files to Naiad's .emp files. This tool was bu
 
 Current Features:
 -----------------
-* Writes triangulated geometry and point velocities to EMP files.
-* Loads particles and particle velocities from EMP files.
-* Loads meshes from EMP files.
+ * Writes triangulated geometry and point velocities to EMP files.
+ * Loads particles and particle velocities from EMP files.
+ * Loads meshes from EMP files.
+
+Components:
+-----------
+ * Geo2Emp class for converting between Naiad's .emp and Houdini's .bgeo format
+ * geo2emp commandline tool to server as frontend to the converter class
 
 
 Directories:
@@ -42,10 +48,13 @@ For more help:
 	geo2emp -h 
 
 
-.EMP as internal Houdini format (using the GEOio mechanism):
-------------------------------------------------------------
-Houdini has the nifty ability to load/save file formats as if the file formats were native, using commandline converters. bgeo2emp will use this feature to import and export .EMP files. See "Installing" section on how to achieve this.
+Recommended usage of the commandline tool: 
+------------------------------------------
+It is recommended to integrate the commandline tool into Houdini using Houdini's GEOio mechanism so that you can read and write .emp files from within Houdini (see Installing section). 
 
+Performance tip:
+----------------
+Please take note that it is indeed slower to load .emp files through a File SOP than their .bgeo equivalent since it has to convert all the .emp data on each frame. Rather convert your .emp sequences to a .bgeo sequence and load the .bgeo files to allow for faster loading & scrubbing.
 
 Compiling (Linux):
 ------------------
@@ -54,7 +63,6 @@ Compiling (Linux):
 3. type "make" 
 
 If the compile was successful, a binary file (geo2emp) will be output in the bin/ directory.
-
 
 Installing (Linux):
 -------------------

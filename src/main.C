@@ -40,6 +40,8 @@
 void processOpts(AnyOption& opt)
 {
 	
+	opt.addUsage("Naiad Buddy for Houdini toolkit - geo2emp converter");
+	opt.addUsage("");
 	opt.addUsage("Usage: geo2emp [options] source dest");
 	opt.addUsage("");
   opt.addUsage("  The extension of the source/dest will be used to determine");
