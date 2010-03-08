@@ -1,24 +1,24 @@
 Open source BGEO/EMP converter tool for Houdini 10
 --------------------------------------------------
 
+The project home can be found at: http://code.google.com/p/geo2emp/
+
 This library has been tested with:
 Gentoo 64bit, GCC 4.3.3
-Houdini 10.0.401 (www.sidefx.com)
-Naiad alpha.20.4 (www.exoticmatter.com)
+Houdini 10.0.465 (www.sidefx.com)
+Naiad 0.93b (www.exoticmatter.com)
 
-NOTE: This file is currently outdated. It needs to be updated for the new bgeo2emp converter...after we have a decent code base.
-
+This library is not backwards compatible with Naiad. It *may* work with, or compile against, previous versions but it has not been tested/implemented.
 
 Description:
 ------------
 This tool converts Houdini's .bgeo files to Naiad's .emp files. This tool was built in order to import/export .EMP files directly from Houdini.
 
-
 Current Features:
 -----------------
-* Writes already triangulated geometry and point velocities to EMP files.
-* Extracts points and point velocities from EMP files.
-* Extracts meshes from EMP files.
+* Writes triangulated geometry and point velocities to EMP files.
+* Loads particles and particle velocities from EMP files.
+* Loads meshes from EMP files.
 
 
 Directories:
@@ -32,50 +32,48 @@ sample_hip/ - Sample Houdini files to show how to use geo2emp
 
 Command Line Usage:
 -------------------
-Convert to EMP:
-geo2emp source.bgeo dest.emp
+Convert BGEO to EMP:
+	geo2emp source.bgeo dest.emp
 
-Convert from EMP:
-geo2emp source.emp dest.bgeo
+Convert EMP to BGEO:
+	geo2emp source.emp dest.bgeo
+
+For more help:
+	geo2emp -h 
 
 
-.EMP as internal Houdini format:
---------------------------------
+.EMP as internal Houdini format (using the GEOio mechanism):
+------------------------------------------------------------
 Houdini has the nifty ability to load/save file formats as if the file formats were native, using commandline converters. bgeo2emp will use this feature to import and export .EMP files. See "Installing" section on how to achieve this.
 
 
 Compiling (Linux):
 ------------------
-1. source the houdini_setup file so the makefile has access to the "hcustom" build script
-2. Go into the src directory and edit the Makefile. Adjust the NAIAD variable to point to your Naiad install path.
-3. From within the src/ directory, run "make":
-   bgeo2emp/src$ make
-	 
-If the compile was successful, a new binary file (bgeo2emp.bin) will be present in the bin/ directory.
+1. source houdini_setup
+2. Make sure your NAIAD_PATH has been set up, and the $NAIAD_PATH/lib directory is in the linker path (either through ld.so.conf or LD_LIBRARY_PATH)
+3. type "make" 
+
+If the compile was successful, a binary file (geo2emp) will be output in the bin/ directory.
 
 
 Installing (Linux):
 -------------------
-1. Edit the "bin/geo2emp" script and adjust the Naiad path to point to your installation.
-2. Copy the "geo2emp" script and "bgeo2emp.bin" binary to a directory in your path variable, e.g., /usr/bin or /usr/local/bin.
+2. Copy the "geo2emp" binary to a directory in your path variable, e.g., /usr/bin or /usr/local/bin.
 3. Copy the houdini/GEOio script to a directory in your HOUDINI_PATH or append the contents to an existing GEOio file.
 
-The "geo2emp" tool should now be ready to run. Make sure your Houdini environment has been sourced, and type "geo2emp" in the console. If the installation was successful, this should print the usage instructions for the tool.
-
-
-Troubleshooting (Linux):
-------------------------
-1) libstdc++ issues:
-Something to take note of is that Naiad has its own libstdc++.so.6 library but is not necessarily incompatible with Houdini 10 which results in messages like this: bgeo2emp.bin: /usr/local/naiad/alpha.20.4/lib/libstdc++.so.6: version `GLIBCXX_3.4.9' not found (required by /usr/local/houdini/10.0.401/dsolib/libHoudiniUI.so)
-To combat this problem, the geo2emp script puts the path of the system-wide libstdc++ first in the LD_LIBRARY_PATH variable.
-
+The "geo2emp" tool should now be ready to run. Make sure your Houdini and Naiad environment is properly set up, then type "geo2emp" in the console. If the installation was successful, this should print the usage instructions for the tool.
 
 Changes:
 --------
+0.2b)
+	- Completely rewritten for Naiad beta.
+	- Restored functionality of previous version (see Features section)
+
 0.1)
- - First release.
+	- First release. 
 
 
 Contributors
 ------------
-*) Van Aarde Krynauw, BlackGinger
+*) Van Aarde Krynauw
+
