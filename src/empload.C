@@ -30,6 +30,7 @@
 
 #include <GEO/GEO_AttributeHandle.h>
 #include <GU/GU_PrimPoly.h>
+#include <GU/GU_PrimPart.h>
 
 #include <Ni.h>
 #include <NgBody.h>
@@ -138,6 +139,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 	int positionChannelIndex = 0;
 	GEO_Point *ppt;
 	GEO_AttributeHandle attr;
+	GU_PrimParticle *pParticle;
 	std::vector<std::string> houdiniNames; //houdini names that correspond to naiad channels.
 	std::vector<GB_AttribType> houdiniTypes; //houdini types for the naiad channels.
 	//Default values for attributes
@@ -146,7 +148,14 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 	int zero3i[3] = {0,0,0};
 	int zero1i = 0;
 
-	
+
+	LogVerbose() << "Particle shape size: " << size << std::endl;
+	LogVerbose() << "Particle shape channel count: " << channelCount << std::endl;
+
+	LogVerbose() << "Building particle shape...";
+	pParticle = GU_PrimParticle::build(_gdpIn, 0);
+	LogVerbose() << "done." << std::endl;
+
 	//std::cout << "Size: " << size << std::endl;
 	//std::cout << "Channel count: " << channelCount << std::endl;
 
@@ -240,6 +249,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 	//The channel values for particle shapes are stored in blocks/tiles.
 	const Ng::TileLayout& layout = pBody->constLayout();
 	unsigned int numBlocks = layout.fineTileCount();
+	unsigned int absPtNum = 0;
 
 	//Get the block array for the positions channel
 	const em::block3_array3f& positionBlocks( pShape->constBlocks3f("position") );	
@@ -252,9 +262,12 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 		//std::cout << "taking block from positions..." << blockIndex << std::endl;
 		//std::cout << "block size:" << posBlock.size() << std::endl;
 		//Iterate over all the points/particles in the position block
-		for (int ptNum = 0; ptNum < posBlock.size(); ptNum++)
+		for (int ptNum = 0; ptNum < posBlock.size(); ptNum++, absPtNum++)
 		{
 			ppt = _gdpIn->appendPoint();
+			LogDebug() << "getting absolute point " << absPtNum << "; block pt num: " << ptNum << std::endl;
+			//ppt = pParticle->getVertex(absPtNum).getPt();
+			pParticle->appendParticle(ppt);
 			//std::cout << "pos: " << i << " " << posBlock(i)[0] << posBlock(i)[1] << std::endl;
 			ppt->setPos( UT_Vector3( posBlock(ptNum)[0], posBlock(ptNum)[1], posBlock(ptNum)[2] ) );
 

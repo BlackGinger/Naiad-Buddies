@@ -56,10 +56,10 @@ class Geo2Emp
 
 		enum LogLevel
 		{
-			LL_SILENCE = -1,
-			LL_INFO = 0,
-			LL_VERBOSE,
-			LL_DEBUG,
+			LL_SILENCE = 0,
+			LL_INFO = 1,
+			LL_VERBOSE = 2,
+			LL_DEBUG = 3,
 		};
 
 		enum ErrorCode
