@@ -37,6 +37,12 @@
 
 Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(Ng::Body*& pMeshBody)
 {
+	if (!_gdpOut)
+	{
+		//If we don't have a GDP for writing data into Houdini, return error.
+		return EC_NULL_READ_GDP;
+	}
+
 	//Create a Naiad mesh body
 	
 	//Ng::Body* pMeshBody = new Ng::Body("trimesh"); 	

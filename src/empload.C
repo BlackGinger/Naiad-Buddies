@@ -48,6 +48,8 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 		return EC_NULL_WRITE_GDP;
 	}
 
+	LogInfo() << "=============== Loading particle shape ===============" << std::endl; 
+
 	const Ng::TriangleShape* pShape;
 
 	pShape = pBody->queryConstTriangleShape();
@@ -79,12 +81,13 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 	float zero1f = 0;
 	int zero3i[3] = {0,0,0};
 	int zero1i = 0;
+	GEO_AttributeHandle attr_v = _gdpIn->getPointAttribute("v");
 
 	if (emp_has_v)
 	{
 		bufVel = &(ptShape.constBuffer3f("velocity"));
 		//If GDP doesn't have a velocity attribute, create one.
-		GEO_AttributeHandle attr_v = _gdpIn->getPointAttribute("v");
+		attr_v = _gdpIn->getPointAttribute("v");
 		if ( !attr_v.isAttributeValid() )
 		{
 			_gdpIn->addPointAttrib("v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f);
@@ -98,6 +101,12 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 	{
 		ppt = _gdpIn->appendPoint();
 		ppt->setPos( UT_Vector3( bufPos(ptNum)[0], bufPos(ptNum)[1], bufPos(ptNum)[2] ) );
+		if (emp_has_v)
+		{
+			//Get the point velocities from the EMP file
+			attr_v.setElement(ppt);
+			attr_v.setV3( UT_Vector3( (*bufVel)(ptNum)[0], (*bufVel)(ptNum)[1], (*bufVel)(ptNum)[2] ) );
+		}
 	}
 
 	//Now that all the points are in the GDP, build the triangles
@@ -121,6 +130,12 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 
 Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 {
+	if (!_gdpIn)
+	{
+		//If we don't have a GDP for writing data into Houdini, return error.
+		return EC_NULL_WRITE_GDP;
+	}
+
 	const Ng::ParticleShape* pShape;
 
 	LogInfo() << "=============== Loading particle shape ===============" << std::endl; 
@@ -380,6 +395,11 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 
 Geo2Emp::ErrorCode Geo2Emp::loadFieldShape( const Ng::Body* pBody )
 {
+	if (!_gdpIn)
+	{
+		//If we don't have a GDP for writing data into Houdini, return error.
+		return EC_NULL_WRITE_GDP;
+	}
 
 	return EC_NOT_YET_IMPLEMENTED;
 }
