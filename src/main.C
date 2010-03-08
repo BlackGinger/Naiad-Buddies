@@ -34,23 +34,6 @@
 
 /**************************************************************************************************/
 
-static void
-usage(const char *program)
-{
-    cerr << "Usage: " << program << " sourcefile dstfile\n";
-    cerr << "The extension of the source/dest will be used to determine" << endl;
-    cerr << "how the conversion is done.  Supported extensions are .emp" << endl;
-    cerr << "and .bgeo" << endl;
-}
-
-/**************************************************************************************************/
-
-/*
- * Initialise the commandline option parser
- */
-
-/**************************************************************************************************/
-
 /*
  * Initialise the commandline option parser
  */
@@ -58,6 +41,9 @@ void processOpts(AnyOption& opt)
 {
 	
 	opt.addUsage("Usage: geo2emp [options] input output");
+  opt.addUsage("  The extension of the source/dest will be used to determine");
+	opt.addUsage("  how the conversion is done.  Supported extensions are .emp");
+	opt.addUsage("  and .bgeo");
 	opt.addUsage("");
 	opt.addUsage("\t-h\t--help\t\t Prints this help");
 	opt.addUsage("\t-v\t--verbose [lvl]\t Verbosity level:");

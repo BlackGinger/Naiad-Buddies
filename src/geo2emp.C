@@ -188,7 +188,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, unsigned int type
 		saveMeshShape( pBody );
 		if (pBody)
 		{
-			//Make sure all the particles are sorted into the correct blocks
+			//Make sure all the emp particles are sorted into the correct blocks
 			pBody->update();
 			empWriter.write(pBody, Ng::String("*/*"));
 
@@ -199,7 +199,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, unsigned int type
 	}
 
 	//Create a single Naiad mesh body for the triangulated meshes.
-	Ng::Body* pMeshBody = NULL;
+	//Ng::Body* pMeshBody = NULL;
 
 	//This is just a random default name with significance whatsoever...meaning I made it up.
 	//One day when this tool turns into a SOP, the name can be specified some edit box. Or even use (slow) group names.

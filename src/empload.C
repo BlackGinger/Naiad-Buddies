@@ -78,9 +78,6 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 
 	//Default values for attributes
 	float zero3f[3] = {0,0,0};
-	float zero1f = 0;
-	int zero3i[3] = {0,0,0};
-	int zero1i = 0;
 	GEO_AttributeHandle attr_v = _gdpIn->getPointAttribute("v");
 
 	if (emp_has_v)
@@ -322,11 +319,11 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 					{
 						//std::cout << "got int attrib: " << chan->name() << std::endl;
 						//Get the created channel data
-						const em::block3f& channelData( pShape->constBlocks1f(chan->name())(blockIndex) );
+						const em::block3i& channelData( pShape->constBlocks1i(chan->name())(blockIndex) );
 						//Get the Houdini point attribute using the name list we built earlier.
 						attr = _gdpIn->getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
-
+						attr.setI( channelData(ptNum) );
 					}
 					break;
 					case Ng::ValueBase::Vec3fType:
