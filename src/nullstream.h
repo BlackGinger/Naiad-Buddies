@@ -2,7 +2,7 @@
 #ifndef __NULLSTREAM_H__
 #define __NULLSTREAM_H__
 
-//Take from: http://bytes.com/topic/c/answers/127843-null-output-stream
+//This source has been taken from: http://bytes.com/topic/c/answers/127843-null-output-stream
 
 struct nullstream : std::ostream 
 {

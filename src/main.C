@@ -40,7 +40,8 @@
 void processOpts(AnyOption& opt)
 {
 	
-	opt.addUsage("Usage: geo2emp [options] input output");
+	opt.addUsage("Usage: geo2emp [options] source dest");
+	opt.addUsage("");
   opt.addUsage("  The extension of the source/dest will be used to determine");
 	opt.addUsage("  how the conversion is done.  Supported extensions are .emp");
 	opt.addUsage("  and .bgeo");
@@ -131,7 +132,7 @@ int main(int argc, char *argv[])
 
 	geo2emp.redirect( std::cerr );
 
-	UT_String	inputname, outputname;
+	UT_String	inputname, outputname, lowerin, lowerout;
 
 	inputname.harden(opt.getArgv(0));
 	outputname.harden(opt.getArgv(1));
@@ -140,8 +141,38 @@ int main(int argc, char *argv[])
 	{
 		shapeMask = 0xFFFFFFFF;
 	}
-		
-	if (!strcmp(inputname.fileExtension(), ".emp"))
+
+	lowerin = inputname;
+	lowerin.toLower();
+	lowerout = outputname;
+	lowerout.toLower();
+
+	if ( ! (lowerin.endsWith(".emp") || lowerin.endsWith(".geo") || lowerin.endsWith(".bgeo") ) )
+	{
+		geo2emp.LogInfo() << "Unrecognized extension for source file: " << inputname << std::endl;
+		return 1;
+	}
+	else
+	{
+		//Check whether the input filename actually exist
+		ifstream inp;
+		inp.open( inputname );
+		inp.close();
+		if (inp.fail())
+		{
+			geo2emp.LogInfo() << "Error: The input file does not exist!" << std::endl;
+			return 1;
+		}
+
+	}
+
+	if ( ! (lowerout.endsWith(".emp") || lowerout.endsWith(".geo") || lowerout.endsWith(".bgeo") ) )
+	{
+		geo2emp.LogInfo() << "Unrecognized extension for destination file: " << outputname << std::endl;
+		return 1;
+	}
+
+	if ( lowerin.endsWith(".emp") )
 	{
 		geo2emp.LogInfo() << "Loading EMP: " << inputname << std::endl;
 		// Convert from emp (by default, convert all naiad body types to bgeo)
@@ -152,7 +183,7 @@ int main(int argc, char *argv[])
 		// Save our result.
 		gdp.save((const char *) outputname, 0, 0);
   }
-  else
+  else if (lowerin.endsWith(".geo") || lowerin.endsWith(".bgeo") )
   {
 		// Convert to emp.
 		geo2emp.LogInfo() << "Loading GDP: " << inputname << std::endl;
@@ -161,7 +192,12 @@ int main(int argc, char *argv[])
 		geo2emp.LogInfo() << "Saving EMP: " << outputname << std::endl;
 		geo2emp.saveEmpBodies(outputname.toStdString(), shapeMask);
    }
-   return 0;
+	else
+	{
+		geo2emp.LogInfo() << "Unrecognized extension for source file: " << inputname << std::endl;
+		geo2emp.LogInfo() << "How did you get to this point anyways? You should've been kicked out at the extension integrity checks already!" << std::endl;
+		return 1;
+	}
 
 	return 0;
 }
