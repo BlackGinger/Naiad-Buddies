@@ -167,7 +167,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, unsigned int type)
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, unsigned int types)
+Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, float time, unsigned int types)
 {
 	LogInfo() << "Saving EMP Bodies" << std::endl;
 //std::cout << "save emp bodies" << std::endl;
@@ -179,7 +179,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, unsigned int type
 	NiBegin(NI_BODY_ONLY);
 
 	//Construct the EMP Writer and add bodies as they get processed.
-	Ng::EmpWriter empWriter(empfile, 1.0);
+	Ng::EmpWriter empWriter(empfile, time);
 		
 	if ( _gdpOut->primitives().entries() > _gdpOut->particleCount() )
 	{

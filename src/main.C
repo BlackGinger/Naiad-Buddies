@@ -57,20 +57,19 @@ void processOpts(AnyOption& opt)
 	opt.addUsage("\t-p\t--particles\t Load particle shape");
 	opt.addUsage("\t-m\t--mesh\t\t Load mesh shape");
 	opt.addUsage("\t-f\t--field\t\t Load field shape");
+	opt.addUsage("\t-t\t--time\t\t Timestep of file (only relevent for EMP files)");
 	opt.addUsage("");
 
 
 	//opt->setOption( "verbose", 'v' );
 
 	/* by default all  options  will be checked on the command line and from option/resource file */
-  opt.setFlag(  "help", 'h' );   /* a flag (takes no argument), supporting long and short form */ 
 	opt.setOption( "verbose", 'v' );
+	opt.setOption( "time", 't' );        
+  opt.setFlag( "help", 'h' );   /* a flag (takes no argument), supporting long and short form */ 
 	opt.setFlag( "particles", 'p' ); 
 	opt.setFlag( "mesh", 'm' ); 
 	opt.setFlag( "field", 'f' );
-	opt.setFlag( "allshapes", 'a' );
-
-        
 }
 /**************************************************************************************************/
 
@@ -81,6 +80,7 @@ int main(int argc, char *argv[])
 	GU_Detail gdp;
 	int shapeMask = 0;
 	bool loadAllShapes = true;
+	float time = 0;
 
 	geo2emp.setGdpIn(&gdp);
 	geo2emp.setGdpOut(&gdp);
@@ -186,12 +186,19 @@ int main(int argc, char *argv[])
   }
   else if (lowerin.endsWith(".geo") || lowerin.endsWith(".bgeo") )
   {
+		if ( opt.getValue("time") != NULL || opt.getValue( 't' ) != NULL )
+		{
+			istringstream timestream( opt.getValue('t') );
+			timestream >> time;
+			geo2emp.LogInfo() << "Time is set to: " << time << std::endl;
+		}
+
 		// Convert to emp.
 		geo2emp.LogInfo() << "Loading GDP: " << inputname << std::endl;
 		gdp.load((const char *) inputname, 0);
 
 		geo2emp.LogInfo() << "Saving EMP: " << outputname << std::endl;
-		geo2emp.saveEmpBodies(outputname.toStdString(), shapeMask);
+		geo2emp.saveEmpBodies(outputname.toStdString(), time, shapeMask);
    }
 	else
 	{
