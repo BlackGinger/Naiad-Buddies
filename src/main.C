@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 		geo2emp.LogInfo() << "Unrecognized extension for source file: " << inputname << std::endl;
 		return 1;
 	}
-	else
+	else if (not inputname.match("stdin.bgeo"))
 	{
 		//Check whether the input filename actually exist
 		ifstream inp;
@@ -162,8 +162,7 @@ int main(int argc, char *argv[])
 		inp.close();
 		if (inp.fail())
 		{
-			geo2emp.LogInfo() << "Error: The input file does not exist!" << std::endl;
-			return 1;
+			geo2emp.LogInfo() << "Error: The input file does not exist: " << inputname << std::endl;
 		}
 
 	}
