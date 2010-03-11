@@ -92,6 +92,9 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 		}
 	}
 
+	//Before we start adding points to the GDP, just record how many points are already there.
+	int initialPointCount = _gdpIn->points().entries();	
+
 	GEO_Point *ppt;
 	//Now, copy all the points into the GDP.
 	for (int ptNum = 0; ptNum < ptShape.size(); ptNum ++)
@@ -114,10 +117,9 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 		//Set the three vertices of the triangle
 		for (int i = 0; i < 3; i++ )
 		{
-			pPrim->setVertex(i, _gdpIn->points()[ bufIndex(tri)[i] ] );
+			pPrim->setVertex(i, _gdpIn->points()[ initialPointCount + bufIndex(tri)[i] ] );
 		}
 	}
-
 
 	return EC_SUCCESS;
 }
@@ -257,6 +259,8 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 
 		//std::cout << "channel: " << chan->name() << " size: " << chan->size() << std::endl;
 	}	
+
+
 
 	//The channel values for particle shapes are stored in blocks/tiles.
 	const Ng::TileLayout& layout = pBody->constLayout();
