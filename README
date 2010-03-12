@@ -1,7 +1,7 @@
 Naiad Buddy for Houdini toolkit
 -------------------------------
 
-Version: v0.2b
+Version: v0.2.2
 
 The project home can be found at: http://code.google.com/p/geo2emp/
 
@@ -9,7 +9,7 @@ The source has been tested with:
 Gentoo 64bit, GCC 4.3.3
 Ubuntu 9.04 64bit, GCC 4.1.3
 Houdini 10.0.465 (www.sidefx.com)
-Naiad 0.93b (www.exoticmatter.com)
+Naiad 0.95b (www.exoticmatter.com)
 
 This library is not backwards compatible with Naiad. It *may* work with, or compile against, previous versions but it has not been tested/implemented.
 
@@ -21,7 +21,8 @@ Current Features:
 -----------------
  * Writes triangulated geometry and point velocities to EMP files.
  * Loads particles and particle velocities from EMP files.
- * Loads meshes from EMP files.
+ * Loads multiple meshes from EMP files.
+ * Allow setting timestep value for EMP files (needed for EMP sequences)
 
 Components:
 -----------
