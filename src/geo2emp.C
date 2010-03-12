@@ -77,7 +77,8 @@ Geo2Emp::Geo2Emp() :
 	_out( _outnull.rdbuf() ),
 	_logLevel(LL_SILENCE),
 	_gdpIn(0),
-	_gdpOut(0)
+	_gdpOut(0),
+	_bodyName("trimesh")
 {
 	
 }

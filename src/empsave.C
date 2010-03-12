@@ -46,7 +46,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(Ng::Body*& pMeshBody)
 	//Create a Naiad mesh body
 	
 	//Ng::Body* pMeshBody = new Ng::Body("trimesh"); 	
-	pMeshBody = new Ng::Body("trimesh"); 	
+	pMeshBody = new Ng::Body( _bodyName ); 	
 	pMeshBody->match("Mesh");
 	
 	//get the mutable shapes for the mesh body.

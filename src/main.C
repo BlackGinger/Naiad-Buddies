@@ -58,6 +58,7 @@ void processOpts(AnyOption& opt)
 	opt.addUsage("\t-m\t--mesh\t\t Load mesh shape");
 	opt.addUsage("\t-f\t--field\t\t Load field shape");
 	opt.addUsage("\t-t\t--time\t\t Timestep of file (only relevent for EMP files)");
+	opt.addUsage("\t-b\t--bodyname\t\t Force to use this body name (default: trimesh)");
 	opt.addUsage("");
 
 
@@ -66,6 +67,7 @@ void processOpts(AnyOption& opt)
 	/* by default all  options  will be checked on the command line and from option/resource file */
 	opt.setOption( "verbose", 'v' );
 	opt.setOption( "time", 't' );        
+	opt.setOption( "bodyname", 'b' );        
   opt.setFlag( "help", 'h' );   /* a flag (takes no argument), supporting long and short form */ 
 	opt.setFlag( "particles", 'p' ); 
 	opt.setFlag( "mesh", 'm' ); 
@@ -112,6 +114,10 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if ( opt.getValue("bodyname") != NULL || opt.getValue( 'b' ) != NULL )
+	{
+		geo2emp.setBodyName( opt.getValue('b') );
+	}
 
 	if ( opt.getValue("particle") != NULL || opt.getValue( 'p' ) != NULL )
 	{
