@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <unistd.h>
 
 #include <CMD/CMD_Args.h>
 
@@ -58,6 +59,8 @@ void processOpts(AnyOption& opt)
 	opt.addUsage("\t-m\t--mesh\t\t Load mesh shape");
 	opt.addUsage("\t-f\t--field\t\t Load field shape");
 	opt.addUsage("\t-t\t--time\t\t Timestep of file (only relevent for EMP files)");
+	opt.addUsage("\t-n\t--frame\t\t Frame of file");
+	opt.addUsage("\t-d\t--pad\t\t Frame number zero-padding of file");
 	opt.addUsage("\t-b\t--bodyname\t\t Force to use this body name (default: trimesh)");
 	opt.addUsage("");
 
@@ -66,7 +69,9 @@ void processOpts(AnyOption& opt)
 
 	/* by default all  options  will be checked on the command line and from option/resource file */
 	opt.setOption( "verbose", 'v' );
-	opt.setOption( "time", 't' );        
+	opt.setOption( "time", 't' );
+	opt.setOption( "frame", 'n' );
+	opt.setOption( "pad", 'd' );	
 	opt.setOption( "bodyname", 'b' );        
   opt.setFlag( "help", 'h' );   /* a flag (takes no argument), supporting long and short form */ 
 	opt.setFlag( "particles", 'p' ); 
@@ -83,6 +88,9 @@ int main(int argc, char *argv[])
 	int shapeMask = 0;
 	bool loadAllShapes = true;
 	float time = 0;
+	int frame = 1;
+	int pad = 0;
+	char pwd[BUFSIZ];
 
 	geo2emp.setGdpIn(&gdp);
 	geo2emp.setGdpOut(&gdp);
@@ -138,6 +146,17 @@ int main(int argc, char *argv[])
 		shapeMask |= Geo2Emp::BT_FIELD;
 	}
 
+	if ( opt.getValue("frame") != NULL || opt.getValue( 'n' ) != NULL )
+	{
+		istringstream framestream( opt.getValue('n') );
+		framestream >> frame;
+	}
+	if ( opt.getValue("pad") != NULL || opt.getValue( 'd' ) != NULL )
+	{
+		istringstream padstream( opt.getValue('d') );
+		padstream >> pad;
+	}
+
 	geo2emp.redirect( std::cerr );
 
 	UT_String	inputname, outputname, lowerin, lowerout;
@@ -149,6 +168,30 @@ int main(int argc, char *argv[])
 	{
 		shapeMask = 0xFFFFFFFF;
 	}
+
+	lowerin = inputname;
+	lowerin.toLower();
+	lowerout = outputname;
+	lowerout.toLower();
+
+	// Naiad's EmpReader and EmpWriter classes require absoulte paths from 0.96. Check whether
+	// lowerin and lowerout start with /, if not prefix it with the current working directory
+	getcwd(pwd, BUFSIZ);
+	if ( ( lowerin != "stdin.bgeo" ) && ( !inputname.startsWith("/") ) )
+	{
+		// Not an absolute path, prefix current working directory
+		inputname.prepend("/");
+		inputname.prepend(pwd);
+	}
+	if ( ( lowerout != "stdout.bgeo" ) && ( !outputname.startsWith("/") ) )
+	{
+		// Not an absolute path, prefix current working directory
+		outputname.prepend("/");
+		outputname.prepend(pwd);
+	}
+
+	geo2emp.LogInfo() << "Absolute input path: " << inputname << std::endl;
+	geo2emp.LogInfo() << "Absolute output path: " << outputname << std::endl;
 
 	lowerin = inputname;
 	lowerin.toLower();
@@ -183,7 +226,7 @@ int main(int argc, char *argv[])
 	{
 		geo2emp.LogInfo() << "Loading EMP: " << inputname << std::endl;
 		// Convert from emp (by default, convert all naiad body types to bgeo)
-		geo2emp.loadEmpBodies( inputname.toStdString(), shapeMask );
+		geo2emp.loadEmpBodies( inputname.toStdString(), frame, pad, shapeMask );
 	
 		geo2emp.LogInfo() << "Saving GDP: " << outputname << std::endl;
 		//std::cout << "Writing file: " << outputname << std::endl;
@@ -204,7 +247,7 @@ int main(int argc, char *argv[])
 		gdp.load((const char *) inputname, 0);
 
 		geo2emp.LogInfo() << "Saving EMP: " << outputname << std::endl;
-		geo2emp.saveEmpBodies(outputname.toStdString(), time, shapeMask);
+		geo2emp.saveEmpBodies(outputname.toStdString(), time, frame, pad, shapeMask);
    }
 	else
 	{

@@ -99,7 +99,7 @@ void Geo2Emp::redirect(ostream &os)
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, unsigned int type)
+Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame, int pad, unsigned int type)
 {
 	Ng::EmpReader* empReader = NULL;	
 
@@ -112,7 +112,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, unsigned int type)
 	{
 		//std::cout << "Create new emp reader." << std::endl;
 		Ng::String ngfilen = Ng::String(filen);
-		empReader = new Ng::EmpReader( ngfilen );
+		empReader = new Ng::EmpReader( ngfilen, frame, 0, pad );
 		//std::cout << "getting body count..." << std::endl;
 		//std::cout << "body count: " << empReader->bodyCount() << std::endl;
 		numBodies = empReader->bodyCount();
@@ -168,7 +168,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, unsigned int type)
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, float time, unsigned int types)
+Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, float time, int frame, int pad, unsigned int types)
 {
 	LogInfo() << "Saving EMP Bodies" << std::endl;
 //std::cout << "save emp bodies" << std::endl;
@@ -180,7 +180,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, float time, unsig
 	NiBegin(NI_BODY_ONLY);
 
 	//Construct the EMP Writer and add bodies as they get processed.
-	Ng::EmpWriter empWriter(empfile, time);
+	Ng::EmpWriter empWriter(empfile, frame, 0, pad, time);
 		
 	if ( _gdpOut->primitives().entries() > _gdpOut->particleCount() )
 	{

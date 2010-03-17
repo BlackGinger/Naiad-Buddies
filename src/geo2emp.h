@@ -149,7 +149,7 @@ class Geo2Emp
 		 * @param types A bitset of EMP body type from enum EmpBodyTypes to define which bodies should be loaded.
 		 *
 		 */
-		ErrorCode loadEmpBodies(std::string filen, unsigned int types = BT_PARTICLE|BT_MESH|BT_FIELD);
+		ErrorCode loadEmpBodies(std::string filen, int frame, int pad, unsigned int types = BT_PARTICLE|BT_MESH|BT_FIELD);
 
 		/**
 		 * Save bodies to the EMP file. 
@@ -158,7 +158,7 @@ class Geo2Emp
 		 * @param types A bitset of EMP body type from enum EmpBodyTypes to define which bodies should be loaded.
 		 *
 		 */
-		ErrorCode saveEmpBodies(std::string filen, float time, unsigned int types = BT_PARTICLE|BT_MESH|BT_FIELD);
+		ErrorCode saveEmpBodies(std::string filen, float time, int frame, int pad, unsigned int types = BT_PARTICLE|BT_MESH|BT_FIELD);
 
 	protected:
 		/** 
