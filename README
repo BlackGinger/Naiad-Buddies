@@ -9,7 +9,7 @@ The source has been tested with:
 Gentoo 64bit, GCC 4.3.3
 Ubuntu 9.04 64bit, GCC 4.1.3
 Houdini 10.0.465 (www.sidefx.com)
-Naiad 0.95b (www.exoticmatter.com)
+Naiad 0.101 (www.exoticmatter.com)
 
 This library is not backwards compatible with Naiad. It *may* work with, or compile against, previous versions but it has not been tested/implemented.
 
@@ -87,4 +87,5 @@ Changes:
 Contributors
 ------------
 *) Van Aarde Krynauw
+*) Morné Chamberlain
 
