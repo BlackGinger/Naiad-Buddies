@@ -30,6 +30,9 @@
 // To fix issues with gcc and GB_GenericData.h with inline templated function specialisation storage
 // This is needed with GCC 4.1, but not with GCC 4.3
 #define NEED_SPECIALIZATION_STORAGE
+#if (__GNUC__ == 4 && __GNUC_MINOR__ >= 3 ) 
+	#undef NEED_SPECIALIZATION_STORAGE
+#endif
 
 #include <iostream>
 

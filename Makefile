@@ -17,19 +17,27 @@
 #               default to the the HOME houdini directory.
 #   ICONS       Name of the icon files to install (optionial)
 
-#Make sure this points to your naiad installation
+#Make sure that your NAIAD_PATH variable is set up and that the LD_LIBRARY_PATH includes $(NAIAD_PATH)/lib
 
 #You shouldn't need to touch anything below this line.
 
-NAIAD_INC=-I $(NAIAD_PATH)/include/Ni -I $(NAIAD_PATH)/include/Ng -I $(NAIAD_PATH)/include/em
+NAIAD_INC=-I$(NAIAD_PATH)/include/Ni -I$(NAIAD_PATH)/include/Ng -I$(NAIAD_PATH)/include/em
 
-NAIAD_LIBS=-lNi -liomp5 -limf -lsvml -l:libintlc.so.5 -lpthread
+#Linking should work without libintlc.so.5. If it doesn't then your LD_LIBRARY_PATH is probably set incorrectly.
+#NAIAD_LIBS=-lNi -liomp5 -limf -lsvml -l:libintlc.so.5 -lpthread
+NAIAD_LIBS=-lNi -liomp5 -limf -lsvml -lpthread
 
-LIBDIRS=-L$(HFS)/python/lib -L$(NAIAD_PATH)/lib
+LIBDIRS=-L$(HFS)/python/lib -L$(NAIAD_PATH)/lib -Wl,-rpath=$(HFS)/dsolib
 INCDIRS= -g -Ithirdparty/anyoption -I$(HFS)/toolkit/include $(NAIAD_INC)
-LIBS= $(NAIAD_LIBS)
+LIBS=$(NAIAD_LIBS)
 APPNAME=bin/geo2emp
 SOURCES=thirdparty/anyoption/anyoption.C src/geo2emp.C src/empload.C src/empsave.C src/main.C
 
-#Include a locally modified makefile
-include $(HFS)/toolkit/makefiles/Makefile.gnu
+ifeq ("$(HOUDINI_MAJOR_RELEASE).$(HOUDINI_MINOR_RELEASE)", "10.5")
+	#Include a locally modified (fixed) makefile for Houdini 10.5
+	include Makefile_10_5.gnu
+else
+	#Include the default Houdini 10.0 makefile
+	include $(HFS)/toolkit/makefiles/Makefile.gnu
+endif
+
