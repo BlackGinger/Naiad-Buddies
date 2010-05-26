@@ -29,6 +29,7 @@
 #include <iostream>
 
 #include <GEO/GEO_AttributeHandle.h>
+#include <GEO/GEO_PointTree.h>
 #include <GU/GU_PrimPoly.h>
 #include <GU/GU_PrimPart.h>
 
@@ -177,7 +178,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 	for (int i = 0; i < channelCount; i++)
 	{
 		//std::cout << "channel: " << i << std::endl;
-		const Ng::ChannelCPtr& chan = pShape->channel(i);
+		const Ng::ChannelCowPtr& chan = pShape->channel(i);
 
 		if ( chan->name() == "position" )	
 		{
@@ -199,6 +200,19 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 				LogVerbose() << "Creating velocity attribute" << std::endl;
 				_gdpIn->addPointAttrib( "v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f );
 				attr = _gdpIn->getPointAttribute( "v" );
+			}
+		}
+		else if (chan->name() == "N" )
+		{
+			LogVerbose() << "Processing N (normal) attribute" << std::endl;
+			houdiniNames.push_back("N");
+			houdiniTypes.push_back(GB_ATTRIB_VECTOR);
+			attr = _gdpIn->getPointAttribute("N");
+			if ( !attr.isAttributeValid() )
+			{
+				LogVerbose() << "Creating normal attribute" << std::endl;
+				_gdpIn->addPointAttrib( "N", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f );
+				attr = _gdpIn->getPointAttribute( "N" );
 			}
 		}
 		else
@@ -278,6 +292,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 		//std::cout << "taking block from positions..." << blockIndex << std::endl;
 		//std::cout << "block size:" << posBlock.size() << std::endl;
 		//Iterate over all the points/particles in the position block
+
 		for (int ptNum = 0; ptNum < posBlock.size(); ptNum++, absPtNum++)
 		{
 			ppt = _gdpIn->appendPoint();
@@ -286,7 +301,10 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 			pParticle->appendParticle(ppt);
 			//std::cout << "pos: " << i << " " << posBlock(i)[0] << posBlock(i)[1] << std::endl;
 			ppt->setPos( UT_Vector3( posBlock(ptNum)[0], posBlock(ptNum)[1], posBlock(ptNum)[2] ) );
+			LogDebug() << "Appending to point tree " << std::endl;
 
+			// /* 
+			
 			//Loop over the channels and add the attributes
 			for (int channelIndex = 0; channelIndex < channelCount; channelIndex++)
 			{
@@ -297,7 +315,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 
 				//TODO: normals and velocities should be added as VECTORS, not FLOATS
 
-				const Ng::ChannelCPtr& chan = pShape->channel(channelIndex);
+				const Ng::ChannelCowPtr chan = pShape->channel(channelIndex);
 
 				if (chan->size() == 0)
 					//There is no channel data to be retrieved. 
@@ -385,6 +403,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 
 				}
 			}
+			// */
 		}	
 	}
 
