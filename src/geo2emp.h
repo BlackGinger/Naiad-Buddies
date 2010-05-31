@@ -175,7 +175,7 @@ class Geo2Emp
 		 * Save shapes to EMP files.
 		 */
 		ErrorCode saveMeshShape( Ng::Body*& pBody );
-		ErrorCode saveParticleShape( Ng::Body*& pBody ) { return EC_NOT_YET_IMPLEMENTED; } 
+		ErrorCode saveParticleShape( Ng::Body*& pBody );
 		ErrorCode saveFieldShape( Ng::Body*& pBody )  { return EC_NOT_YET_IMPLEMENTED; };
 
 		LogLevel _logLevel;
