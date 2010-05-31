@@ -226,12 +226,23 @@ int main(int argc, char *argv[])
 	{
 		geo2emp.LogInfo() << "Loading EMP: " << inputname << std::endl;
 		// Convert from emp (by default, convert all naiad body types to bgeo)
-		geo2emp.loadEmpBodies( inputname.toStdString(), frame, pad, shapeMask );
+		int result = geo2emp.loadEmpBodies( inputname.toStdString(), frame, pad, shapeMask );
 	
-		geo2emp.LogInfo() << "Saving GDP: " << outputname << std::endl;
-		//std::cout << "Writing file: " << outputname << std::endl;
-		// Save our result.
-		gdp.save((const char *) outputname, 0, 0);
+		if (result == Geo2Emp::EC_SUCCESS)
+		{
+			geo2emp.LogInfo() << "Saving GDP: " << outputname << std::endl;
+			int binary = 1;
+  		if ( lowerout.endsWith(".geo") )
+				binary = 0;
+			//std::cout << "Writing file: " << outputname << std::endl;
+			// Save our result.
+			gdp.save((const char *) outputname, binary, 0);
+		}
+		else
+		{
+			geo2emp.LogInfo() << "Error occured while loading EMP. Does the file exist? " << inputname.toStdString() << std::endl;
+			return 1;
+		}
   }
   else if (lowerin.endsWith(".geo") || lowerin.endsWith(".bgeo") )
   {
@@ -244,11 +255,19 @@ int main(int argc, char *argv[])
 
 		// Convert to emp.
 		geo2emp.LogInfo() << "Loading GDP: " << inputname << std::endl;
-		gdp.load((const char *) inputname, 0);
+		int result = gdp.load((const char *) inputname, 0);
 
-		geo2emp.LogInfo() << "Saving EMP: " << outputname << std::endl;
-		geo2emp.saveEmpBodies(outputname.toStdString(), time, frame, pad, shapeMask);
-   }
+		if (result >= 0)
+		{
+			geo2emp.LogInfo() << "Saving EMP: " << outputname << std::endl;
+			geo2emp.saveEmpBodies(outputname.toStdString(), time, frame, pad, shapeMask);
+		}
+		else
+		{
+			geo2emp.LogInfo() << "Error occured while loading BGEO. Does the file exist? " << inputname.toStdString() << std::endl;
+			return 1;
+		}
+  }
 	else
 	{
 		geo2emp.LogInfo() << "Unrecognized extension for source file: " << inputname << std::endl;
