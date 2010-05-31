@@ -146,4 +146,66 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(Ng::Body*& pMeshBody)
 
 /**************************************************************************************************/
 
+Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
+{
+	if (!_gdpOut)
+	{
+		//If we don't have a GDP for writing data into Houdini, return error.
+		return EC_NULL_READ_GDP;
+	}
+
+	//Create a Naiad particle body
+	//
+	//Note from Marcus: the "quick and dirty" way of doing this is to just to make some small tile-layout,
+	// add all particles into the first block, and then call "update" on the body so that it automatically
+	// re-sorts them all into their appropriate blocks...
+	pParticleBody = new Ng::Body( _bodyName ); 	
+	pParticleBody->match("Particle");
+		
+	//get the mutable shapes for the mesh body.
+	Ng::ParticleShape& particleShape( pParticleBody->mutableParticleShape() );
+	Ng::TileLayout& layout( pParticleBody->mutableLayout() );
+	
+	// PLEASE NOTE: this should really be a box close to a particle, instead of (0,0,0)...(1,1,1) but I was in a hurry!
+	// so this will make some "dummy" tiles...
+	layout.worldBoxRefine( em::vec3f(0,0,0), em::vec3f(1,1,1),1,false);
+	particleShape.sync( layout );
+
+	//For the sake of simplicity, copy ALL the points in the GDP across.
+	//It will be much slower if we have to filter out all the non-mesh vertices and then remap the vertices to new point numbers.
+	const GEO_PointList& ptlist = _gdpOut->points();
+	const GEO_PrimList& primlist = _gdpOut->primitives();
+	const GEO_Point* ppt;
+	const GEO_Primitive* pprim;
+	UT_Vector3 pos, v3;
+	int numpoints = ptlist.entries();
+	int vertcount = 0;
+	GEO_AttributeHandle attr_v, attr_N;
+	bool attr_v_valid, attr_N_valid;
+
+	//Ng::Buffer3f* pNormBuffer = 0;
+	//Ng::Buffer3f* pVelBuffer = 0;
+	
+	//The position attribute needs special/explicit treatment
+	//Get the position buffer from the particleShape
+	
+	em::block3_array3f& vectorBlocks( particleShape.mutableBlocks3f("position") );
+	em::block3vec3f& vectorData( vectorBlocks(0) );
+
+	//Make sure we have enough space in the position attribute
+	vectorData.reserve( _gdpOut->points().entries() );
+
+	for (int i = 0; i < numpoints; i++)
+	{
+		//Set the point position
+		pos = _gdpOut->points()[i]->getPos();
+		vectorData.push_back( em::vec3f( pos[0], pos[1], pos[2] ) );
+	}
+
+	pParticleBody->update();
+	
+	return EC_SUCCESS;
+}
+
+/**************************************************************************************************/
 
