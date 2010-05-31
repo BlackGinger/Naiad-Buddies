@@ -43,8 +43,9 @@
 
 #include "nullstream.h"
 
+namespace geo2emp
+{
 
-// Code below this is line is being written for the more Object Orient command line tool
 
 #define LOG(loglevel) if ( (loglevel) <= _logLevel ) _out
 #define VERBOSE LOG(LL_VERBOSE)
@@ -194,6 +195,7 @@ class Geo2Emp
 		std::string _niException;
 };
 
+} // namespace geo2emp
 
 #endif //geo2emp
 
