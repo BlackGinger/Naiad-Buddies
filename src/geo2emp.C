@@ -33,6 +33,10 @@
 #include <NgBody.h>
 #include <NgEmp.h>
 #include <NgString.h>
+//Thirdparty headers
+#include "pystring.h"
+
+using namespace geo2emp;
 
 /**************************************************************************************************/
 
@@ -78,7 +82,10 @@ Geo2Emp::Geo2Emp() :
 	_logLevel(LL_SILENCE),
 	_gdpIn(0),
 	_gdpOut(0),
-	_bodyName("trimesh")
+	_bodyName("trimesh"),
+	_startFrame(0),
+	_endFrame(0),
+	_fps(24)
 {
 	
 }
@@ -161,6 +168,45 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame, int pad,
 	}
 
 	NiEnd();
+
+	return EC_SUCCESS;
+}
+
+/**************************************************************************************************/
+
+Geo2Emp::ErrorCode Geo2Emp::saveEmp(unsigned int types)
+{
+
+	std::cout << "Saving EMP with data: " << std::endl;
+	std::cout << "Startframe: " << _startframe << std::endl;
+	std::cout << "Endframe: " << _endframe << std::endl;
+	std::cout << "FPS: " << _fps << std::endl;
+	std::cout << "initframe: " << _initialFrame << std::endl;
+
+	//Perform sequence conversion evaluation
+	if ( pystring::find( _inputFile.toStdString(), "#" ) != -1 || pystring::find( _outputFile.toStdString(), "#" ) != -1 )
+	{
+		int sf = _startFrame;
+		int ef = _endFrame;
+		float time;
+		//Do a sequence conversion
+		if (sf > ef)
+		{
+			ef = _startFrame;
+			sf = _endFrame;
+		}
+
+		for (int i = sf; i < ef; i++)
+		{
+			std::cout << i << " - converting : " << _inputFile << " to " << _outputFile << std::endl;			
+		}
+
+	}
+	else
+	{
+		//Do a straight conversion
+		std::cout << "straight convert : " << _inputFile << " to " << _outputFile << std::endl;			
+	}
 
 	return EC_SUCCESS;
 }

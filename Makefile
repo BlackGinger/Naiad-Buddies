@@ -31,7 +31,7 @@ LIBDIRS=-L$(HFS)/python/lib -L$(NAIAD_PATH)/lib -Wl,-rpath=$(HFS)/dsolib
 INCDIRS= -O2 -Iinclude -Ithirdparty/anyoption -Ithirdparty/pystring -I$(HFS)/toolkit/include $(NAIAD_INC)
 LIBS=$(NAIAD_LIBS)
 APPNAME=bin/geo2emp
-SOURCES=thirdparty/anyoption/anyoption.C thirdparty/pystring/pystring.C src/cli_geo2emp.C src/empload.C src/empsave.C src/main.C
+SOURCES=thirdparty/anyoption/anyoption.C thirdparty/pystring/pystring.C src/cli_geo2emp.C src/empload.C src/empsave.C src/geo2emp.C
 
 ifeq ("$(HOUDINI_MAJOR_RELEASE).$(HOUDINI_MINOR_RELEASE)", "10.5")
 	#Include a locally modified (fixed) makefile for Houdini 10.5

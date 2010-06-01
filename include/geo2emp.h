@@ -147,6 +147,27 @@ class Geo2Emp
 		void setBodyName(std::string bname) { _bodyName = bname; }
 
 		/**
+		 * Set the input filename or sequence name
+		 */
+		void setInputFilename(const std::string input) { _inputFile = input; }
+
+		/**
+		 * Set the output filename or sequence name
+		 */
+		void setOutputFilename(const std::string output) { _outputFile = output; }
+
+		void setStartFrame(int sf) { _startFrame = sf; }
+		void setEndFrame(int sf) { _endFrame = ef; }
+		void setFPS(int fps) { _fps = fps; }
+		void setInitialFrame(int iframe) { _initFrame = iframe; }
+
+		
+		/**
+		 * This function wraps the normal EMP save so that possible sequence conversion can take place.
+		 */
+		ErrorCode saveEmp( unsigned int types = BT_PARTICLE|BT_MESH|BT_FIELD );
+
+		/**
 		 * Load bodies from the EMP file. 
 		 *
 		 * @param filen The filename of the EMP file.
@@ -156,7 +177,9 @@ class Geo2Emp
 		ErrorCode loadEmpBodies(std::string filen, int frame, int pad, unsigned int types = BT_PARTICLE|BT_MESH|BT_FIELD);
 
 		/**
-		 * Save bodies to the EMP file. 
+		 * Save the current GDP to an EMP file. 
+		 *
+		 * Saves a single EMP file with the given timestep. Rather use the saveEmp() that wraps this function.
 		 *
 		 * @param filen The filename of the EMP file.
 		 * @param types A bitset of EMP body type from enum EmpBodyTypes to define which bodies should be loaded.
@@ -187,6 +210,14 @@ class Geo2Emp
 		GU_Detail* _gdpIn;
 		/** GDP used for writing EMPs functions */
 		const GU_Detail* _gdpOut;
+
+		std::string _inputFile;
+		std::string _outputFile;
+
+		int _startFrame;
+		int _endFrame;
+		int _fps;
+		int _initFrame;
 
 		/** Use this as the bodyName, for now. This mechanism will be refined in the future. */
 		std::string _bodyName;

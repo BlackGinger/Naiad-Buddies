@@ -68,7 +68,7 @@ void processOpts(AnyOption& opt)
 	opt.addUsage("\t-e\t--endframe\t\t End frame of the sequence");
 	opt.addUsage("\t-i\t--initframe\t\t Frame that is considered zero time for Naiad sim (default: 0)");
 	opt.addUsage("\t-d\t--pad\t\t Frame number padding (default: 4)");
-	opt.addUsage("\t-t\t--time\t\t Timestep of the EMP file");
+	opt.addUsage("\t-t\t--time\t\t Timestep of the EMP file (only use this if you know what you are doing)");
 	opt.addUsage("\t-b\t--bodyname\t\t Force to use this body name (default: trimesh)");
 	opt.addUsage("");
 
@@ -89,6 +89,10 @@ void processOpts(AnyOption& opt)
 	opt.setFlag( "field", 'f' );
 }
 /**************************************************************************************************/
+
+#include <IMG/IMG_Format.h>
+#include <IMG/IMG_File.h>
+#include <PXL/PXL_Common.h>
 
 int main(int argc, char *argv[])
 {
@@ -155,11 +159,19 @@ int main(int argc, char *argv[])
 		shapeMask = Geo2Emp::BT_FIELD;
 	}
 
-
 	if ( opt.getValue("startframe") != NULL || opt.getValue( 's' ) != NULL )
+	{
+		geo2emp.setStartFrame( stringToInt( opt.getValue('s') ) );
+	}
+	if ( opt.getValue("endframe") != NULL || opt.getValue( 'e' ) != NULL )
+	{
+		sframe = stringToInt( opt.getValue('e') );
+	}
+	if ( opt.getValue("initframe") != NULL || opt.getValue( 's' ) != NULL )
 	{
 		sframe = stringToInt( opt.getValue('s') );
 	}
+
 	if ( opt.getValue("pad") != NULL || opt.getValue( 'd' ) != NULL )
 	{
 		istringstream padstream( opt.getValue('d') );
@@ -176,19 +188,26 @@ int main(int argc, char *argv[])
 	lowerout.toLower();
 
 	//If the input or ouput name has a hash, then we enable sequence conversion
-	if ( pystring::find( inputname, "#" ) != -1 || pystring::find( outputname, "#" ) != -1 )
+	if ( pystring::find( inputname.toStdString(), "#" ) != -1 || pystring::find( outputname.toStdString(), "#" ) != -1 )
 	{
-		std::cout << "Found a hash!" << std::endl;
-	}
-	else
-	{
-		std::cout << "no hash." << std::endl;
+		seqconv = true;
 	}
 
+	//Do some parm integrity checks
+	if (shapeMask == 0)
+	{
+		//Require, for now, that a conversion needs to be specified.
+		geo2emp.LogInfo() << "No conversion mode found. Please specify the conversion mode using -p, -m, or -f." << std::endl;
+		return 1;
+	}
+
+	if (seqconv == true)
+	{
+		geo2emp.LogInfo() << "Sequence conversion not yet supported!" << std::endl;
+		return 1;
+	}
 	
-	return 0;
-
-	// Naiad's EmpReader and EmpWriter classes require absoulte paths from 0.96. Check whether
+	// Naiad's EmpReader and EmpWriter classes require absolute paths from 0.96. Check whether
 	// lowerin and lowerout start with /, if not prefix it with the current working directory
 	getcwd(pwd, BUFSIZ);
 	if ( ( lowerin != "stdin.bgeo" ) && ( !inputname.startsWith("/") ) )
@@ -212,12 +231,12 @@ int main(int argc, char *argv[])
 	lowerout = outputname;
 	lowerout.toLower();
 
-	if ( ! (lowerin.endsWith(".emp") || lowerin.endsWith(".geo") || lowerin.endsWith(".bgeo") ) )
-	{
-		geo2emp.LogInfo() << "Unrecognized extension for source file: " << inputname << std::endl;
-		return 1;
-	}
-	else if (not inputname.match("stdin.bgeo"))
+  //if ( ! (lowerin.endsWith(".emp") || lowerin.endsWith(".geo") || lowerin.endsWith(".bgeo") ) )
+	//{
+	//	geo2emp.LogInfo() << "Unrecognized extension for source file: " << inputname << std::endl;
+	//	return 1;
+	//}
+	if (not inputname.match("stdin.bgeo"))
 	{
 		//Check whether the input filename actually exist
 		ifstream inp;
@@ -230,14 +249,15 @@ int main(int argc, char *argv[])
 
 	}
 
-	if ( ! (lowerout.endsWith(".emp") || lowerout.endsWith(".geo") || lowerout.endsWith(".bgeo") ) )
-	{
-		geo2emp.LogInfo() << "Unrecognized extension for destination file: " << outputname << std::endl;
-		return 1;
-	}
+	//if ( ! (lowerout.endsWith(".emp") || lowerout.endsWith(".geo") || lowerout.endsWith(".bgeo") ) )
+	//{
+	//	geo2emp.LogInfo() << "Unrecognized extension for destination file: " << outputname << std::endl;
+	//	return 1;
+	//}
 
-  if (lowerin.endsWith(".geo") || lowerin.endsWith(".bgeo") )
-  {
+	//Dont bother checking extensions. Assume the input is BGEO and the output is EMP
+  //if (lowerin.endsWith(".geo") || lowerin.endsWith(".bgeo") )
+	
 		if ( opt.getValue("time") != NULL || opt.getValue( 't' ) != NULL )
 		{
 			istringstream timestream( opt.getValue('t') );
@@ -252,20 +272,21 @@ int main(int argc, char *argv[])
 		if (result >= 0)
 		{
 			geo2emp.LogInfo() << "Saving EMP: " << outputname << std::endl;
-			geo2emp.saveEmpBodies(outputname.toStdString(), time, frame, pad, shapeMask);
+			//geo2emp.saveEmpBodies(outputname.toStdString(), time, frame, pad, shapeMask);
 		}
 		else
 		{
 			geo2emp.LogInfo() << "Error occured while loading BGEO. Does the file exist? " << inputname.toStdString() << std::endl;
 			return 1;
 		}
-  }
+	/*
 	else
 	{
 		geo2emp.LogInfo() << "Unrecognized extension for source file: " << inputname << std::endl;
 		geo2emp.LogInfo() << "How did you get to this point anyways? You should've been kicked out at the extension integrity checks already!" << std::endl;
 		return 1;
 	}
+	*/
 
 	return 0;
 }
