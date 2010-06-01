@@ -165,11 +165,11 @@ int main(int argc, char *argv[])
 	}
 	if ( opt.getValue("endframe") != NULL || opt.getValue( 'e' ) != NULL )
 	{
-		sframe = stringToInt( opt.getValue('e') );
+		geo2emp.setEndFrame( stringToInt( opt.getValue('e') ) );
 	}
-	if ( opt.getValue("initframe") != NULL || opt.getValue( 's' ) != NULL )
+	if ( opt.getValue("initframe") != NULL || opt.getValue( 'i' ) != NULL )
 	{
-		sframe = stringToInt( opt.getValue('s') );
+		geo2emp.setInitialFrame( stringToInt( opt.getValue('i') ) );
 	}
 
 	if ( opt.getValue("pad") != NULL || opt.getValue( 'd' ) != NULL )
