@@ -30,6 +30,7 @@
 #include <GEO/GEO_TriMesh.h>
 
 #include <NgEmp.h>
+#include <NgFactory.h>
 #include <NgString.h>
 
 
@@ -44,10 +45,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(Ng::Body*& pMeshBody)
 	}
 
 	//Create a Naiad mesh body
-	
-	//Ng::Body* pMeshBody = new Ng::Body("trimesh"); 	
-	pMeshBody = new Ng::Body( _bodyName ); 	
-	pMeshBody->match("Mesh");
+	pMeshBody = Ng::Factory::createBody("Mesh", _bodyName);
 	
 	//get the mutable shapes for the mesh body.
 	Ng::TriangleShape& triShape( pMeshBody->mutableTriangleShape() );
@@ -159,8 +157,8 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 	//Note from Marcus: the "quick and dirty" way of doing this is to just to make some small tile-layout,
 	// add all particles into the first block, and then call "update" on the body so that it automatically
 	// re-sorts them all into their appropriate blocks...
-	pParticleBody = new Ng::Body( _bodyName ); 	
-	pParticleBody->match("Particle");
+	
+	pParticleBody = Ng::Factory::createBody("Particle", _bodyName);
 		
 	//get the mutable shapes for the mesh body.
 	Ng::ParticleShape& particleShape( pParticleBody->mutableParticleShape() );
