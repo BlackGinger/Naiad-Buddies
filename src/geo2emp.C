@@ -25,6 +25,7 @@
  */
 
 #include "geo2emp.h"
+#include "geo2emp_utils.h"
 
 #include <stdio.h>
 #include <iostream>
@@ -80,14 +81,17 @@ std::string Geo2Emp::getErrorString(ErrorCode error)
 Geo2Emp::Geo2Emp() :
 	_out( _outnull.rdbuf() ),
 	_logLevel(LL_SILENCE),
-	_gdpIn(0),
-	_gdpOut(0),
-	_bodyName("trimesh"),
+	_gdp(0),
+	_bodyName("unnamed_body"),
 	_startFrame(0),
 	_endFrame(0),
-	_fps(24)
+	_initFrame(0),
+	_fps(24),
+	_time(0),
+	_overrideEmpTime(false),
+	_framepadding(4)
 {
-	
+	std::cout << "Initial frame padding: " << _framepadding << std::endl;	
 }
 
 /**************************************************************************************************/
@@ -106,7 +110,7 @@ void Geo2Emp::redirect(ostream &os)
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame, int pad, unsigned int type)
+Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame, int pad)
 {
 	Ng::EmpReader* empReader = NULL;	
 
@@ -153,15 +157,15 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame, int pad,
 
 		//Inspect the body singature and call the appropriate loader.
 		
-		if ( (type & BT_PARTICLE) && pBody->matches("Particle") )
+		if ( (_typeMask & BT_PARTICLE) && pBody->matches("Particle") )
 		{
 			loadParticleShape(pBody);
 		}
-		if ((type & BT_FIELD) && pBody->matches("Field") )
+		if ((_typeMask & BT_FIELD) && pBody->matches("Field") )
 		{
 			loadFieldShape(pBody);
 		}
-		if ( (type & BT_MESH) && pBody->matches("Mesh") )
+		if ( (_typeMask & BT_MESH) && pBody->matches("Mesh") )
 		{
 			loadMeshShape(pBody);
 		}
@@ -174,21 +178,25 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame, int pad,
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::saveEmp(unsigned int types)
+Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 {
+	std::string frameinput, frameoutput;
+	GU_Detail gdp; //Local GDP that will be used for conversions.
 
-	std::cout << "Saving EMP with data: " << std::endl;
-	std::cout << "Startframe: " << _startframe << std::endl;
-	std::cout << "Endframe: " << _endframe << std::endl;
-	std::cout << "FPS: " << _fps << std::endl;
-	std::cout << "initframe: " << _initialFrame << std::endl;
+	LogDebug() << "Saving EMP with data: " << std::endl;
+	LogDebug() << "Startframe: " << _startFrame << std::endl;
+	LogDebug() << "Endframe: " << _endFrame << std::endl;
+	LogDebug() << "FPS: " << _fps << std::endl;
+	LogDebug() << "initframe: " << _initFrame << std::endl;
+	LogDebug() << "framepadding: " << _framepadding << std::endl;
 
 	//Perform sequence conversion evaluation
-	if ( pystring::find( _inputFile.toStdString(), "#" ) != -1 || pystring::find( _outputFile.toStdString(), "#" ) != -1 )
+	if ( pystring::find( _inputFile, "#" ) != -1 || pystring::find( _outputFile, "#" ) != -1 )
 	{
 		int sf = _startFrame;
 		int ef = _endFrame;
 		float time;
+		bool stdinput = false;
 		//Do a sequence conversion
 		if (sf > ef)
 		{
@@ -196,10 +204,35 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp(unsigned int types)
 			sf = _endFrame;
 		}
 
-		for (int i = sf; i < ef; i++)
+		//Create and a set a local gdp object
+		setGdp( &gdp );
+
+
+		for (int i = sf; i <= ef; i++)
 		{
-			std::cout << i << " - converting : " << _inputFile << " to " << _outputFile << std::endl;			
+			frameinput = pystring::replace(_inputFile, "#", intToString(i, _framepadding));
+			frameoutput = pystring::replace(_outputFile, "#", intToString(i, _framepadding));
+			//Make sure the input file exists
+			stdinput = frameinput.compare("stdin.bgeo") == 0;
+			if ( stdinput || (!stdinput) && fileExists(frameinput) )
+			{
+				LogVerbose() << " converting : " << frameinput << " to " << frameoutput << std::endl;	
+
+				//Load the bgeo data
+				gdp.load( frameinput.c_str(), 0 );
+
+				time = (i - (_startFrame-_initFrame-1))/_fps; 
+				LogDebug() << " frame: " << i << " time: " << time << std::endl;
+
+				saveEmpBodies( frameoutput, i, time );
+			}
+			else
+			{
+				LogInfo() << "Error: Input file was not found - " << frameinput << std::endl;
+			}
 		}
+
+		setGdp(0);
 
 	}
 	else
@@ -214,22 +247,23 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp(unsigned int types)
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, float time, int frame, int pad, unsigned int types)
+Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float time)
 {
 	LogInfo() << "Saving EMP Bodies" << std::endl;
-//std::cout << "save emp bodies" << std::endl;
 
-	LogDebug() << "particle count: " << _gdpOut->particleCount() << std::endl;
-	LogDebug() << "paste count: " << _gdpOut->pasteCount() << std::endl;
-	LogDebug() << "quadric count: " << _gdpOut->quadricCount() << std::endl;
+	LogDebug() << "particle count: " << _gdp->particleCount() << std::endl;
+	LogDebug() << "paste count: " << _gdp->pasteCount() << std::endl;
+	LogDebug() << "quadric count: " << _gdp->quadricCount() << std::endl;
 
 	NiBegin(NI_BODY_ONLY);
 
 	//Construct the EMP Writer and add bodies as they get processed.
-	Ng::EmpWriter empWriter(empfile, frame, 0, pad, time);
-		
-	if ( _gdpOut->primitives().entries() > _gdpOut->particleCount() )
+	Ng::EmpWriter empWriter(empfile, frame, (1.0f/_fps), _framepadding, time);
+
+	if (_typeMask & BT_MESH)
 	{
+		LogVerbose() << "Writing Mesh to EMP!" << std::endl;	
+		//Attempt to extract meshes from the current GDP
 		//If we have more than just particle primitives it means that we most likely have a mesh that we're dealing with
 		Ng::Body* pBody = 0;
 		saveMeshShape( pBody );
@@ -245,39 +279,36 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, float time, int f
 		}
 	}
 
-	//Create a single Naiad mesh body for the triangulated meshes.
-	//Ng::Body* pMeshBody = NULL;
+	if ( _typeMask & BT_PARTICLE )
+	{	
+		LogVerbose() << "Writing Particles to EMP!" << std::endl;	
+		//Attempt to extract particles from the current GDP
+		//Note that all points in the GDP will be copied into an EMP as particles, regardless of whether they 
+		// are Houdini particles or not. 		
+		Ng::Body* pBody = 0;
+		saveParticleShape( pBody );
+		if (pBody)
+		{
+			//Make sure all the emp particles are sorted into the correct blocks
+			pBody->update();
+			empWriter.write(pBody, Ng::String("*/*"));
 
-	//This is just a random default name with significance whatsoever...meaning I made it up.
-	//One day when this tool turns into a SOP, the name can be specified some edit box. Or even use (slow) group names.
-	//But for now, just stuff all the triangles into on mesh.
-	//pMeshBody = new Ng::Body("trimesh"); 	
-	//pMeshBody->match("Mesh");
+			//Question: Can the bodies be deleted directly after a write, or does the writer need to be closed first?
+			delete pBody;
+			pBody = 0;
+		}
+	}
 
-	//get the mutable shapes for the mesh body.
-	//Ng::TriangleShape& triShape( pMeshBody->mutableTriangleShape() );
-	//Ng::PointShape& ptShape( pMeshBody->mutablePointShape() );
+	if ( _typeMask & BT_FIELD )
+	{
+		LogInfo() << "Unsupported shape type!" << std::endl;	
+	}
 
 	//All done
 	empWriter.close();
 	
 	NiEnd();
 
-	//First, copy all the points over to the gdp.
-/*
-	for (pprim = gdp->primitives().head(); pprim; pprim = gdp->primitives().next(pprim) )
-	{
-		//const GEO_PrimParticle* prim_part = dynamic_cast<const GEO_PrimParticle*>(pprim);
-		const GEO_TriMesh* prim_mesh = dynamic_cast<const GEO_TriMesh*>(pprim);
-
-		if ( prim_part )
-		{
-
-			
-		}
-
-	}
-*/
 	//Return success
 	return EC_SUCCESS;
 }

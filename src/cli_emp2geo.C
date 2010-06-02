@@ -88,7 +88,6 @@ int main(int argc, char *argv[])
 	int shapeMask = 0;
 	bool loadAllShapes = true;
 	float time = 0;
-	int frame = 1;
 	int pad = 0;
 	char pwd[BUFSIZ];
 
@@ -146,11 +145,6 @@ int main(int argc, char *argv[])
 		shapeMask |= Geo2Emp::BT_FIELD;
 	}
 
-	if ( opt.getValue("frame") != NULL || opt.getValue( 'n' ) != NULL )
-	{
-		istringstream framestream( opt.getValue('n') );
-		framestream >> frame;
-	}
 	if ( opt.getValue("pad") != NULL || opt.getValue( 'd' ) != NULL )
 	{
 		istringstream padstream( opt.getValue('d') );

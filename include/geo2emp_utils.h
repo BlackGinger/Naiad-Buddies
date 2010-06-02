@@ -24,34 +24,28 @@
  * THE SOFTWARE.
  */
 
+#ifndef __GEO2EMP_UTILS_H__
+#define __GEO2EMP_UTILS_H__
+
 #include <string>
 
 namespace geo2emp
 {
-	int stringToInt(const char* s)
-	{
-		int result;
-		istringstream timestream( s );
-		timestream >> result;
-		return result;
-	}
+	std::string intToString(int i, int padding=0);
 
-	int stringToInt(const std::string& s)
-	{
-		return stringToInt( s.c_str() );
-	}
-	
-	float stringToFloat(const char* s)
-	{
-		float result;
-		istringstream timestream( s );
-		timestream >> result;
-		return result;
-	}
-	
-	float stringToFloat(const std::string& s)
-	{
-		return stringToFloat( s.c_str() );
-	}
+	int stringToInt(const char* s);
 
+	int stringToInt(const std::string& s);
+	
+	float stringToFloat(const char* s);
+	
+	float stringToFloat(const std::string& s);
+
+	/**
+	 * Test whether the specified file exists or not.
+	 */
+	bool fileExists(const std::string& file);
 }
+
+#endif //__GEO2EMP_UTILS_H__
+

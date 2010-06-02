@@ -44,7 +44,7 @@ using namespace geo2emp;
 
 Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 {	
-	if (!_gdpIn)
+	if (!_gdp)
 	{
 		//If we don't have a GDP for writing data into Houdini, return error.
 		return EC_NULL_WRITE_GDP;
@@ -80,28 +80,28 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 
 	//Default values for attributes
 	float zero3f[3] = {0,0,0};
-	GEO_AttributeHandle attr_v = _gdpIn->getPointAttribute("v");
+	GEO_AttributeHandle attr_v = _gdp->getPointAttribute("v");
 
 	if (emp_has_v)
 	{
 		bufVel = &(ptShape.constBuffer3f("velocity"));
 		//If GDP doesn't have a velocity attribute, create one.
-		attr_v = _gdpIn->getPointAttribute("v");
+		attr_v = _gdp->getPointAttribute("v");
 		if ( !attr_v.isAttributeValid() )
 		{
-			_gdpIn->addPointAttrib("v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f);
-			attr_v = _gdpIn->getPointAttribute("v");
+			_gdp->addPointAttrib("v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f);
+			attr_v = _gdp->getPointAttribute("v");
 		}
 	}
 
 	//Before we start adding points to the GDP, just record how many points are already there.
-	int initialPointCount = _gdpIn->points().entries();	
+	int initialPointCount = _gdp->points().entries();	
 
 	GEO_Point *ppt;
 	//Now, copy all the points into the GDP.
 	for (int ptNum = 0; ptNum < ptShape.size(); ptNum ++)
 	{
-		ppt = _gdpIn->appendPoint();
+		ppt = _gdp->appendPoint();
 		ppt->setPos( UT_Vector3( bufPos(ptNum)[0], bufPos(ptNum)[1], bufPos(ptNum)[2] ) );
 		if (emp_has_v)
 		{
@@ -115,11 +115,11 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 	GU_PrimPoly *pPrim;
 	for (int tri = 0; tri < triShape.channel(indexChannelNum)->size(); tri++)
 	{
-		pPrim = GU_PrimPoly::build(_gdpIn, 3, GU_POLY_CLOSED, 0); //Build a closed poly with 3 points, but don't add them to the GDP.
+		pPrim = GU_PrimPoly::build(_gdp, 3, GU_POLY_CLOSED, 0); //Build a closed poly with 3 points, but don't add them to the GDP.
 		//Set the three vertices of the triangle
 		for (int i = 0; i < 3; i++ )
 		{
-			pPrim->setVertex(i, _gdpIn->points()[ initialPointCount + bufIndex(tri)[i] ] );
+			pPrim->setVertex(i, _gdp->points()[ initialPointCount + bufIndex(tri)[i] ] );
 		}
 	}
 
@@ -131,7 +131,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 
 Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 {
-	if (!_gdpIn)
+	if (!_gdp)
 	{
 		//If we don't have a GDP for writing data into Houdini, return error.
 		return EC_NULL_WRITE_GDP;
@@ -169,7 +169,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 	LogVerbose() << "Particle shape channel count: " << channelCount << std::endl;
 
 	LogVerbose() << "Building particle shape...";
-	pParticle = GU_PrimParticle::build(_gdpIn, 0);
+	pParticle = GU_PrimParticle::build(_gdp, 0);
 	LogVerbose() << "done." << std::endl;
 
 	//std::cout << "Size: " << size << std::endl;
@@ -195,12 +195,12 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 			LogVerbose() << "Processing velocity attribute" << std::endl;
 			houdiniNames.push_back("v");
 			houdiniTypes.push_back(GB_ATTRIB_VECTOR);
-			attr = _gdpIn->getPointAttribute("v");
+			attr = _gdp->getPointAttribute("v");
 			if ( !attr.isAttributeValid() )
 			{
 				LogVerbose() << "Creating velocity attribute" << std::endl;
-				_gdpIn->addPointAttrib( "v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f );
-				attr = _gdpIn->getPointAttribute( "v" );
+				_gdp->addPointAttrib( "v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f );
+				attr = _gdp->getPointAttribute( "v" );
 			}
 		}
 		else if (chan->name() == "N" )
@@ -208,17 +208,17 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 			LogVerbose() << "Processing N (normal) attribute" << std::endl;
 			houdiniNames.push_back("N");
 			houdiniTypes.push_back(GB_ATTRIB_VECTOR);
-			attr = _gdpIn->getPointAttribute("N");
+			attr = _gdp->getPointAttribute("N");
 			if ( !attr.isAttributeValid() )
 			{
 				LogVerbose() << "Creating normal attribute" << std::endl;
-				_gdpIn->addPointAttrib( "N", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f );
-				attr = _gdpIn->getPointAttribute( "N" );
+				_gdp->addPointAttrib( "N", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f );
+				attr = _gdp->getPointAttribute( "N" );
 			}
 		}
 		else
 		{
-			attr = _gdpIn->getPointAttribute( chan->name().c_str() );
+			attr = _gdp->getPointAttribute( chan->name().c_str() );
 			if ( !attr.isAttributeValid() )
 			{
 				//If the attribute doesn't exist yet, then create a new one based on the Naiad type. 
@@ -264,8 +264,8 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 				houdiniNames.push_back( chan->name() );
 				houdiniTypes.push_back(GB_ATTRIB_FLOAT);
 
-				_gdpIn->addPointAttrib( chan->name().c_str(), size, type, data );
-				attr = _gdpIn->getPointAttribute( chan->name().c_str() );
+				_gdp->addPointAttrib( chan->name().c_str(), size, type, data );
+				attr = _gdp->getPointAttribute( chan->name().c_str() );
 				LogVerbose() << "Created generic point attribute: " << chan->name() << std::endl;
 				//std::cout << "added attribute: " << chan->name() << " valid: " << attr.isAttributeValid() << std::endl;
 			}
@@ -296,7 +296,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 
 		for (int ptNum = 0; ptNum < posBlock.size(); ptNum++, absPtNum++)
 		{
-			ppt = _gdpIn->appendPoint();
+			ppt = _gdp->appendPoint();
 			LogDebug() << "getting absolute point " << absPtNum << "; block pt num: " << ptNum << std::endl;
 			//ppt = pParticle->getVertex(absPtNum).getPt();
 			pParticle->appendParticle(ppt);
@@ -332,7 +332,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 						//Get the created channel data
 						const em::block3f& channelData( pShape->constBlocks1f(chan->name())(blockIndex) );
 						//Get the Houdini point attribute using the name list we built earlier.
-						attr = _gdpIn->getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr = _gdp->getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
 						attr.setF( channelData(ptNum) );
 
@@ -344,7 +344,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 						//Get the created channel data
 						const em::block3i& channelData( pShape->constBlocks1i(chan->name())(blockIndex) );
 						//Get the Houdini point attribute using the name list we built earlier.
-						attr = _gdpIn->getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr = _gdp->getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
 						attr.setI( channelData(ptNum) );
 					}
@@ -355,7 +355,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 						//Get the created channel data
 						const em::block3vec3f& channelData( pShape->constBlocks3f(channelIndex)(blockIndex) );
 						//Get the Houdini point attribute using the name list we built earlier.
-						attr = _gdpIn->getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr = _gdp->getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
 						//std::cout << "setting v3" << std::endl;
 						if (houdiniTypes[channelIndex] == GB_ATTRIB_VECTOR)
@@ -380,7 +380,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 						//Get the created channel data
 						const em::block3vec3i& channelData( pShape->constBlocks3i(chan->name())(blockIndex) );
 						//Get the Houdini point attribute using the name list we built earlier.
-						attr = _gdpIn->getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr = _gdp->getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
 						if (houdiniTypes[channelIndex] == GB_ATTRIB_VECTOR)
 						{
@@ -416,7 +416,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 
 Geo2Emp::ErrorCode Geo2Emp::loadFieldShape( const Ng::Body* pBody )
 {
-	if (!_gdpIn)
+	if (!_gdp)
 	{
 		//If we don't have a GDP for writing data into Houdini, return error.
 		return EC_NULL_WRITE_GDP;

@@ -135,14 +135,9 @@ class Geo2Emp
 		ostream& LogDebug() { return Log(LL_DEBUG); }
 
 		/**
-		 * Set the GU_Detail context for loading EMP data
+		 * Set the GU_Detail object for reading/writing EMP data
 		 */
-		void setGdpIn(GU_Detail* in) { _gdpIn = in; }
-
-		/**
-		 * Set the GU_Detail context for saving EMP data
-		 */
-		void setGdpOut(const GU_Detail* out) { _gdpOut = out; }
+		void setGdp(GU_Detail* gdp) { _gdp = gdp; }
 
 		void setBodyName(std::string bname) { _bodyName = bname; }
 
@@ -157,15 +152,26 @@ class Geo2Emp
 		void setOutputFilename(const std::string output) { _outputFile = output; }
 
 		void setStartFrame(int sf) { _startFrame = sf; }
-		void setEndFrame(int sf) { _endFrame = ef; }
-		void setFPS(int fps) { _fps = fps; }
+		void setEndFrame(int ef) { _endFrame = ef; }
+		void setFrameRate(float fps) { _fps = fps; }
 		void setInitialFrame(int iframe) { _initFrame = iframe; }
+		void setFramePadding(int padding) { _framepadding = padding; }
+		void setTypeMask( unsigned int typeMask ) { _typeMask = typeMask; }
+
+		/**
+		 * Override sequence conversion timestep calculation. USE WITH CARE.
+		 * 
+		 * It should be noted that by overriding the time value for a sequence will result in all the
+		 * EMP files having the same timestep value and will not simulate / interpolate correctly in Naiad.
+		 * This function should only be used if you have a very good reason for explicitly setting the EMP time value.
+		 */
+		void setEmpTime(float t, bool overrideTime=true) { _time = t; _overrideEmpTime = overrideTime; }
 
 		
 		/**
 		 * This function wraps the normal EMP save so that possible sequence conversion can take place.
 		 */
-		ErrorCode saveEmp( unsigned int types = BT_PARTICLE|BT_MESH|BT_FIELD );
+		ErrorCode saveEmp();
 
 		/**
 		 * Load bodies from the EMP file. 
@@ -174,7 +180,7 @@ class Geo2Emp
 		 * @param types A bitset of EMP body type from enum EmpBodyTypes to define which bodies should be loaded.
 		 *
 		 */
-		ErrorCode loadEmpBodies(std::string filen, int frame, int pad, unsigned int types = BT_PARTICLE|BT_MESH|BT_FIELD);
+		ErrorCode loadEmpBodies(std::string filen, int frame, int pad);
 
 		/**
 		 * Save the current GDP to an EMP file. 
@@ -182,10 +188,11 @@ class Geo2Emp
 		 * Saves a single EMP file with the given timestep. Rather use the saveEmp() that wraps this function.
 		 *
 		 * @param filen The filename of the EMP file.
+		 * @param time The timestep to write into the EMP file.
 		 * @param types A bitset of EMP body type from enum EmpBodyTypes to define which bodies should be loaded.
 		 *
 		 */
-		ErrorCode saveEmpBodies(std::string filen, float time, int frame, int pad, unsigned int types = BT_PARTICLE|BT_MESH|BT_FIELD);
+		ErrorCode saveEmpBodies(std::string filen, int frame, float time);
 
 	protected:
 		/** 
@@ -206,18 +213,24 @@ class Geo2Emp
 		/** This is the internal logging stream for the class */
 		std::ostream _out;
 		nullstream _outnull; 
-		/** GDP used for reading from EMPs into Houdini functions */
-		GU_Detail* _gdpIn;
-		/** GDP used for writing EMPs functions */
-		const GU_Detail* _gdpOut;
+		/** GDP used for reading from / writing to EMP files */
+		GU_Detail* _gdp;
 
 		std::string _inputFile;
 		std::string _outputFile;
+		int _framepadding;
 
 		int _startFrame;
 		int _endFrame;
-		int _fps;
+		float _fps;
 		int _initFrame;
+		
+		unsigned int _typeMask;
+
+		/** Time value to write into EMP file(s). */
+		float _time;
+		/** This flags has to be set to true in order to override the calculated sequence timestep with the _time value */
+		bool _overrideEmpTime;
 
 		/** Use this as the bodyName, for now. This mechanism will be refined in the future. */
 		std::string _bodyName;
