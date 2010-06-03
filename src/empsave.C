@@ -27,6 +27,7 @@
 #include "geo2emp.h"
 
 #include <GEO/GEO_AttributeHandle.h>
+#include <GEO/GEO_AttributeHandleList.h>
 #include <GEO/GEO_TriMesh.h>
 
 #include <NgEmp.h>
@@ -37,7 +38,7 @@ using namespace geo2emp;
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(Ng::Body*& pMeshBody)
+Geo2Emp::ErrorCode Geo2Emp::saveMeshShape_old(Ng::Body*& pMeshBody)
 {
 	if (!_gdp)
 	{
@@ -138,6 +139,126 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(Ng::Body*& pMeshBody)
 					triVec[i] = triMesh->getVertex(i).getPt()->getNum();
 				}
 				indexBuffer.push_back( triVec );
+			}
+		}
+	}
+
+	LogInfo() << " ************** Done with Mesh Shape ************** " << std::endl;	
+
+	return EC_SUCCESS;
+}
+
+/**************************************************************************************************/
+
+Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
+{
+	const GEO_Primitive* pprim;
+	const GEO_Point* ppt;
+	GEO_AttributeHandleList attribList;
+	UT_Vector3 pos;
+	Ng::Body* pMeshBody;
+	std::string bodyName;
+	int ptnum, totalpoints;
+	int numAttribs;
+
+	if (!_gdp)
+	{
+		//If we don't have a GDP for writing data into Houdini, return error.
+		return EC_NULL_READ_GDP;
+	}
+
+	LogInfo() << " ************** Saving Mesh Shape ************** " << std::endl;	
+
+	attribList.bindDetail(_gdp);
+	
+	//Add all the GDP point attributes to the attribute list
+	attribList.appendAllAttributes( GEO_POINT_DICT );
+	numAttribs = attribList.entries();
+	LogInfo() << "Number of attributes: " << attribList.entries() << " empty:" << attribList.isEmpty() << std::endl;	
+
+	for (int i = 0; i < numAttribs; i++)
+	{
+		LogInfo() << "Attribute #" << i << " - " << attribList[i]->getName() << std::endl;
+	}
+
+	//Build a map to separate bodies using their name attributes
+	StringToPrimPolyListMap namesMap;
+	StringToPrimPolyListMap::iterator nameIt;
+	PrimPolyList::iterator polyIt;
+	//Build a vector to remap point numbers.
+	std::vector<int> remappedPtNum;
+
+	buildTriPrimNamesMap( namesMap );	
+
+	//Iterate over the names in the map
+	for (nameIt = namesMap.begin(); nameIt != namesMap.end(); nameIt++)
+	{
+		LogInfo() << "Processing Name: " << nameIt->first << std::endl;		
+		bodyName = nameIt->first;
+		//List of polygons for this body
+		PrimPolyList &polyList = nameIt->second;
+
+		//Clear the remapped point numbers for this body
+		remappedPtNum.clear();
+		remappedPtNum.resize( _gdp->primitives().entries()*3, -1 );
+
+		//Create a Naiad mesh body
+		pMeshBody = Ng::Factory::createBody("Mesh", bodyName);
+		meshBodyList.push_back( pMeshBody );
+	
+		//get the mutable shapes for the mesh body.
+		Ng::TriangleShape& triShape( pMeshBody->mutableTriangleShape() );
+		Ng::PointShape& ptShape( pMeshBody->mutablePointShape() );
+
+		Ng::Buffer3f& pPosBuf( ptShape.mutableBuffer3f("position") );
+		pPosBuf.reserve( polyList.size() * 3 ); //Each primitive is treated as a triangle
+	
+		//Now its time to set the index channel to form faces
+		Ng::Buffer3i& indexBuffer = triShape.mutableBuffer3i("index");
+		indexBuffer.reserve( polyList.size() );
+		em::vec3i triVec(0,0,0); //Triangle description for the index buffer
+		totalpoints = 0;
+
+		LogDebug() << "Starting poly iteration... " << std::endl;
+		//Iterate over all the primitives in this list and remap their point numbers
+		for ( polyIt = polyList.begin(); polyIt != polyList.end(); polyIt++ )
+		{
+			pprim = *polyIt;
+			//LogDebug() << "Prim point count: " << pprim->getVertexCount() << std::endl;
+			if ( pprim->getVertexCount() == 3 )
+			{
+				//only extract the first three vertices from the primitive
+				for (int i = 2; i >= 0; i--)
+				{
+					//First iterate the points and make sure they have remapped point numbers
+					ppt = pprim->getVertex(i).getPt();
+					ptnum = ppt->getNum();
+
+					if (remappedPtNum[ ptnum ] == -1)
+					{
+						//We have an unmapped point for this body
+						//Push the point into the position buffer
+						pos = ppt->getPos();
+						pPosBuf.push_back( em::vec3f( pos[0], pos[1], pos[2]) );
+						//Record the position at which this point is stored
+						remappedPtNum[ ptnum ] = totalpoints;
+						totalpoints++;						
+					}
+
+					//At this point the current vertex has been remapped at some stage.
+					//Write the remapped index in the triVec
+					triVec[i] = remappedPtNum[ ptnum ];
+
+					//Perform a blind copy of all the attributes.
+				}
+				//Push the remapped indices into the body's index buffer.
+				indexBuffer.push_back( triVec );
+			}
+			else
+			{
+				//Not interested!
+				LogVerbose() << "Warning! Primitive non-triangular primitive found on body: " << bodyName << std::endl;
+				continue;
 			}
 		}
 	}

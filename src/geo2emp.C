@@ -34,6 +34,9 @@
 #include <NgBody.h>
 #include <NgEmp.h>
 #include <NgString.h>
+//Houdini headers
+#include <GEO/GEO_AttributeHandle.h>
+#include <GEO/GEO_PrimPoly.h>
 //Thirdparty headers
 #include "pystring.h"
 
@@ -91,7 +94,7 @@ Geo2Emp::Geo2Emp() :
 	_overrideEmpTime(false),
 	_framepadding(4)
 {
-	std::cout << "Initial frame padding: " << _framepadding << std::endl;	
+
 }
 
 /**************************************************************************************************/
@@ -116,24 +119,17 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame, int pad)
 
 	NiBegin(NI_BODY_ONLY);
 
-	//std::cout << "loading emp bodies from: " << filen << std::endl;
-
 	unsigned int numBodies = 0;
 	try
 	{
-		//std::cout << "Create new emp reader." << std::endl;
 		Ng::String ngfilen = Ng::String(filen);
 		empReader = new Ng::EmpReader( ngfilen, frame, 0, pad );
-		//std::cout << "getting body count..." << std::endl;
-		//std::cout << "body count: " << empReader->bodyCount() << std::endl;
 		numBodies = empReader->bodyCount();
-		//std::cout << "Found " << numBodies << " bodies in emp file " << std::endl;
 	}
 	catch( std::exception& e )
 	{
 		//TODO: generate a proper error / exit code for Houdini. 
 		// return exit code?
-		//std::cout << "exception! " << e.what() << std::endl;
 		_niException = e.what();
 
 		return EC_NAIAD_EXCEPTION;
@@ -228,6 +224,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 			}
 			else
 			{
+				//The input file could not be located on disk.
 				LogInfo() << "Error: Input file was not found - " << frameinput << std::endl;
 			}
 		}
@@ -237,8 +234,28 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 	}
 	else
 	{
+		LogInfo() << "straight convert : " << _inputFile << " to " << _outputFile << std::endl;			
+		bool stdinput = _inputFile.compare("stdin.bgeo") == 0;
+		LogInfo() << "stdinput? " << stdinput << std::endl;			
+
+		if ( stdinput || (!stdinput) && fileExists(_inputFile) )
+		{
+			LogVerbose() << " converting : " << _inputFile << " to " << _outputFile << std::endl;	
+
+			setGdp( &gdp );
+			//Load the bgeo data
+			gdp.load( _inputFile.c_str(), 0 );
+			//Just pass zero as the frame since it is not a sequence.
+			saveEmpBodies( _outputFile, 0, _time );
+
+			setGdp( 0 );
+		}
+		else
+		{
+			//The input file could not be located on disk.
+			LogInfo() << "Error: Input file was not found - " << frameinput << std::endl;
+		}
 		//Do a straight conversion
-		std::cout << "straight convert : " << _inputFile << " to " << _outputFile << std::endl;			
 	}
 
 	return EC_SUCCESS;
@@ -266,16 +283,19 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 		//Attempt to extract meshes from the current GDP
 		//If we have more than just particle primitives it means that we most likely have a mesh that we're dealing with
 		Ng::Body* pBody = 0;
-		saveMeshShape( pBody );
-		if (pBody)
+		std::list<Ng::Body*> bodyList;
+		saveMeshShape( bodyList );
+		for (std::list<Ng::Body*>::iterator bodyIt = bodyList.begin(); bodyIt != bodyList.end(); bodyIt++)
 		{
-			//Make sure all the emp particles are sorted into the correct blocks
-			pBody->update();
-			empWriter.write(pBody, Ng::String("*/*"));
+			if (*bodyIt)
+			{
+				//Make sure all the emp particles are sorted into the correct blocks
+				(*bodyIt)->update();
+				empWriter.write( (*bodyIt), Ng::String("*/*"));
 
-			//Question: Can the bodies be deleted directly after a write, or does the writer need to be closed first?
-			delete pBody;
-			pBody = 0;
+				//Question: Can the bodies be deleted directly after a write, or does the writer need to be closed first?
+				delete (*bodyIt);
+			}
 		}
 	}
 
@@ -312,4 +332,45 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 	//Return success
 	return EC_SUCCESS;
 }
+
+/**************************************************************************************************/
+
+void Geo2Emp::buildTriPrimNamesMap(StringToPrimPolyListMap& namesMap)
+{
+	//Iterate over the gdp and map geometry (triangle) primitives to their name attributes
+	
+	const GEO_PrimList& prims = _gdp->primitives();
+	const GEO_Primitive* pprim;
+	GEO_AttributeHandle attrName;
+	bool hasName = true;
+	UT_String primName;
+
+	attrName = _gdp->getPrimAttribute("name");
+	if ( !attrName.isAttributeValid() )
+		hasName = false;
+
+	int numprims = prims.entries();
+
+	for (int i = 0; i < numprims; i++)
+	{
+		pprim = prims[i];
+		if (! dynamic_cast<const GEO_PrimPoly*>( pprim ) )
+			//If we don't have a GEO_PrimPoly, then bail
+			continue;
+
+		//If we have a GEO_PrimPoly, get its name attribute
+		if (hasName)
+		{
+			attrName.setElement( pprim );
+			attrName.getString( primName );
+			namesMap[ primName.toStdString() ].push_back( pprim );
+		}
+		else
+		{
+			namesMap[ _bodyName ].push_back( pprim );
+		}		
+	}
+}
+
+/**************************************************************************************************/
 
