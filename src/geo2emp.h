@@ -163,6 +163,13 @@ class Geo2Emp
 		 */
 		ErrorCode saveEmpBodies(std::string filen, float time, int frame, int pad, unsigned int types = BT_PARTICLE|BT_MESH|BT_FIELD);
 
+		/**
+		 * Utility function for creating a local variable mapping ($NAME) for attributes.
+		 * @param attr_name The attribute name.
+		 * @param pGU_Detail A pointer to the GU_Detail instance containing the attribute.
+		 */
+		void createGUDLocalVariableMapping( const std::string &attr_name, GU_Detail *pGU_Detail );
+
 	protected:
 		/** 
 		 * Load shapes from EMP files. 

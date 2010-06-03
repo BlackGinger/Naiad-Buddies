@@ -41,6 +41,21 @@
 
 /**************************************************************************************************/
 
+void Geo2Emp::createGUDLocalVariableMapping( const std::string &attr_name, GU_Detail *pGU_Detail )
+{
+	UT_String var_name( attr_name.c_str(), 1 );
+
+	if ( pGU_Detail == NULL )
+	{
+		return;
+	}
+
+	var_name.toUpper();
+	pGU_Detail->addVariableName( attr_name.c_str(), var_name.buffer() );
+}
+
+/**************************************************************************************************/
+
 Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 {	
 	if (!_gdpIn)
@@ -89,6 +104,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 		if ( !attr_v.isAttributeValid() )
 		{
 			_gdpIn->addPointAttrib("v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f);
+			createGUDLocalVariableMapping( "v", _gdpIn );
 			attr_v = _gdpIn->getPointAttribute("v");
 		}
 	}
@@ -162,6 +178,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 	float zero1f = 0;
 	int zero3i[3] = {0,0,0};
 	int zero1i = 0;
+	int64_t zero1i64 = 0;
 
 
 	LogVerbose() << "Particle shape size: " << size << std::endl;
@@ -199,6 +216,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 			{
 				LogVerbose() << "Creating velocity attribute" << std::endl;
 				_gdpIn->addPointAttrib( "v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f );
+				createGUDLocalVariableMapping( "v", _gdpIn );
 				attr = _gdpIn->getPointAttribute( "v" );
 			}
 		}
@@ -241,6 +259,12 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 						type = GB_ATTRIB_INT;
 						data = &zero1i;
 						break;
+					case Ng::ValueBase::Int64Type:
+						// Create a single int64 attribute.
+						size = sizeof(int64_t);
+						type = GB_ATTRIB_INT;
+						data = &zero1i64;
+						break;
 					case Ng::ValueBase::Vec3fType:
 						//Create a tuple of 3 floats.
 						size = sizeof(float)*3;
@@ -256,14 +280,26 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 
 					default:
 						//Unsupported type...now what??
+						LogDebug() << "Unsupported channel type encountered, type = " << chan->type() << ", channel name: " << chan->name() << ", shape name: " << pShape->name() << ", body name: " << pBody->name() << std::endl;
+						size = 0;
+						data = NULL;
 						break;
 
 				}
 
 				houdiniNames.push_back( chan->name() );
-				houdiniTypes.push_back(GB_ATTRIB_FLOAT);
+				if ( ( size == 0 ) && ( data == NULL ) )
+				{
+					// For unsupported types we use GB_ATTRIB_MIXED, since according to the HDK GB_ATTRIB_MIXED represents blind data that isn't stored in bgeos anyway
+					houdiniTypes.push_back( GB_ATTRIB_MIXED );
+				}
+				else
+				{
+					houdiniTypes.push_back( type );
+				}
 
 				_gdpIn->addPointAttrib( chan->name().c_str(), size, type, data );
+				createGUDLocalVariableMapping( chan->name(), _gdpIn );
 				attr = _gdpIn->getPointAttribute( chan->name().c_str() );
 				LogVerbose() << "Created generic point attribute: " << chan->name() << std::endl;
 				//std::cout << "added attribute: " << chan->name() << " valid: " << attr.isAttributeValid() << std::endl;
@@ -321,6 +357,12 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 					//There is no channel data to be retrieved. 
 					continue;
 
+				if ( houdiniTypes[ channelIndex ] == GB_ATTRIB_MIXED )
+				{
+					// GB_ATTRIB_MIXED represents an unsupported type, skip it
+					continue;
+				}
+
 				//std::cout << "inspecting channel: " << channelIndex << ":" << chan->name() << std::endl;
 				//Fill the attributes data in the Houdini GDP. (The attributes have been created in the first channel loop).
 				switch ( chan->type() )
@@ -346,6 +388,22 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 						attr = _gdpIn->getPointAttribute( houdiniNames[channelIndex].c_str() );
 						attr.setElement(ppt);
 						attr.setI( channelData(ptNum) );
+					}
+					break;
+					case Ng::ValueBase::Int64Type:
+					{
+						//std::cout << "got int64 attrib: " << chan->name() << std::endl;
+						//Get the created channel data
+						//There isn't a Ng::ParticleShape::constBlocks1i64 yet, so we have to follow a slightly longer route
+						const Ng::ParticleChannel1i64& particle_chan = pShape->constChannel1i64( channelIndex );
+						const em::block3< int64_t >& channelData( particle_chan.constBlocks()( blockIndex ) );
+						//Get the Houdini point attribute using the name list we built earlier.
+						attr = _gdpIn->getPointAttribute( houdiniNames[channelIndex].c_str() );
+						attr.setElement(ppt);
+						int64_t value = channelData( ptNum );
+						// Least significant bits in index 0
+						attr.setI( value, 0 );
+						attr.setI( value >> 32, 1 );
 					}
 					break;
 					case Ng::ValueBase::Vec3fType:
