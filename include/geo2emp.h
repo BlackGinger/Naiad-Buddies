@@ -220,12 +220,25 @@ class Geo2Emp
 		typedef std::map<std::string, PrimPolyList> StringToPrimPolyListMap;
 		void buildTriPrimNamesMap(StringToPrimPolyListMap& namesMap);
 
+		//A mini struct used to build Attribute LUTs
+		class AttributeInfo
+		{
+			public:
+				GB_AttribType type;
+				int entries;
+				int empIndex;
+		};
+
 		LogLevel _logLevel;
 		/** This is the internal logging stream for the class */
 		std::ostream _out;
 		nullstream _outnull; 
 		/** GDP used for reading from / writing to EMP files */
 		GU_Detail* _gdp;
+
+		//Attribute maps
+		std::map<std::string, std::string> _houAttribMangle; //Map Houdini attributes to Naiad attributes
+		std::map<std::string, std::string> _empAttribMangle; //Map Naiad attributes to Houdini attributes
 
 		std::string _inputFile;
 		std::string _outputFile;

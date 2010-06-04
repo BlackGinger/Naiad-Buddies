@@ -26,6 +26,7 @@
 
 #include "geo2emp.h"
 
+#include <GB/GB_AttributeDefines.h>
 #include <GEO/GEO_AttributeHandle.h>
 #include <GEO/GEO_AttributeHandleList.h>
 #include <GEO/GEO_TriMesh.h>
@@ -155,11 +156,18 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 	const GEO_Primitive* pprim;
 	const GEO_Point* ppt;
 	GEO_AttributeHandleList attribList;
+	GEO_AttributeHandle* pAttr;
+	GB_Attribute* pBaseAttr;
 	UT_Vector3 pos;
 	Ng::Body* pMeshBody;
-	std::string bodyName;
+	std::string bodyName, attrname;
 	int ptnum, totalpoints;
 	int numAttribs;
+	//Maps houdini attributes to some cached data
+	std::map<int, AttributeInfo> attrLut;
+	AttributeInfo* pAttrInfo;
+	int attrSize;
+	const GEO_PointAttribDict *pPtAttrDict;
 
 	if (!_gdp)
 	{
@@ -173,12 +181,84 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 	
 	//Add all the GDP point attributes to the attribute list
 	attribList.appendAllAttributes( GEO_POINT_DICT );
+
 	numAttribs = attribList.entries();
-	LogInfo() << "Number of attributes: " << attribList.entries() << " empty:" << attribList.isEmpty() << std::endl;	
+
+	LogVerbose() << "Number of attributes: " << attribList.entries() << " empty:" << attribList.isEmpty() << std::endl;	
 
 	for (int i = 0; i < numAttribs; i++)
 	{
-		LogInfo() << "Attribute #" << i << " - " << attribList[i]->getName() << std::endl;
+		pAttr = attribList[i];
+		pAttrInfo = &( attrLut[i] );
+		pAttrInfo->entries = pAttr->entries();
+
+		LogDebug() << "pAttr: " << pAttr << " - " << std::endl;
+		LogDebug() << "Attribute #" << i << " - " << pAttr->getName() << " - " << attrSize << std::endl;
+
+		//Note: if attribute overrides need to be done, this is probably the place.
+		//The attribute creation code *might* need to be moved to another function...or at least some of it
+		//so that it may be shared by other conversion code
+		if ( pAttr->isP() )
+		{
+			//If we have position, then set up the type manually
+			LogDebug() << "We have a position attribute. Set attributes manually." << std::endl;
+			pAttrInfo->entries = 3;
+			pAttrInfo->type = GB_ATTRIB_VECTOR;
+		}
+		else
+		{
+			//Retrieve attribute info through the standard channels...
+			LogDebug() << "Retrieving attribute data using the Point Dictionary." << std::endl;
+
+			//Now that we now which attribute we want, find it using the GU_Detail object.
+			//TODO: Is there some beter way of doing this???
+			pPtAttrDict = dynamic_cast< const GEO_PointAttribDict* >( _gdp->getAttributeDict( GEO_POINT_DICT ) );
+			pBaseAttr = _gdp->getAttributeDict( GEO_POINT_DICT )->find( pAttr->getName() );
+			pAttrInfo->type = pBaseAttr->getType();
+		}
+
+		LogDebug() << "Switching on attribute type." << std::endl;
+
+		//Create each attribute and store their indices in a LUT.
+		
+		switch ( pAttrInfo->type )
+		{
+			case GB_ATTRIB_FLOAT:
+				{
+					switch (pAttrInfo->entries)
+					{
+						case 1:
+							{
+								
+								
+							}
+						case 2:
+						case 3:
+						default:
+							LogDebug() << "Warning: Got a float with entries: " << pAttrInfo->entries() << ". Ignoring attribute." << std::endl;
+							break;
+					}
+
+					//Create a naiad channel
+					std::cout << "Float " << pAttrInfo->entries << std::endl;
+					break;
+				}
+			case GB_ATTRIB_INT:
+				std::cout << "Int " << pAttrInfo->entries << std::endl;
+				break;
+
+			case GB_ATTRIB_VECTOR:
+				std::cout << "Vector (Vector3)" << std::endl;
+				break;
+			case GB_ATTRIB_MIXED:
+			case GB_ATTRIB_INDEX:
+			default:
+				//Unsupported attribute, so give it a skip.
+				LogInfo() << "Unsupported attribute type for blind copy [" << pAttrInfo->type << "]" << std::endl;
+				continue;
+				break;
+		}
+		
 	}
 
 	//Build a map to separate bodies using their name attributes
@@ -224,8 +304,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 		for ( polyIt = polyList.begin(); polyIt != polyList.end(); polyIt++ )
 		{
 			pprim = *polyIt;
-			//LogDebug() << "Prim point count: " << pprim->getVertexCount() << std::endl;
-			if ( pprim->getVertexCount() == 3 )
+			if ( pprim->getVertexCount() >= 3 )
 			{
 				//only extract the first three vertices from the primitive
 				for (int i = 2; i >= 0; i--)
@@ -250,6 +329,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 					triVec[i] = remappedPtNum[ ptnum ];
 
 					//Perform a blind copy of all the attributes.
+
 				}
 				//Push the remapped indices into the body's index buffer.
 				indexBuffer.push_back( triVec );
@@ -257,7 +337,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 			else
 			{
 				//Not interested!
-				LogVerbose() << "Warning! Primitive non-triangular primitive found on body: " << bodyName << std::endl;
+				LogVerbose() << "Warning! Primitive with less than 3 vertices found on body: " << bodyName << " (Vertex count: " << pprim->getVertexCount() << ")" << std::endl;
 				continue;
 			}
 		}

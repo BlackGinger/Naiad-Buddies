@@ -94,7 +94,13 @@ Geo2Emp::Geo2Emp() :
 	_overrideEmpTime(false),
 	_framepadding(4)
 {
+	_houAttribMangle["P"] = "position";
+	_houAttribMangle["N"] = "normal";
+	_houAttribMangle["v"] = "velocity";
 
+	_empAttribMangle["position"] = "P";
+	_empAttribMangle["normal"] = "N";
+	_empAttribMangle["velocity"] = "v";
 }
 
 /**************************************************************************************************/
