@@ -219,46 +219,6 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 
 		LogDebug() << "Switching on attribute type." << std::endl;
 
-		//Create each attribute and store their indices in a LUT.
-		
-		switch ( pAttrInfo->type )
-		{
-			case GB_ATTRIB_FLOAT:
-				{
-					switch (pAttrInfo->entries)
-					{
-						case 1:
-							{
-								
-								
-							}
-						case 2:
-						case 3:
-						default:
-							LogDebug() << "Warning: Got a float with entries: " << pAttrInfo->entries() << ". Ignoring attribute." << std::endl;
-							break;
-					}
-
-					//Create a naiad channel
-					std::cout << "Float " << pAttrInfo->entries << std::endl;
-					break;
-				}
-			case GB_ATTRIB_INT:
-				std::cout << "Int " << pAttrInfo->entries << std::endl;
-				break;
-
-			case GB_ATTRIB_VECTOR:
-				std::cout << "Vector (Vector3)" << std::endl;
-				break;
-			case GB_ATTRIB_MIXED:
-			case GB_ATTRIB_INDEX:
-			default:
-				//Unsupported attribute, so give it a skip.
-				LogInfo() << "Unsupported attribute type for blind copy [" << pAttrInfo->type << "]" << std::endl;
-				continue;
-				break;
-		}
-		
 	}
 
 	//Build a map to separate bodies using their name attributes
@@ -292,7 +252,82 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 
 		Ng::Buffer3f& pPosBuf( ptShape.mutableBuffer3f("position") );
 		pPosBuf.reserve( polyList.size() * 3 ); //Each primitive is treated as a triangle
-	
+
+		//This preprocessor defition was placed here simply because it is only applicable to this code section
+		//and will fail to work anywhere else.
+		#define PROCESSCHANNEL(type, defaults) \
+		{ \
+			if ( !ptShape.hasChannels ## type (empAttrName) ) \
+			{ \
+				ptShape.createChannel ## type ( empAttrName, (defaults) ); \
+			} \
+			pAttrInfo->empIndex = ptShape.channelIndex( empAttrName ); \
+			ptShape.mutableBuffer ## type ( empAttrName ).reserve ( polyList.size() * 3 ); \
+			pAttrInfo->supported = true; \
+		}
+
+		//Iterate over the BGEO attributes and create corresponding channels in the EMP
+		//Also, store the channel index for direct lookups when transferring data.
+		for (int i = 0; i < numAttribs; i++)
+		{
+			//Mangle the geo attribute name right now
+			pAttr = attribList[i];
+			std::string empAttrName;
+			if ( _geoAttribMangle.find( pAttr->getName() ) != _geoAttribMangle.end() )
+				empAttrName = _geoAttribMangle[ pAttr->getName() ];
+			else
+				empAttrName = pAttr->getName();
+			LogDebug() << "Mangling name: " << pAttr->getName() << " ==> " << empAttrName << std::endl;
+			pAttrInfo = &( attrLut[i] );
+			pAttrInfo->supported = false;
+			pAttrInfo->flipvector = true; //By default, flip vectors
+
+			if ( std::string(pAttr->getName()).compare("P") == 0 )
+				pAttrInfo->flipvector = false;
+
+			pAttrInfo->empIndex = -1;
+			switch ( pAttrInfo->type )
+			{
+				case GB_ATTRIB_FLOAT:
+					LogDebug() << "Float " << pAttrInfo->entries << std::endl;
+					switch ( pAttrInfo->entries )
+					{
+						case 1:
+							PROCESSCHANNEL( 1f, 0.0f );
+							break;
+						case 3:
+							PROCESSCHANNEL( 3f, em::vec3f(0.0f) );
+							break;
+					}
+					break;
+				case GB_ATTRIB_INT:
+					LogDebug() << "Int " << pAttrInfo->entries << std::endl;
+					break;
+				case GB_ATTRIB_VECTOR:
+					{
+						LogDebug() << "Vector (Vector3)" << std::endl;
+						PROCESSCHANNEL( 3f, em::vec3f(0.0f) );
+						break;
+					}
+				case GB_ATTRIB_MIXED:
+				case GB_ATTRIB_INDEX:
+				default:
+					//Unsupported attribute, so give it a skip.
+					LogDebug() << "Unsupported attribute type for blind copy [" << pAttrInfo->type << "]" << std::endl;
+					continue;
+					break;
+			}
+
+			if ( pAttrInfo->supported )
+				LogDebug() << "Supported Blind Copy! Channel: [" << empAttrName << "] Index: " << pAttrInfo->empIndex << std::endl;
+			else
+			{
+				LogDebug() << "Unsupported Blind Copy! Channel: [" << empAttrName << "]" <<  std::endl;
+				continue;
+			}
+		} //for numAttribs
+
+
 		//Now its time to set the index channel to form faces
 		Ng::Buffer3i& indexBuffer = triShape.mutableBuffer3i("index");
 		indexBuffer.reserve( polyList.size() );
@@ -307,18 +342,24 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 			if ( pprim->getVertexCount() >= 3 )
 			{
 				//only extract the first three vertices from the primitive
-				for (int i = 2; i >= 0; i--)
+				for (int i = 0; i < 3; i++)
 				{
 					//First iterate the points and make sure they have remapped point numbers
-					ppt = pprim->getVertex(i).getPt();
+					//NOTE: Houdini & Naiad triangle windings differ.
+					ppt = pprim->getVertex(2-i).getPt();
 					ptnum = ppt->getNum();
 
 					if (remappedPtNum[ ptnum ] == -1)
 					{
 						//We have an unmapped point for this body
+						//Push the applicable point attributes into each channel
+						transferMeshPointAttribs(numAttribs, attribList, attrLut, ptShape, ppt);
+												
 						//Push the point into the position buffer
-						pos = ppt->getPos();
-						pPosBuf.push_back( em::vec3f( pos[0], pos[1], pos[2]) );
+						
+						//pos = ppt->getPos();
+						//pPosBuf.push_back( em::vec3f( pos[0], pos[1], pos[2]) );
+
 						//Record the position at which this point is stored
 						remappedPtNum[ ptnum ] = totalpoints;
 						totalpoints++;						
@@ -346,6 +387,82 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 	LogInfo() << " ************** Done with Mesh Shape ************** " << std::endl;	
 
 	return EC_SUCCESS;
+}
+
+/**************************************************************************************************/
+
+void Geo2Emp::transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Ng::PointShape& ptShape, const GEO_Point* ppt)
+{
+	GEO_AttributeHandle* pAttr;
+	AttributeInfo* pAttrInfo;
+
+	for (int i = 0; i < numAttribs; i++)
+	{
+		pAttr = attribList[i];
+		pAttrInfo = &( attrLut[i] );
+
+		if (!pAttrInfo->supported)
+			//Skip unsupported attributes
+			continue;
+
+		pAttr->setElement( ppt );
+		if (! pAttr->isAttributeValid() )
+		{
+			LogDebug() << "Invalid attribute handle on supported attribute!! [" << pAttr->getName() << "]" << std::endl;
+		}
+
+		LogDebug() << "Transferring attribute: " << pAttr->getName() << std::endl;
+
+		switch ( pAttrInfo->type )
+		{
+			case GB_ATTRIB_FLOAT:
+				//LogDebug() << "Transfer Float" << pAttrInfo->entries << "[" << pAttr->getName() << "]" << std::endl;
+				switch ( pAttrInfo->entries )
+				{
+					case 1:
+						{
+							//LogDebug() << "Float1: " << pAttr->getV3() << std::endl;
+							//Get the channel from the point shape
+							Ng::Buffer1f& pbuf = ptShape.mutableBuffer1f( pAttrInfo->empIndex );
+							//Write the data into the buffer
+							pbuf.push_back( pAttr->getF() );
+						}
+						break;
+					case 3:
+						{
+							//LogDebug() << "Float3: " << pAttr->getV3() << std::endl;
+							//Get the channel from the point shape
+							Ng::Buffer3f& pbuf = ptShape.mutableBuffer3f( pAttrInfo->empIndex );
+							//Write the data into the buffer
+							pbuf.push_back( em::vec3f( pAttr->getF(0), pAttr->getF(1), pAttr->getF(2) ) );
+						}
+						break;
+				}
+				break;
+			case GB_ATTRIB_INT:
+				LogDebug() << "Int " << pAttrInfo->entries << std::endl;
+				break;
+			case GB_ATTRIB_VECTOR:
+				{
+					LogDebug() << "Transfer Vector3 [" << pAttr->getName() << "] " <<  pAttr->getF(0) << "," << pAttr->getF(1) << "," << pAttr->getF(2)<< std::endl;
+					Ng::Buffer3f& pbuf = ptShape.mutableBuffer3f( pAttrInfo->empIndex );
+					//If we have a vector, we need to invert it (reverse winding).
+					//Write the data into the buffer
+					pbuf.push_back( em::vec3f( pAttr->getF(0), pAttr->getF(1), pAttr->getF(2) ) );
+
+					break;
+				}
+			case GB_ATTRIB_MIXED:
+			case GB_ATTRIB_INDEX:
+			default:
+				//Unsupported attribute, so give it a skip.
+				LogDebug() << " !!!!! SHOULDNT GET THIS !!!! Unsupported attribute type for blind copy [" << pAttrInfo->type << "]" << std::endl;
+				continue;
+				break;
+		}
+
+	}
+
 }
 
 /**************************************************************************************************/

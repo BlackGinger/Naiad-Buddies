@@ -197,6 +197,17 @@ class Geo2Emp
 		ErrorCode saveEmpBodies(std::string filen, int frame, float time);
 
 	protected:
+		//A mini struct used to build Attribute LUTs
+		class AttributeInfo
+		{
+			public:
+				GB_AttribType type;
+				int entries;
+				int empIndex;
+				bool supported; //Whether or not this attribute should be copied
+				bool flipvector; //If this is a vector, then flip it
+		};
+
 		/** 
 		 * Load shapes from EMP files. 
 		 */
@@ -220,14 +231,10 @@ class Geo2Emp
 		typedef std::map<std::string, PrimPolyList> StringToPrimPolyListMap;
 		void buildTriPrimNamesMap(StringToPrimPolyListMap& namesMap);
 
-		//A mini struct used to build Attribute LUTs
-		class AttributeInfo
-		{
-			public:
-				GB_AttribType type;
-				int entries;
-				int empIndex;
-		};
+		/**
+		 * Transfer geo point attributes to corresponding emp channel
+		 */
+		void transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Ng::PointShape& ptShape, const GEO_Point* ppt);
 
 		LogLevel _logLevel;
 		/** This is the internal logging stream for the class */
@@ -237,7 +244,7 @@ class Geo2Emp
 		GU_Detail* _gdp;
 
 		//Attribute maps
-		std::map<std::string, std::string> _houAttribMangle; //Map Houdini attributes to Naiad attributes
+		std::map<std::string, std::string> _geoAttribMangle; //Map Houdini attributes to Naiad attributes
 		std::map<std::string, std::string> _empAttribMangle; //Map Naiad attributes to Houdini attributes
 
 		std::string _inputFile;
