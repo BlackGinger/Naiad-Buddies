@@ -249,8 +249,12 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 			LogVerbose() << " converting : " << _inputFile << " to " << _outputFile << std::endl;	
 
 			setGdp( &gdp );
+			LogVerbose() << " Gdp has been set. " << std::endl;	
+			gdp.clearAndDestroy();
+			LogVerbose() << " Gdp is being loaded. " << std::endl;	
 			//Load the bgeo data
 			gdp.load( _inputFile.c_str(), 0 );
+			LogVerbose() << " Saving Emp Bodies. " << std::endl;	
 			//Just pass zero as the frame since it is not a sequence.
 			saveEmpBodies( _outputFile, 0, _time );
 
@@ -263,6 +267,8 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 		}
 		//Do a straight conversion
 	}
+
+	LogVerbose() << "Conversion completed..." << std::endl;
 
 	return EC_SUCCESS;
 }

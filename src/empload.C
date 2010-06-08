@@ -62,11 +62,103 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 		return EC_NO_TRIANGLE_SHAPE;
 	}
 
-	//Fore now, let's just hardcode the imports to get some base functionality. It can be generified at a later stage.
-
 	//Get access to shapes we need to loading a mesh (point and triangle)
 	const Ng::TriangleShape& triShape = pBody->constTriangleShape();
 	const Ng::PointShape& ptShape = pBody->constPointShape();
+
+	//Retrieve the number of points and channels
+	int64_t size = ptShape.size();
+	int channelCount = ptShape.channelCount();
+
+	//Attribute Lookup Tables
+	std::vector< GEO_AttributeHandle > attribLut;
+	std::vector<GeoAttributeInfo> attribInfo; //houdini types for the naiad channels.
+	GeoAttributeInfo* pInfo;
+	GEO_AttributeHandle attr;
+	std::string attrName;
+
+	float zero3f[3] = {0,0,0};
+	float zero1f = 0;
+	int zero3i[3] = {0,0,0};
+	int zero1i = 0;
+	const void* data;
+
+	attribLut.clear();
+	attribInfo.clear();
+	attribLut.resize( channelCount );
+	attribInfo.resize( channelCount );
+
+
+	//Prepare for a blind copy of Naiad channels to Houdini attributes.
+	//Iterate over the channels and create the corresponding attributes in the GDP
+	for (int i = 0; i < channelCount; i++)
+	{
+		//std::cout << "channel: " << i << std::endl;
+		const Ng::ChannelCowPtr& chan = ptShape.channel(i);
+
+		if ( _empAttribMangle.find( chan->name() ) != _empAttribMangle.end() )
+			attrName = _empAttribMangle[ chan->name() ];
+		else
+			attrName = chan->name();
+
+		LogDebug() << "Processing EMP Channel: " << chan->name() << "; mangled: " << attrName << std::endl;
+
+		//Determine the attribute type, and store it
+		pInfo = &(attribInfo[ i ]);
+		pInfo->supported = false;
+		pInfo->size = 0;
+
+		switch ( chan->type() )
+		{
+			case Ng::ValueBase::IntType:
+				LogDebug() << "IntType: " << std::endl;
+				pInfo->type = GB_ATTRIB_INT;
+				pInfo->entries = 1;
+				pInfo->size = sizeof(int);
+				pInfo->supported = true;
+				data = &zero1i;
+				break;
+			case Ng::ValueBase::FloatType:
+				LogDebug() << "FloatType: " << std::endl;
+				pInfo->type = GB_ATTRIB_FLOAT;
+				pInfo->size = sizeof(float);
+				pInfo->entries = 1;
+				pInfo->supported = true;
+				data = &zero1f;
+				break;
+			case Ng::ValueBase::Vec3fType:
+				LogDebug() << "Vec3fType: " << std::endl;
+				pInfo->type = GB_ATTRIB_VECTOR;
+				pInfo->size = sizeof(float);
+				pInfo->entries = 3;
+				pInfo->supported = true;
+				data = &zero3f;
+				break;
+			default:
+				pInfo->supported = false;
+				break;
+		}
+
+		//If the attribute is not supported, then continue with the next one.
+		if (!pInfo->supported)
+		{
+			LogVerbose() << "Unsupported attribute. Skipping:" << attrName << std::endl;
+			continue;
+		}
+
+		//Check whether the attribute exists or not
+		attr = _gdp->getPointAttribute( attrName.c_str() );
+		if ( !attr.isAttributeValid() )
+		{
+			LogVerbose() << "Creating attribute in GDP:" << attrName << std::endl;
+			LogDebug() << "Name: " << attrName << std::endl << "Entries: " << pInfo->entries << std::endl << "Size: " << pInfo->size << std::endl;
+			_gdp->addPointAttrib( attrName.c_str(), pInfo->size * pInfo->entries, pInfo->type, data);
+			attr = _gdp->getPointAttribute( attrName.c_str() );
+		}
+
+		//Put the attribute handle in a Lut for easy access later.
+		attribLut[i] = attr;
+	}	
 
 	//Get the position and velocity buffers from the point shape and the index buffer from the triangle shape
 	const Ng::Buffer3f& bufPos = ptShape.constBuffer3f("position");
@@ -79,7 +171,6 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 	//Invoking triShape.size() directly possibly tries to read the size from the "position" attribute...Shoudl it??
 
 	//Default values for attributes
-	float zero3f[3] = {0,0,0};
 	GEO_AttributeHandle attr_v = _gdp->getPointAttribute("v");
 
 	if (emp_has_v)

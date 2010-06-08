@@ -47,12 +47,12 @@ void processOpts(AnyOption& opt)
 	
 	opt.addUsage("Naiad Buddy for Houdini toolkit - command line geo2emp converter");
 	opt.addUsage("");
-	opt.addUsage("Usage: emp2geo [options] input.emp output.bgeo");
-	opt.addUsage("Usage: emp2geo [options] -s startframe -e endframe input.#.emp output.#.bgeo");
+	opt.addUsage("Usage: geo2emp [options] input.bgeo output.emp");
+	opt.addUsage("Usage: geo2emp [options] -s startframe -e endframe input.#.bgeo output.#.emp");
 	opt.addUsage("");
-  opt.addUsage("  This tool is used to convert EMP files to BGEO files. The input");
-	opt.addUsage("  will be regarded as an EMP file and the output will be regarded");
-	opt.addUsage("  as a BGEO file regardless of their extensions.");
+  opt.addUsage("  This tool is used to convert BGEO files to EMP files. The input");
+	opt.addUsage("  will be regarded as a BGEO file and the output will be regarded");
+	opt.addUsage("  as an EMP file regardless of their extensions.");
 	opt.addUsage("  Sequence conversion is also supported.");
 	opt.addUsage("");
 	opt.addUsage("\t-h\t--help\t\t Prints this help");
@@ -66,7 +66,11 @@ void processOpts(AnyOption& opt)
 	opt.addUsage("\t-f\t--field\t\t Interpret bgeo data as volume data");
 	opt.addUsage("\t-s\t--startframe\t Start frame of the sequence");
 	opt.addUsage("\t-e\t--endframe\t End frame of the sequence");
+	opt.addUsage("\t-i\t--initframe\t Frame that is considered zero time for Naiad sim (default: 0)");
+	opt.addUsage("\t-r\t--framerate\t Frame rate for the file sequence (default: 24)");
 	opt.addUsage("\t-d\t--pad\t\t Frame number padding (default: 4)");
+	opt.addUsage("\t-t\t--time\t\t Timestep of the EMP file (only use this if you know what you are doing)");
+	opt.addUsage("\t-b\t--bodyname\t Force to use this body name (default: trimesh)");
 	opt.addUsage("");
 
 
@@ -76,7 +80,11 @@ void processOpts(AnyOption& opt)
 	opt.setOption( "verbose", 'v' );
 	opt.setOption( "startframe", 's' );
 	opt.setOption( "endframe", 'e' );
+	opt.setOption( "initframe", 'i' );
+	opt.setOption( "framerate", 'r' );
 	opt.setOption( "pad", 'd' );	
+	opt.setOption( "time", 't' );
+	opt.setOption( "bodyname", 'b' );        
   opt.setFlag( "help", 'h' );   /* a flag (takes no argument), supporting long and short form */ 
 	opt.setFlag( "particles", 'p' ); 
 	opt.setFlag( "mesh", 'm' ); 
@@ -94,7 +102,6 @@ int main(int argc, char *argv[])
 	AnyOption opt;
 	int shapeMask = 0;
 	bool seqconv = false;
-	//int pad = 0;
 	char pwd[BUFSIZ];
 
 	
@@ -126,6 +133,11 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if ( opt.getValue("bodyname") != NULL || opt.getValue( 'b' ) != NULL )
+	{
+		geo2emp.setBodyName( opt.getValue('b') );
+	}
+
 	if ( opt.getValue("particle") != NULL || opt.getValue( 'p' ) != NULL )
 	{
 		shapeMask |= Geo2Emp::BT_PARTICLE;
@@ -148,6 +160,24 @@ int main(int argc, char *argv[])
 	if ( opt.getValue("endframe") != NULL || opt.getValue( 'e' ) != NULL )
 	{
 		geo2emp.setEndFrame( stringToInt( opt.getValue('e') ) );
+	}
+	if ( opt.getValue("framerate") != NULL || opt.getValue( 'r' ) != NULL )
+	{
+		geo2emp.setFrameRate( stringToFloat( opt.getValue('r') ) );
+	}
+	if ( opt.getValue("initframe") != NULL || opt.getValue( 'i' ) != NULL )
+	{
+		geo2emp.setInitialFrame( stringToInt( opt.getValue('i') ) );
+	}
+	if ( opt.getValue("time") != NULL || opt.getValue( 't' ) != NULL )
+	{
+		geo2emp.setEmpTime( stringToInt( opt.getValue('t') ) );
+	}
+	if ( opt.getValue("pad") != NULL || opt.getValue( 'd' ) != NULL )
+	{
+		//istringstream padstream( opt.getValue('d') );
+		//padstream >> pad;
+		geo2emp.setFramePadding( stringToInt( opt.getValue('d') ) );
 	}
 
 	geo2emp.setTypeMask( shapeMask );
@@ -219,9 +249,24 @@ int main(int argc, char *argv[])
 	geo2emp.setInputFilename( inputname.toStdString() );
 	geo2emp.setOutputFilename( outputname.toStdString() );
 	//Save EMP file(s) using the current geo2emp state.
-	geo2emp.saveEmp();
+	geo2emp.saveGeo();
 
-	//TODO: Process error code do a proper error return
+		// Convert to emp.
+		/*
+		geo2emp.LogInfo() << "Loading GDP: " << inputname << std::endl;
+		int result = gdp.load((const char *) inputname, 0);
+
+		if (result >= 0)
+		{
+			geo2emp.LogInfo() << "Saving EMP: " << outputname << std::endl;
+			//geo2emp.saveEmpBodies(outputname.toStdString(), time, frame, pad, shapeMask);
+		}
+		else
+		{
+			geo2emp.LogInfo() << "Error occured while loading BGEO. Does the file exist? " << inputname.toStdString() << std::endl;
+			return 1;
+		}
+		*/
 
 	return 0;
 }
