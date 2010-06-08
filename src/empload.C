@@ -149,6 +149,12 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 		return EC_NO_PARTICLE_SHAPE;
 	}
 
+	//Attribute Lookup Tables
+	std::vector< GEO_AttributeHandle > attribLut;
+	std::vector<GeoAttributeInfo> attribInfo; //houdini types for the naiad channels.
+	GeoAttributeInfo* pInfo;
+	std::string attrName;
+
 	//We have a valid particle shape. Start copying particle data over to the GDP
 	int64_t size = pShape->size();
 	int channelCount = pShape->channelCount();
@@ -163,7 +169,219 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 	float zero1f = 0;
 	int zero3i[3] = {0,0,0};
 	int zero1i = 0;
+	const void* data;
 
+	LogVerbose() << "Particle shape size: " << size << std::endl;
+	LogVerbose() << "Particle shape channel count: " << channelCount << std::endl;
+
+	LogVerbose() << "Building particle primitive...";
+	pParticle = GU_PrimParticle::build(_gdp, 0);
+	LogVerbose() << "done." << std::endl;
+
+	attribLut.clear();
+	attribInfo.clear();
+	attribLut.resize( channelCount );
+	attribInfo.resize( channelCount );
+
+	//Prepare for a blind copy of Naiad channels to Houdini attributes.
+	//Iterate over the channels and create the corresponding attributes in the GDP
+	for (int i = 0; i < channelCount; i++)
+	{
+		//std::cout << "channel: " << i << std::endl;
+		const Ng::ChannelCowPtr& chan = pShape->channel(i);
+
+		if ( _empAttribMangle.find( chan->name() ) != _empAttribMangle.end() )
+			attrName = _empAttribMangle[ chan->name() ];
+		else
+			attrName = chan->name();
+
+
+
+		LogDebug() << "Processing EMP Channel: " << chan->name() << "; mangled: " << attrName << std::endl;
+
+		//Determine the attribute type, and store it
+		pInfo = &(attribInfo[ i ]);
+		pInfo->supported = false;
+		pInfo->size = 0;
+
+		if (attrName.compare("P") == 0)
+			//Don't treat position as an attribute. This will be handled separately.
+			continue;
+
+		switch ( chan->type() )
+		{
+			case Ng::ValueBase::IntType:
+				pInfo->type = GB_ATTRIB_INT;
+				pInfo->entries = 1;
+				pInfo->size = sizeof(int);
+				pInfo->supported = true;
+				data = &zero1i;
+				break;
+			case Ng::ValueBase::FloatType:
+				pInfo->type = GB_ATTRIB_FLOAT;
+				pInfo->size = sizeof(float);
+				pInfo->entries = 1;
+				pInfo->supported = true;
+				data = &zero1f;
+				break;
+			case Ng::ValueBase::Vec3fType:
+				pInfo->type = GB_ATTRIB_VECTOR;
+				pInfo->size = sizeof(float);
+				pInfo->entries = 3;
+				pInfo->supported = true;
+				data = &zero3f;
+				break;
+			default:
+				pInfo->supported = false;
+				break;
+		}
+
+		//If the attribute is not supported, then continue with the next one.
+		if (!pInfo->supported)
+		{
+			LogVerbose() << "Unsupported attribute. Skipping:" << attrName << std::endl;
+			continue;
+		}
+
+		//Check whether the attribute exists or not
+		attr = _gdp->getPointAttribute( attrName.c_str() );
+		if ( !attr.isAttributeValid() )
+		{
+			LogVerbose() << "Creating attribute in GDP:" << attrName << std::endl;
+			LogDebug() << "Name: " << attrName << std::endl << "Entries: " << pInfo->entries << std::endl << "Size: " << pInfo->size << std::endl;
+			_gdp->addPointAttrib( attrName.c_str(), pInfo->size * pInfo->entries, pInfo->type, data);
+			attr = _gdp->getPointAttribute( attrName.c_str() );
+		}
+
+		//Put the attribute handle in a Lut for easy access later.
+		attribLut[i] = attr;
+	}	
+
+	//The channel values for particle shapes are stored in blocks/tiles.
+	const Ng::TileLayout& layout = pBody->constLayout();
+	unsigned int numBlocks = layout.fineTileCount();
+	unsigned int absPtNum = 0;
+
+	//Get the block array for the positions channel
+	const em::block3_array3f& positionBlocks( pShape->constBlocks3f("position") );	
+	unsigned int bsize;
+
+	for (int blockIndex = 0; blockIndex < numBlocks; blockIndex ++)
+	{
+		//Get a single block from the position blocks
+		const em::block3vec3f& posBlock = positionBlocks(blockIndex);
+
+		//std::cout << "taking block from positions..." << blockIndex << std::endl;
+		//LogDebug() << "block size:" << posBlock.size() << std::endl;
+		//Iterate over all the points/particles in the position block
+		bsize = posBlock.size();
+		for (int ptNum = 0; ptNum < bsize; ptNum++, absPtNum++)
+		{
+			if (ptNum % 100 == 0)
+				LogDebug() << "Block: " << blockIndex << "/" << numBlocks << " ; Point " << ptNum << "/" << bsize << std::endl;
+
+			ppt = _gdp->appendPoint();
+
+			//LogDebug() << "getting absolute point " << absPtNum << "; block pt num: " << ptNum << std::endl;
+			
+			//ppt = pParticle->getVertex(absPtNum).getPt();
+			pParticle->appendParticle(ppt);
+
+			//LogDebug() << "Dumping position: " << std::endl;
+			//LogDebug() << "pos: " << ptNum << " " << posBlock(ptNum)[0] << posBlock(ptNum)[1] << std::endl;
+			ppt->setPos( UT_Vector3( posBlock(ptNum)[0], posBlock(ptNum)[1], posBlock(ptNum)[2] ) );
+			//LogDebug() << "Appending to point tree " << std::endl;
+
+			// /* 
+			
+			//Loop over the channels and add the attributes
+			for (int channelIndex = 0; channelIndex < channelCount; channelIndex++)
+			{
+				//LogDebug() << "processing channel index: " << channelIndex;
+				pInfo = &(attribInfo[ channelIndex ]);
+				//If the attribute is not supported then skip it
+				if (!pInfo->supported)
+				{
+					//LogDebug() << "Unsupported! skipping. " << std::endl;
+					continue;
+				}
+
+				const Ng::ChannelCowPtr& chan = pShape->channel( channelIndex );
+				//LogDebug() << "processing channel index: " << channelIndex << " - " << chan->name() << std::endl;
+
+				//TODO: normals and velocities should be added as VECTORS, not FLOATS
+
+				//if (chan->size() == 0)
+					//There is no channel data to be retrieved. 
+				//	continue;
+
+
+				//LogDebug() << "Supported channel. Setting element." << std::endl;
+				attr = attribLut[ channelIndex ];
+				attr.setElement( ppt );
+
+				switch ( pInfo->type )
+				{
+					case GB_ATTRIB_VECTOR:
+						{
+							//LogDebug() << "Transferring Vector3 data...";
+							const em::block3vec3f& channelData( pShape->constBlocks3f(channelIndex)(blockIndex) );
+							//Get the Houdini point attribute using the name list we built earlier.
+							attr.setV3( UT_Vector3( channelData(ptNum)[0], channelData(ptNum)[1], channelData(ptNum)[2]  ) );
+							//LogDebug() << "Done. " << std::endl;
+						}
+						break;
+					default:
+						//not yet implemented.
+						continue;
+						break;
+
+				}
+
+			}
+		}	
+	}
+
+	//std::cout << "all done. " << std::endl;
+	return EC_SUCCESS;
+}
+
+/**************************************************************************************************/
+
+Geo2Emp::ErrorCode Geo2Emp::loadParticleShape_old( const Ng::Body* pBody )
+{
+	if (!_gdp)
+	{
+		//If we don't have a GDP for writing data into Houdini, return error.
+		return EC_NULL_WRITE_GDP;
+	}
+
+	const Ng::ParticleShape* pShape;
+
+	LogInfo() << "=============== Loading particle shape ===============" << std::endl; 
+
+	pShape = pBody->queryConstParticleShape();
+
+	if (!pShape)
+	{
+		//std::cout << "Received NULL particle shape!" << std::endl;
+		return EC_NO_PARTICLE_SHAPE;
+	}
+
+	//We have a valid particle shape. Start copying particle data over to the GDP
+	int64_t size = pShape->size();
+	int channelCount = pShape->channelCount();
+	int positionChannelIndex = 0;
+	GEO_Point *ppt;
+	GEO_AttributeHandle attr;
+	GU_PrimParticle *pParticle;
+	std::vector<std::string> houdiniNames; //houdini names that correspond to naiad channels.
+	std::vector<GB_AttribType> houdiniTypes; //houdini types for the naiad channels.
+	//Default values for attributes
+	float zero3f[3] = {0,0,0};
+	float zero1f = 0;
+	int zero3i[3] = {0,0,0};
+	int zero1i = 0;
 
 	LogVerbose() << "Particle shape size: " << size << std::endl;
 	LogVerbose() << "Particle shape channel count: " << channelCount << std::endl;
@@ -274,8 +492,6 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 
 		//std::cout << "channel: " << chan->name() << " size: " << chan->size() << std::endl;
 	}	
-
-
 
 	//The channel values for particle shapes are stored in blocks/tiles.
 	const Ng::TileLayout& layout = pBody->constLayout();
@@ -411,7 +627,6 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 	//std::cout << "all done. " << std::endl;
 	return EC_SUCCESS;
 }
-
 /**************************************************************************************************/
 
 Geo2Emp::ErrorCode Geo2Emp::loadFieldShape( const Ng::Body* pBody )

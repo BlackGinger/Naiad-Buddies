@@ -1,7 +1,7 @@
 /*
- * main.C
+ * cli_geo2emp.C
  *
- * command line frontend to the .bgeo to .emp converter
+ * command line frontend for converting BGEO to EMP files
  *
  * Copyright (c) 2010 Van Aarde Krynauw.
  *
@@ -25,13 +25,17 @@
  */
 
 #include "geo2emp.h"
+#include "geo2emp_utils.h"
 #include "anyoption.h"
+#include "pystring.h"
 
 #include <stdio.h>
 #include <iostream>
 #include <unistd.h>
 
 #include <CMD/CMD_Args.h>
+
+using namespace geo2emp;
 
 /**************************************************************************************************/
 
@@ -41,13 +45,15 @@
 void processOpts(AnyOption& opt)
 {
 	
-	opt.addUsage("Naiad Buddy for Houdini toolkit - geo2emp converter");
+	opt.addUsage("Naiad Buddy for Houdini toolkit - command line geo2emp converter");
 	opt.addUsage("");
-	opt.addUsage("Usage: geo2emp [options] source dest");
+	opt.addUsage("Usage: geo2emp [options] input.bgeo output.emp");
+	opt.addUsage("Usage: geo2emp [options] -s startframe -e endframe input.#.bgeo output.#.emp");
 	opt.addUsage("");
-  opt.addUsage("  The extension of the source/dest will be used to determine");
-	opt.addUsage("  how the conversion is done.  Supported extensions are .emp");
-	opt.addUsage("  and .bgeo");
+  opt.addUsage("  This tool is used to convert BGEO files to EMP files. The input");
+	opt.addUsage("  will be regarded as a BGEO file and the output will be regarded");
+	opt.addUsage("  as an EMP file regardless of their extensions.");
+	opt.addUsage("  Sequence conversion is also supported.");
 	opt.addUsage("");
 	opt.addUsage("\t-h\t--help\t\t Prints this help");
 	opt.addUsage("\t-v\t--verbose [lvl]\t Verbosity level:");
@@ -55,13 +61,16 @@ void processOpts(AnyOption& opt)
 	opt.addUsage("\t\t\t\t     1 - Informative");
 	opt.addUsage("\t\t\t\t     2 - Talkative");
 	opt.addUsage("\t\t\t\t     3 - Debug");
-	opt.addUsage("\t-p\t--particles\t Load particle shape");
-	opt.addUsage("\t-m\t--mesh\t\t Load mesh shape");
-	opt.addUsage("\t-f\t--field\t\t Load field shape");
-	opt.addUsage("\t-t\t--time\t\t Timestep of file (only relevent for EMP files)");
-	opt.addUsage("\t-n\t--frame\t\t Frame of file");
-	opt.addUsage("\t-d\t--pad\t\t Frame number zero-padding of file");
-	opt.addUsage("\t-b\t--bodyname\t\t Force to use this body name (default: trimesh)");
+	opt.addUsage("\t-p\t--particles\t Interpret bgeo data as particles");
+	opt.addUsage("\t-m\t--mesh\t\t Interpret bgeo data as one or more meshes");
+	opt.addUsage("\t-f\t--field\t\t Interpret bgeo data as volume data");
+	opt.addUsage("\t-s\t--startframe\t Start frame of the sequence");
+	opt.addUsage("\t-e\t--endframe\t End frame of the sequence");
+	opt.addUsage("\t-i\t--initframe\t Frame that is considered zero time for Naiad sim (default: 0)");
+	opt.addUsage("\t-r\t--framerate\t Frame rate for the file sequence (default: 24)");
+	opt.addUsage("\t-d\t--pad\t\t Frame number padding (default: 4)");
+	opt.addUsage("\t-t\t--time\t\t Timestep of the EMP file (only use this if you know what you are doing)");
+	opt.addUsage("\t-b\t--bodyname\t Force to use this body name (default: trimesh)");
 	opt.addUsage("");
 
 
@@ -69,9 +78,12 @@ void processOpts(AnyOption& opt)
 
 	/* by default all  options  will be checked on the command line and from option/resource file */
 	opt.setOption( "verbose", 'v' );
-	opt.setOption( "time", 't' );
-	opt.setOption( "frame", 'n' );
+	opt.setOption( "startframe", 's' );
+	opt.setOption( "endframe", 'e' );
+	opt.setOption( "initframe", 'i' );
+	opt.setOption( "framerate", 'r' );
 	opt.setOption( "pad", 'd' );	
+	opt.setOption( "time", 't' );
 	opt.setOption( "bodyname", 'b' );        
   opt.setFlag( "help", 'h' );   /* a flag (takes no argument), supporting long and short form */ 
 	opt.setFlag( "particles", 'p' ); 
@@ -80,19 +92,23 @@ void processOpts(AnyOption& opt)
 }
 /**************************************************************************************************/
 
+#include <IMG/IMG_Format.h>
+#include <IMG/IMG_File.h>
+#include <PXL/PXL_Common.h>
+
 int main(int argc, char *argv[])
 {
 	Geo2Emp geo2emp;
 	AnyOption opt;
-	GU_Detail gdp;
 	int shapeMask = 0;
-	bool loadAllShapes = true;
 	float time = 0;
-	int pad = 0;
+	bool seqconv = false;
+	int sframe = 0;
+	int eframe = 0;
+	int initframe = 0;
+	//int pad = 0;
 	char pwd[BUFSIZ];
 
-	geo2emp.setGdpIn(&gdp);
-	geo2emp.setGdpOut(&gdp);
 	
 	processOpts(opt);
 
@@ -109,6 +125,7 @@ int main(int argc, char *argv[])
 	if( opt.getFlag( "help" ) || opt.getFlag( 'h' ) ) 
 	{
 		opt.printUsage();
+		return 0;
 	}
 
 	if ( opt.getValue("verbose") != NULL || opt.getValue( 'v' ) != NULL )
@@ -128,28 +145,47 @@ int main(int argc, char *argv[])
 
 	if ( opt.getValue("particle") != NULL || opt.getValue( 'p' ) != NULL )
 	{
-		loadAllShapes = false;
 		shapeMask |= Geo2Emp::BT_PARTICLE;
 	}
 
-
 	if ( opt.getValue("mesh") != NULL || opt.getValue( 'm' ) != NULL )
 	{
-		loadAllShapes = false;
 		shapeMask |= Geo2Emp::BT_MESH;
 	}
 
 	if ( opt.getValue("field") != NULL || opt.getValue( 'f' ) != NULL )
 	{
-		loadAllShapes = false;
 		shapeMask |= Geo2Emp::BT_FIELD;
 	}
 
+	if ( opt.getValue("startframe") != NULL || opt.getValue( 's' ) != NULL )
+	{
+		geo2emp.setStartFrame( stringToInt( opt.getValue('s') ) );
+	}
+	if ( opt.getValue("endframe") != NULL || opt.getValue( 'e' ) != NULL )
+	{
+		geo2emp.setEndFrame( stringToInt( opt.getValue('e') ) );
+	}
+	if ( opt.getValue("framerate") != NULL || opt.getValue( 'r' ) != NULL )
+	{
+		geo2emp.setFrameRate( stringToFloat( opt.getValue('r') ) );
+	}
+	if ( opt.getValue("initframe") != NULL || opt.getValue( 'i' ) != NULL )
+	{
+		geo2emp.setInitialFrame( stringToInt( opt.getValue('i') ) );
+	}
+	if ( opt.getValue("time") != NULL || opt.getValue( 't' ) != NULL )
+	{
+		geo2emp.setEmpTime( stringToInt( opt.getValue('t') ) );
+	}
 	if ( opt.getValue("pad") != NULL || opt.getValue( 'd' ) != NULL )
 	{
-		istringstream padstream( opt.getValue('d') );
-		padstream >> pad;
+		//istringstream padstream( opt.getValue('d') );
+		//padstream >> pad;
+		geo2emp.setFramePadding( stringToInt( opt.getValue('d') ) );
 	}
+
+	geo2emp.setTypeMask( shapeMask );
 
 	geo2emp.redirect( std::cerr );
 
@@ -157,19 +193,26 @@ int main(int argc, char *argv[])
 
 	inputname.harden(opt.getArgv(0));
 	outputname.harden(opt.getArgv(1));
-
-	if (loadAllShapes)
-	{
-		shapeMask = 0xFFFFFFFF;
-	}
-
-	lowerin = inputname;
-	lowerin.toLower();
 	lowerout = outputname;
 	lowerout.toLower();
 
-	// Naiad's EmpReader and EmpWriter classes require absoulte paths from 0.96. Check whether
+	//If the input or ouput name has a hash, then we enable sequence conversion
+	if ( pystring::find( inputname.toStdString(), "#" ) != -1 || pystring::find( outputname.toStdString(), "#" ) != -1 )
+	{
+		seqconv = true;
+	}
+
+	//Do some parm integrity checks
+	if (shapeMask == 0)
+	{
+		//Require, for now, that a conversion needs to be specified.
+		geo2emp.LogInfo() << "No conversion mode found. Please specify the conversion mode using -p, -m, or -f." << std::endl;
+		return 1;
+	}
+
+	// Naiad's EmpReader and EmpWriter classes require absolute paths from 0.96. Check whether
 	// lowerin and lowerout start with /, if not prefix it with the current working directory
+	// TODO: test whether this is still the case with Naiad 0.2
 	getcwd(pwd, BUFSIZ);
 	if ( ( lowerin != "stdin.bgeo" ) && ( !inputname.startsWith("/") ) )
 	{
@@ -192,12 +235,9 @@ int main(int argc, char *argv[])
 	lowerout = outputname;
 	lowerout.toLower();
 
-	if ( ! (lowerin.endsWith(".emp") || lowerin.endsWith(".geo") || lowerin.endsWith(".bgeo") ) )
-	{
-		geo2emp.LogInfo() << "Unrecognized extension for source file: " << inputname << std::endl;
-		return 1;
-	}
-	else if (not inputname.match("stdin.bgeo"))
+	//File existence checks will be done during sequence conversion
+	/*
+	if (not inputname.match("stdin.bgeo"))
 	{
 		//Check whether the input filename actually exist
 		ifstream inp;
@@ -209,65 +249,29 @@ int main(int argc, char *argv[])
 		}
 
 	}
+	*/
 
-	if ( ! (lowerout.endsWith(".emp") || lowerout.endsWith(".geo") || lowerout.endsWith(".bgeo") ) )
-	{
-		geo2emp.LogInfo() << "Unrecognized extension for destination file: " << outputname << std::endl;
-		return 1;
-	}
-
-	if ( lowerin.endsWith(".emp") )
-	{
-		geo2emp.LogInfo() << "Loading EMP: " << inputname << std::endl;
-		// Convert from emp (by default, convert all naiad body types to bgeo)
-		int result = geo2emp.loadEmpBodies( inputname.toStdString(), frame, pad, shapeMask );
-	
-		if (result == Geo2Emp::EC_SUCCESS)
-		{
-			geo2emp.LogInfo() << "Saving GDP: " << outputname << std::endl;
-			int binary = 1;
-  		if ( lowerout.endsWith(".geo") )
-				binary = 0;
-			//std::cout << "Writing file: " << outputname << std::endl;
-			// Save our result.
-			gdp.save((const char *) outputname, binary, 0);
-		}
-		else
-		{
-			geo2emp.LogInfo() << "Error occured while loading EMP. Does the file exist? " << inputname.toStdString() << std::endl;
-			return 1;
-		}
-  }
-  else if (lowerin.endsWith(".geo") || lowerin.endsWith(".bgeo") )
-  {
-		if ( opt.getValue("time") != NULL || opt.getValue( 't' ) != NULL )
-		{
-			istringstream timestream( opt.getValue('t') );
-			timestream >> time;
-			geo2emp.LogInfo() << "Time is set to: " << time << std::endl;
-		}
+	geo2emp.setInputFilename( inputname.toStdString() );
+	geo2emp.setOutputFilename( outputname.toStdString() );
+	//Save EMP file(s) using the current geo2emp state.
+	geo2emp.saveGeo();
 
 		// Convert to emp.
+		/*
 		geo2emp.LogInfo() << "Loading GDP: " << inputname << std::endl;
 		int result = gdp.load((const char *) inputname, 0);
 
 		if (result >= 0)
 		{
 			geo2emp.LogInfo() << "Saving EMP: " << outputname << std::endl;
-			geo2emp.saveEmpBodies(outputname.toStdString(), time, frame, pad, shapeMask);
+			//geo2emp.saveEmpBodies(outputname.toStdString(), time, frame, pad, shapeMask);
 		}
 		else
 		{
 			geo2emp.LogInfo() << "Error occured while loading BGEO. Does the file exist? " << inputname.toStdString() << std::endl;
 			return 1;
 		}
-  }
-	else
-	{
-		geo2emp.LogInfo() << "Unrecognized extension for source file: " << inputname << std::endl;
-		geo2emp.LogInfo() << "How did you get to this point anyways? You should've been kicked out at the extension integrity checks already!" << std::endl;
-		return 1;
-	}
+		*/
 
 	return 0;
 }

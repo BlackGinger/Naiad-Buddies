@@ -174,15 +174,16 @@ class Geo2Emp
 		 * This function wraps the normal EMP save so that possible sequence conversion can take place.
 		 */
 		ErrorCode saveEmp();
+		ErrorCode saveGeo();
 
 		/**
 		 * Load bodies from the EMP file. 
 		 *
 		 * @param filen The filename of the EMP file.
-		 * @param types A bitset of EMP body type from enum EmpBodyTypes to define which bodies should be loaded.
+		 * @param frame The frame number that gets passed to the EMPReader (used for hash expansion).
 		 *
 		 */
-		ErrorCode loadEmpBodies(std::string filen, int frame, int pad);
+		ErrorCode loadEmpBodies(std::string filen, int frame);
 
 		/**
 		 * Save the current GDP to an EMP file. 
@@ -207,12 +208,23 @@ class Geo2Emp
 				bool supported; //Whether or not this attribute should be copied
 				bool flipvector; //If this is a vector, then flip it
 		};
+		
+		class GeoAttributeInfo
+		{
+			public:
+				GB_AttribType type;
+				int entries;
+				int size; //Size of a single element for this attribute, i.e., sizeof(int) or sizeof(float)
+				bool supported; //Whether or not this attribute should be copied
+				bool flipvector; //If this is a vector, then flip it
+		};
 
 		/** 
 		 * Load shapes from EMP files. 
 		 */
 		ErrorCode loadMeshShape( const Ng::Body* pBody );
 		ErrorCode loadParticleShape( const Ng::Body* pBody ); 
+		ErrorCode loadParticleShape_old( const Ng::Body* pBody ); 
 		ErrorCode loadFieldShape( const Ng::Body* pBody );
 
 		/**

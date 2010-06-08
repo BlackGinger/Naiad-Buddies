@@ -119,7 +119,7 @@ void Geo2Emp::redirect(ostream &os)
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame, int pad)
+Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 {
 	Ng::EmpReader* empReader = NULL;	
 
@@ -129,7 +129,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame, int pad)
 	try
 	{
 		Ng::String ngfilen = Ng::String(filen);
-		empReader = new Ng::EmpReader( ngfilen, frame, 0, pad );
+		empReader = new Ng::EmpReader( ngfilen, frame, 0, _framepadding );
 		numBodies = empReader->bodyCount();
 	}
 	catch( std::exception& e )
@@ -270,6 +270,98 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 
 /**************************************************************************************************/
 
+Geo2Emp::ErrorCode Geo2Emp::saveGeo()
+{
+	std::string frameinput, frameoutput;
+	GU_Detail gdp; //Local GDP that will be used for conversions.
+
+	LogDebug() << "Saving EMP with data: " << std::endl;
+	LogDebug() << "Startframe: " << _startFrame << std::endl;
+	LogDebug() << "Endframe: " << _endFrame << std::endl;
+	LogDebug() << "FPS: " << _fps << std::endl;
+	LogDebug() << "initframe: " << _initFrame << std::endl;
+	LogDebug() << "framepadding: " << _framepadding << std::endl;
+
+	//Perform sequence conversion evaluation
+	if ( pystring::find( _inputFile, "#" ) != -1 || pystring::find( _outputFile, "#" ) != -1 )
+	{
+		int sf = _startFrame;
+		int ef = _endFrame;
+		bool stdinput = false;
+		//Do a sequence conversion
+		if (sf > ef)
+		{
+			ef = _startFrame;
+			sf = _endFrame;
+		}
+
+		//Create and a set a local gdp object
+		setGdp( &gdp );
+
+
+		for (int i = sf; i <= ef; i++)
+		{
+			frameinput = pystring::replace(_inputFile, "#", intToString(i, _framepadding));
+			frameoutput = pystring::replace(_outputFile, "#", intToString(i, _framepadding));
+			//Make sure the input file exists
+			stdinput = frameinput.compare("stdin.bgeo") == 0;
+			if ( stdinput || (!stdinput) && fileExists(frameinput) )
+			{
+				LogVerbose() << " converting : " << frameinput << " to " << frameoutput << std::endl;	
+
+				LogDebug() << " frame: " << i << std::endl;
+
+				//Load emp data into the current gdp
+				gdp.clearAndDestroy();
+				loadEmpBodies( frameinput, i );
+				//Save out the gdp
+				//TODO: add a variable to Geo2Emp to allow controlling this binary flag
+				gdp.save( frameoutput.c_str(), 1, 0 );
+			}
+			else
+			{
+				//The input file could not be located on disk.
+				LogInfo() << "Error: Input file was not found - " << frameinput << std::endl;
+			}
+		}
+
+		setGdp(0);
+	}
+	else
+	{
+		//Perform a single file conversion. No sequence.
+		LogInfo() << "straight convert : " << _inputFile << " to " << _outputFile << std::endl;			
+		bool stdinput = _inputFile.compare("stdin.bgeo") == 0;
+		LogInfo() << "stdinput? " << stdinput << std::endl;			
+
+		if ( stdinput || (!stdinput) && fileExists(_inputFile) )
+		{
+			LogVerbose() << " converting : " << _inputFile << " to " << _outputFile << std::endl;	
+
+			setGdp( &gdp );
+
+			//Load the EMP data into the current gdp
+			//Just pass zero as the frame since it is not a sequence.
+			loadEmpBodies( _inputFile, 0);
+
+			//now save the gdp to disk
+			gdp.save( _outputFile.c_str(), 1, 0 );
+
+			setGdp( 0 );
+		}
+		else
+		{
+			//The input file could not be located on disk.
+			LogInfo() << "Error: Input file was not found - " << frameinput << std::endl;
+		}
+		//Do a straight conversion
+	}
+
+	return EC_SUCCESS;
+}
+
+
+/**************************************************************************************************/
 Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float time)
 {
 	LogInfo() << "Saving EMP Bodies" << std::endl;
