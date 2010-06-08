@@ -101,12 +101,7 @@ int main(int argc, char *argv[])
 	Geo2Emp geo2emp;
 	AnyOption opt;
 	int shapeMask = 0;
-	float time = 0;
 	bool seqconv = false;
-	int sframe = 0;
-	int eframe = 0;
-	int initframe = 0;
-	//int pad = 0;
 	char pwd[BUFSIZ];
 
 	

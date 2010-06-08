@@ -497,18 +497,10 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 	//For the sake of simplicity, copy ALL the points in the GDP across.
 	//It will be much slower if we have to filter out all the non-mesh vertices and then remap the vertices to new point numbers.
 	const GEO_PointList& ptlist = _gdp->points();
-	const GEO_PrimList& primlist = _gdp->primitives();
-	const GEO_Point* ppt;
-	const GEO_Primitive* pprim;
 	UT_Vector3 pos, v3;
 	int numpoints = ptlist.entries();
-	int vertcount = 0;
 	GEO_AttributeHandle attr_v, attr_N;
-	bool attr_v_valid, attr_N_valid;
 
-	//Ng::Buffer3f* pNormBuffer = 0;
-	//Ng::Buffer3f* pVelBuffer = 0;
-	
 	//The position attribute needs special/explicit treatment
 	//Get the position buffer from the particleShape
 	

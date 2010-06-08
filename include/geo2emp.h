@@ -223,6 +223,7 @@ class Geo2Emp
 		 * Load shapes from EMP files. 
 		 */
 		ErrorCode loadMeshShape( const Ng::Body* pBody );
+		ErrorCode loadMeshShape_old( const Ng::Body* pBody );
 		ErrorCode loadParticleShape( const Ng::Body* pBody ); 
 		ErrorCode loadParticleShape_old( const Ng::Body* pBody ); 
 		ErrorCode loadFieldShape( const Ng::Body* pBody );
