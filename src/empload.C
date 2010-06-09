@@ -50,7 +50,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 		return EC_NULL_WRITE_GDP;
 	}
 
-	LogInfo() << "=============== Loading particle shape ===============" << std::endl; 
+	LogInfo() << "=============== Loading mesh shape ===============" << std::endl; 
 
 	const Ng::TriangleShape* pShape;
 
@@ -88,7 +88,6 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 	attribLut.resize( channelCount );
 	attribInfo.resize( channelCount );
 
-
 	//Prepare for a blind copy of Naiad channels to Houdini attributes.
 	//Iterate over the channels and create the corresponding attributes in the GDP
 	for (int i = 0; i < channelCount; i++)
@@ -111,7 +110,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 		switch ( chan->type() )
 		{
 			case Ng::ValueBase::IntType:
-				LogDebug() << "IntType: " << std::endl;
+				LogDebug() << "IntType " << std::endl;
 				pInfo->type = GB_ATTRIB_INT;
 				pInfo->entries = 1;
 				pInfo->size = sizeof(int);
@@ -119,7 +118,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 				data = &zero1i;
 				break;
 			case Ng::ValueBase::FloatType:
-				LogDebug() << "FloatType: " << std::endl;
+				LogDebug() << "FloatType " << std::endl;
 				pInfo->type = GB_ATTRIB_FLOAT;
 				pInfo->size = sizeof(float);
 				pInfo->entries = 1;
@@ -127,7 +126,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 				data = &zero1f;
 				break;
 			case Ng::ValueBase::Vec3fType:
-				LogDebug() << "Vec3fType: " << std::endl;
+				LogDebug() << "Vec3fType " << std::endl;
 				pInfo->type = GB_ATTRIB_VECTOR;
 				pInfo->size = sizeof(float);
 				pInfo->entries = 3;
@@ -150,40 +149,18 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 		attr = _gdp->getPointAttribute( attrName.c_str() );
 		if ( !attr.isAttributeValid() )
 		{
-			LogVerbose() << "Creating attribute in GDP:" << attrName << std::endl;
-			LogDebug() << "Name: " << attrName << std::endl << "Entries: " << pInfo->entries << std::endl << "Size: " << pInfo->size << std::endl;
+			LogDebug() << "Creating attribute in GDP:" << attrName << std::endl;
 			_gdp->addPointAttrib( attrName.c_str(), pInfo->size * pInfo->entries, pInfo->type, data);
 			attr = _gdp->getPointAttribute( attrName.c_str() );
 		}
 
-		//Put the attribute handle in a Lut for easy access later.
+		//Put the attribute handle in a Lut for easy access later (during transfer)
 		attribLut[i] = attr;
 	}	
 
-	//Get the position and velocity buffers from the point shape and the index buffer from the triangle shape
-	const Ng::Buffer3f& bufPos = ptShape.constBuffer3f("position");
+	//Get index buffer from the triangle shape
 	const Ng::Buffer3i& bufIndex ( triShape.constBuffer3i("index") );
-
-	const Ng::Buffer3f* bufVel = 0;
-	bool emp_has_v = ptShape.hasChannels3f("velocity");
-
-	int indexChannelNum = triShape.channelIndex("index"); //Store the channel number for the "index" channel
-	//Invoking triShape.size() directly possibly tries to read the size from the "position" attribute...Shoudl it??
-
-	//Default values for attributes
-	GEO_AttributeHandle attr_v = _gdp->getPointAttribute("v");
-
-	if (emp_has_v)
-	{
-		bufVel = &(ptShape.constBuffer3f("velocity"));
-		//If GDP doesn't have a velocity attribute, create one.
-		attr_v = _gdp->getPointAttribute("v");
-		if ( !attr_v.isAttributeValid() )
-		{
-			_gdp->addPointAttrib("v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f);
-			attr_v = _gdp->getPointAttribute("v");
-		}
-	}
+	int64_t indexBufSize = bufIndex.size();
 
 	//Before we start adding points to the GDP, just record how many points are already there.
 	int initialPointCount = _gdp->points().entries();	
@@ -193,18 +170,57 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 	for (int ptNum = 0; ptNum < ptShape.size(); ptNum ++)
 	{
 		ppt = _gdp->appendPoint();
-		ppt->setPos( UT_Vector3( bufPos(ptNum)[0], bufPos(ptNum)[1], bufPos(ptNum)[2] ) );
-		if (emp_has_v)
+		
+		//Iterate over the channels in the point shape and copy the data
+		for (int channelIndex = 0; channelIndex < channelCount; channelIndex++)
 		{
-			//Get the point velocities from the EMP file
-			attr_v.setElement(ppt);
-			attr_v.setV3( UT_Vector3( (*bufVel)(ptNum)[0], (*bufVel)(ptNum)[1], (*bufVel)(ptNum)[2] ) );
+			pInfo = &(attribInfo[ channelIndex ]);
+			//If the attribute is not supported then skip it
+			if (!pInfo->supported)
+			{
+				continue;
+			}
+
+			attribLut[ channelIndex ].setElement( ppt );
+
+			//Transfer supported attributes (this includes the point Position)
+			switch ( pInfo->type )
+			{
+				case GB_ATTRIB_INT:
+					{
+						const Ng::Buffer1i& channelData =  ptShape.constBuffer1i(channelIndex);
+						//Get the Houdini point attribute using the name list we built earlier.
+						attribLut[channelIndex].setI( channelData(ptNum) );
+					}
+					break;
+				case GB_ATTRIB_FLOAT:
+					{
+						//TODO: Handle more that 1 entry here, if we ever get something like that ... although I doubt it would happen.
+						const Ng::Buffer1f& channelData( ptShape.constBuffer1f(channelIndex) );
+						//Get the Houdini point attribute using the name list we built earlier.
+						attribLut[channelIndex].setF( channelData(ptNum) );
+					}
+					break;
+				case GB_ATTRIB_VECTOR:
+					{
+						const Ng::Buffer3f& channelData = ptShape.constBuffer3f(channelIndex);
+						//Get the Houdini point attribute using the name list we built earlier.
+						attribLut[channelIndex].setV3( UT_Vector3( channelData(ptNum)[0], channelData(ptNum)[1], channelData(ptNum)[2]  ) );
+					}
+					break;
+				default:
+					//not yet implemented.
+					continue;
+					break;
+			}
+
 		}
+
 	}
 
 	//Now that all the points are in the GDP, build the triangles
 	GU_PrimPoly *pPrim;
-	for (int tri = 0; tri < triShape.channel(indexChannelNum)->size(); tri++)
+	for (int tri = 0; tri < indexBufSize; tri++)
 	{
 		pPrim = GU_PrimPoly::build(_gdp, 3, GU_POLY_CLOSED, 0); //Build a closed poly with 3 points, but don't add them to the GDP.
 		//Set the three vertices of the triangle
