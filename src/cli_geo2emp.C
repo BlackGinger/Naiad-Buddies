@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 	geo2emp.setInputFilename( inputname.toStdString() );
 	geo2emp.setOutputFilename( outputname.toStdString() );
 	//Save EMP file(s) using the current geo2emp state.
-	geo2emp.saveGeo();
+	geo2emp.saveEmp();
 
 		// Convert to emp.
 		/*
