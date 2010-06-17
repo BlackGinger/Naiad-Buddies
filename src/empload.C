@@ -233,93 +233,6 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 	return EC_SUCCESS;
 }
 
-
-/**************************************************************************************************/
-
-Geo2Emp::ErrorCode Geo2Emp::loadMeshShape_old( const Ng::Body* pBody )
-{	
-	if (!_gdp)
-	{
-		//If we don't have a GDP for writing data into Houdini, return error.
-		return EC_NULL_WRITE_GDP;
-	}
-
-	LogInfo() << "=============== Loading particle shape ===============" << std::endl; 
-
-	const Ng::TriangleShape* pShape;
-
-	pShape = pBody->queryConstTriangleShape();
-
-	if (!pShape)
-	{
-		//NULL mesh shape, so return right now.
-		return EC_NO_TRIANGLE_SHAPE;
-	}
-
-	//Fore now, let's just hardcode the imports to get some base functionality. It can be generified at a later stage.
-
-	//Get access to shapes we need to loading a mesh (point and triangle)
-	const Ng::TriangleShape& triShape = pBody->constTriangleShape();
-	const Ng::PointShape& ptShape = pBody->constPointShape();
-
-	//Get the position and velocity buffers from the point shape and the index buffer from the triangle shape
-	const Ng::Buffer3f& bufPos = ptShape.constBuffer3f("position");
-	const Ng::Buffer3i& bufIndex ( triShape.constBuffer3i("index") );
-
-	const Ng::Buffer3f* bufVel = 0;
-	bool emp_has_v = ptShape.hasChannels3f("velocity");
-
-	int indexChannelNum = triShape.channelIndex("index"); //Store the channel number for the "index" channel
-	//Invoking triShape.size() directly possibly tries to read the size from the "position" attribute...Shoudl it??
-
-	//Default values for attributes
-	float zero3f[3] = {0,0,0};
-	GEO_AttributeHandle attr_v = _gdp->getPointAttribute("v");
-
-	if (emp_has_v)
-	{
-		bufVel = &(ptShape.constBuffer3f("velocity"));
-		//If GDP doesn't have a velocity attribute, create one.
-		attr_v = _gdp->getPointAttribute("v");
-		if ( !attr_v.isAttributeValid() )
-		{
-			_gdp->addPointAttrib("v", sizeof(float)*3, GB_ATTRIB_VECTOR, zero3f);
-			attr_v = _gdp->getPointAttribute("v");
-		}
-	}
-
-	//Before we start adding points to the GDP, just record how many points are already there.
-	int initialPointCount = _gdp->points().entries();	
-
-	GEO_Point *ppt;
-	//Now, copy all the points into the GDP.
-	for (int ptNum = 0; ptNum < ptShape.size(); ptNum ++)
-	{
-		ppt = _gdp->appendPoint();
-		ppt->setPos( UT_Vector3( bufPos(ptNum)[0], bufPos(ptNum)[1], bufPos(ptNum)[2] ) );
-		if (emp_has_v)
-		{
-			//Get the point velocities from the EMP file
-			attr_v.setElement(ppt);
-			attr_v.setV3( UT_Vector3( (*bufVel)(ptNum)[0], (*bufVel)(ptNum)[1], (*bufVel)(ptNum)[2] ) );
-		}
-	}
-
-	//Now that all the points are in the GDP, build the triangles
-	GU_PrimPoly *pPrim;
-	for (int tri = 0; tri < triShape.channel(indexChannelNum)->size(); tri++)
-	{
-		pPrim = GU_PrimPoly::build(_gdp, 3, GU_POLY_CLOSED, 0); //Build a closed poly with 3 points, but don't add them to the GDP.
-		//Set the three vertices of the triangle
-		for (int i = 0; i < 3; i++ )
-		{
-			pPrim->setVertex(i, _gdp->points()[ initialPointCount + bufIndex(tri)[i] ] );
-		}
-	}
-
-	return EC_SUCCESS;
-}
-
 /**************************************************************************************************/
 
 Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
@@ -455,6 +368,9 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 	//Get the block array for the positions channel
 	const em::block3_array3f& positionBlocks( pShape->constBlocks3f("position") );	
 	unsigned int bsize;
+	float dec_accumulator = 0.0f;
+	float dec = (1.0f - (_decimation)/100.0f);
+	LogInfo() << "Keeping decimation value: " << dec << std::endl;
 
 	for (int blockIndex = 0; blockIndex < numBlocks; blockIndex ++)
 	{
@@ -466,8 +382,18 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 			LogDebug() << "Block: " << blockIndex << "/" << numBlocks << std::endl;
 		//Iterate over all the points/particles in the position block
 		bsize = posBlock.size();
+
+		//Only process the point if the decimation accumulator is greater than one.
+
 		for (int ptNum = 0; ptNum < bsize; ptNum++, absPtNum++)
 		{
+			dec_accumulator += dec;
+			if (dec_accumulator < 1.0f)
+				//Skip this point
+				continue;
+			//Process this point, remove the dec_accumulator rollover.
+			dec_accumulator -= (int) dec_accumulator;
+
 			ppt = _gdp->appendPoint();
 			pParticle->appendParticle(ppt);
 

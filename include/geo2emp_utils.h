@@ -45,6 +45,19 @@ namespace geo2emp
 	 * Test whether the specified file exists or not.
 	 */
 	bool fileExists(const std::string& file);
+
+	/**
+	 * Clamping functions. If the given value is outside the range, the value is set as the boundary value.
+	 */
+	template <class T>
+	T clamp(T value, T min, T max)
+	{
+		if (value < min)
+			return min;
+		if (value > max)
+			return max;
+		return value;
+	}
 }
 
 #endif //__GEO2EMP_UTILS_H__

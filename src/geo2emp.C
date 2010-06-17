@@ -90,6 +90,7 @@ Geo2Emp::Geo2Emp() :
 	_endFrame(0),
 	_initFrame(0),
 	_fps(24),
+	_decimation(0),
 	_time(0),
 	_overrideEmpTime(false),
 	_framepadding(4)

@@ -61,12 +61,13 @@ void processOpts(AnyOption& opt)
 	opt.addUsage("\t\t\t\t     1 - Informative");
 	opt.addUsage("\t\t\t\t     2 - Talkative");
 	opt.addUsage("\t\t\t\t     3 - Debug");
-	opt.addUsage("\t-p\t--particles\t Interpret bgeo data as particles");
-	opt.addUsage("\t-m\t--mesh\t\t Interpret bgeo data as one or more meshes");
-	opt.addUsage("\t-f\t--field\t\t Interpret bgeo data as volume data");
-	opt.addUsage("\t-s\t--startframe\t Start frame of the sequence");
-	opt.addUsage("\t-e\t--endframe\t End frame of the sequence");
-	opt.addUsage("\t-d\t--pad\t\t Frame number padding (default: 4)");
+	opt.addUsage("\t-p\t--particles\t Extract particles from emp");
+	opt.addUsage("\t-m\t--mesh\t\t Extract meshes from emp");
+	opt.addUsage("\t-f\t--field\t\t Extract field data from emp");
+	opt.addUsage("\t-s\t--startframe [int]\t Start frame of the sequence");
+	opt.addUsage("\t-e\t--endframe [int]\t End frame of the sequence");
+	opt.addUsage("\t-d\t--pad [int]\t\t Frame number padding (default: 4)");
+	opt.addUsage("\t-c\t--decimate [val]\t Percentage of particles to decimate during particle conversion: 0-100 (default: 0)");
 	opt.addUsage("");
 
 
@@ -77,6 +78,7 @@ void processOpts(AnyOption& opt)
 	opt.setOption( "startframe", 's' );
 	opt.setOption( "endframe", 'e' );
 	opt.setOption( "pad", 'd' );	
+	opt.setOption( "decimate", 'c' );	
   opt.setFlag( "help", 'h' );   /* a flag (takes no argument), supporting long and short form */ 
 	opt.setFlag( "particles", 'p' ); 
 	opt.setFlag( "mesh", 'm' ); 
@@ -148,6 +150,11 @@ int main(int argc, char *argv[])
 	if ( opt.getValue("endframe") != NULL || opt.getValue( 'e' ) != NULL )
 	{
 		geo2emp.setEndFrame( stringToInt( opt.getValue('e') ) );
+	}
+	
+	if ( opt.getValue("decimate") != NULL || opt.getValue( 'c' ) != NULL )
+	{
+		geo2emp.setDecimation( stringToInt( opt.getValue('c') ) );
 	}
 
 	geo2emp.setTypeMask( shapeMask );

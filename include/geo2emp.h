@@ -44,6 +44,7 @@
 #include <NgBody.h>
 
 #include "nullstream.h"
+#include "geo2emp_utils.h"
 
 namespace geo2emp
 {
@@ -159,6 +160,7 @@ class Geo2Emp
 		void setInitialFrame(int iframe) { _initFrame = iframe; }
 		void setFramePadding(int padding) { _framepadding = padding; }
 		void setTypeMask( unsigned int typeMask ) { _typeMask = typeMask; }
+		void setDecimation( int decimation ) { _decimation = clamp<int>(decimation, 0, 100); }
 
 		/**
 		 * Override sequence conversion timestep calculation. USE WITH CARE.
@@ -271,6 +273,7 @@ class Geo2Emp
 	
 		/** This is the body types to extract from the GDP */
 		unsigned int _typeMask;
+		int _decimation;
 
 		/** Time value to write into EMP file(s). */
 		float _time;
