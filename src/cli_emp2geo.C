@@ -57,8 +57,8 @@ void processOpts(AnyOption& opt)
 	opt.addUsage("");
 	opt.addUsage("\t-h\t--help\t\t Prints this help");
 	opt.addUsage("\t-v\t--verbose [lvl]\t Verbosity level:");
-	opt.addUsage("\t\t\t\t     0 - Stealth mode");
-	opt.addUsage("\t\t\t\t     1 - Informative");
+	opt.addUsage("\t\t\t\t     0 - Stealth mode (supress output)");
+	opt.addUsage("\t\t\t\t     1 - Informative (default)");
 	opt.addUsage("\t\t\t\t     2 - Talkative");
 	opt.addUsage("\t\t\t\t     3 - Debug");
 	opt.addUsage("\t-p\t--particles\t Extract particles from emp");

@@ -39,118 +39,6 @@ using namespace geo2emp;
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::saveMeshShape_old(Ng::Body*& pMeshBody)
-{
-	if (!_gdp)
-	{
-		//If we don't have a GDP for writing data into Houdini, return error.
-		return EC_NULL_READ_GDP;
-	}
-	
-	LogInfo() << " ************** Saving Mesh Shape ************** " << std::endl;	
-
-	//Create a Naiad mesh body
-	pMeshBody = Ng::Factory::createBody("Mesh", _bodyName);
-	
-	//get the mutable shapes for the mesh body.
-	Ng::TriangleShape& triShape( pMeshBody->mutableTriangleShape() );
-	Ng::PointShape& ptShape( pMeshBody->mutablePointShape() );
-
-	//For the sake of simplicity, copy ALL the points in the GDP across.
-	//It will be much slower if we have to filter out all the non-mesh vertices and then remap the vertices to new point numbers.
-	const GEO_PointList& ptlist = _gdp->points();
-	const GEO_PrimList& primlist = _gdp->primitives();
-	const GEO_Point* ppt;
-	const GEO_Primitive* pprim;
-	UT_Vector3 pos, v3;
-	int numpoints = ptlist.entries();
-	int vertcount = 0;
-	GEO_AttributeHandle attr_v, attr_N;
-	bool attr_v_valid, attr_N_valid;
-	Ng::Buffer3f* pNormBuffer = 0;
-	Ng::Buffer3f* pVelBuffer = 0;
-
-	attr_v = _gdp->getPointAttribute("v");
-	attr_N = _gdp->getPointAttribute("N");
-
-	attr_v_valid = attr_v.isAttributeValid();
-	attr_N_valid = attr_N.isAttributeValid();
-
-	if (attr_v_valid)
-	{
-		//If the geometry has a velocity attribute, then create one on the mesh shape
-		ptShape.createChannel3f( "velocity", em::vec3f(0.0f) );
-		pVelBuffer = &(ptShape.mutableBuffer3f("velocity"));
-		pVelBuffer->reserve(numpoints);
-	}
-	
-	if (attr_N_valid)
-	{
-		//If the geometry has a normal attribute, then create one on the mesh shape
-		ptShape.createChannel3f( "normal", em::vec3f(0.0f) );
-		pNormBuffer = &(ptShape.mutableBuffer3f("normal"));
-		pNormBuffer->reserve(numpoints);
-	}
-
-	//Retrieve the positions buffer from the point shape so that we can add all the vertices.
-	Ng::Buffer3f& pPosBuf( ptShape.mutableBuffer3f("position") );
-	pPosBuf.reserve( numpoints );
-
-	for (int i = 0; i < numpoints; i++)
-	{
-		ppt = ptlist[i];
-		pos = ppt->getPos();
-		pPosBuf.push_back( em::vec3f( pos[0], pos[1], pos[2]) );
-
-		//Set the velocity and normal attributes if there are any.
-		if (attr_v_valid)
-		{
-			attr_v.setElement(ppt);
-			v3 = attr_v.getV3();
-			pVelBuffer->push_back( em::vec3f(v3[0], v3[1], v3[2]) );
-		}
-
-		if (attr_N_valid)
-		{
-			attr_N.setElement(ppt);
-			v3 = attr_N.getV3();
-			pNormBuffer->push_back( em::vec3f(v3[0], v3[1], v3[2]) );
-		}
-
-		//Ponder: Should we export blind data, or keep the attribute exports specific? Maybe blind exports from a SOP could work...
-	}
-
-	//Now its time to set the index channel to form faces
-	Ng::Buffer3i& indexBuffer = triShape.mutableBuffer3i("index");
-	em::vec3i triVec(0,0,0);
-
-	for (pprim = primlist.head(); pprim; pprim = primlist.next(pprim) )
-	{
-		const GEO_TriMesh* triMesh = dynamic_cast<const GEO_TriMesh*>(pprim);
-
-		if ( triMesh )
-		{
-			vertcount = triMesh->getVertexCount();
-
-			if (vertcount >= 3)
-			{
-				//Export the first 3 vertices of this primitive.
-				for (int i = 2; i >= 0; i--)
-				{
-					triVec[i] = triMesh->getVertex(i).getPt()->getNum();
-				}
-				indexBuffer.push_back( triVec );
-			}
-		}
-	}
-
-	LogInfo() << " ************** Done with Mesh Shape ************** " << std::endl;	
-
-	return EC_SUCCESS;
-}
-
-/**************************************************************************************************/
-
 Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 {
 	const GEO_Primitive* pprim;
@@ -254,7 +142,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 		pPosBuf.reserve( polyList.size() * 3 ); //Each primitive is treated as a triangle
 
 		//This preprocessor defition was placed here simply because it is only applicable to this code section
-		//and will fail to work anywhere else.
+		//and will fail to work anywhere else. Not to be classified under "best coding practices".
 		#define PROCESSCHANNEL(type, defaults) \
 		{ \
 			if ( !ptShape.hasChannels ## type (empAttrName) ) \

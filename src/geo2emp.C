@@ -83,7 +83,7 @@ std::string Geo2Emp::getErrorString(ErrorCode error)
 
 Geo2Emp::Geo2Emp() :
 	_out( _outnull.rdbuf() ),
-	_logLevel(LL_SILENCE),
+	_logLevel(LL_INFO),
 	_gdp(0),
 	_bodyName("unnamed_body"),
 	_startFrame(0),
