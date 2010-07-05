@@ -227,7 +227,8 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 				//Load the bgeo data
 				_gdp->load( frameinput.c_str(), 0 );
 
-				time = (i - (_startFrame-_initFrame-1))/_fps; 
+				//time = (i - (_startFrame-_initFrame-1))/_fps; 
+				time = ( i - _initFrame ) / _fps; 
 				LogDebug() << " frame: " << i << " time: " << time << std::endl;
 
 				saveEmpBodies( frameoutput, i, time );
