@@ -106,11 +106,19 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 		pInfo = &(attribInfo[ i ]);
 		pInfo->supported = false;
 		pInfo->size = 0;
+		pInfo->use64 = false;
 
 		switch ( chan->type() )
 		{
 			case Ng::ValueBase::IntType:
 				LogDebug() << "IntType " << std::endl;
+				pInfo->type = GB_ATTRIB_INT;
+				pInfo->entries = 1;
+				pInfo->size = sizeof(int);
+				pInfo->supported = true;
+				data = &zero1i;
+				break;
+			case Ng::ValueBase::Int64Type: //NOTE: This might need to be handled differently ... just remember this 'hack'
 				pInfo->type = GB_ATTRIB_INT;
 				pInfo->entries = 1;
 				pInfo->size = sizeof(int);
@@ -306,6 +314,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 		pInfo = &(attribInfo[ i ]);
 		pInfo->supported = false;
 		pInfo->size = 0;
+		pInfo->use64 = false;
 
 		if (attrName.compare("P") == 0)
 			//Don't treat position as an attribute. This needs to be handled separately.
@@ -318,6 +327,14 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 				pInfo->entries = 1;
 				pInfo->size = sizeof(int);
 				pInfo->supported = true;
+				data = &zero1i;
+				break;			
+			case Ng::ValueBase::Int64Type: //NOTE: This might need to be handled differently ... just remember this 'hack'
+				pInfo->type = GB_ATTRIB_INT;
+				pInfo->entries = 1;
+				pInfo->size = sizeof(int);
+				pInfo->supported = true;
+				pInfo->use64 = true;
 				data = &zero1i;
 				break;
 			case Ng::ValueBase::FloatType:
@@ -416,9 +433,18 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 				{
 					case GB_ATTRIB_INT:
 						{
-							const em::block3i& channelData( pShape->constBlocks1i(channelIndex)(blockIndex) );
-							//Get the Houdini point attribute using the name list we built earlier.
-							attribLut[channelIndex].setI( channelData(ptNum) );
+							if (pInfo->use64)
+							{
+								const em::block3i64& channelData( pShape->constBlocks1i64(channelIndex)(blockIndex) );
+								//Get the Houdini point attribute using the name list we built earlier.
+								attribLut[channelIndex].setI( channelData(ptNum) );
+							}
+							else
+							{
+								const em::block3i& channelData( pShape->constBlocks1i(channelIndex)(blockIndex) );
+								//Get the Houdini point attribute using the name list we built earlier.
+								attribLut[channelIndex].setI( channelData(ptNum) );
+							}
 						}
 						break;
 					case GB_ATTRIB_FLOAT:

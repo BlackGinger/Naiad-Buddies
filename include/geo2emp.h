@@ -219,6 +219,7 @@ class Geo2Emp
 				int size; //Size of a single element for this attribute, i.e., sizeof(int) or sizeof(float)
 				bool supported; //Whether or not this attribute should be copied
 				bool flipvector; //If this is a vector, then flip it
+				bool use64; //A special case flag when converting integers from Naiad to Houdini.
 		};
 
 		/** 
