@@ -128,7 +128,8 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 
 		//Clear the remapped point numbers for this body
 		remappedPtNum.clear();
-		remappedPtNum.resize( _gdp->primitives().entries()*3, -1 );
+		//remappedPtNum.resize( _gdp->primitives().entries()*3, -1 );
+		remappedPtNum.resize( _gdp->points().entries(), -1 );
 
 		//Create a Naiad mesh body
 		pMeshBody = Ng::Factory::createBody("Mesh", bodyName);
@@ -237,7 +238,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 					ppt = pprim->getVertex(2-i).getPt();
 					ptnum = ppt->getNum();
 
-					if (remappedPtNum[ ptnum ] == -1)
+					if (remappedPtNum.at( ptnum ) == -1)
 					{
 						//We have an unmapped point for this body
 						//Push the applicable point attributes into each channel
