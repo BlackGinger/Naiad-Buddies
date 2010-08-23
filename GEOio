@@ -1,3 +1,3 @@
-.p.emp "emp2geo -p %s stdout.bgeo" "geo2emp -p stdin.bgeo %s"
-.m.emp "emp2geo -m %s stdout.bgeo" "geo2emp -m stdin.bgeo %s"
-.f.emp "emp2geo -f %s stdout.bgeo" "geo2emp -f stdin.bgeo %s"
+.p.emp "emp2geo -v 0 -p %s stdout.bgeo" "geo2emp -v 0 -p stdin.bgeo %s"
+.m.emp "emp2geo -v 0 -m %s stdout.bgeo" "geo2emp -v 0 -m stdin.bgeo %s"
+.f.emp "emp2geo -v 0 -f %s stdout.bgeo" "geo2emp -v 0 -f stdin.bgeo %s"
