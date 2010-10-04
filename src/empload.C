@@ -35,7 +35,7 @@
 
 #include <Ni.h>
 #include <NgBody.h>
-#include <NgEmp.h>
+// #include <NgEmp.h>
 #include <NgString.h>
 
 using namespace geo2emp;

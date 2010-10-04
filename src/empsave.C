@@ -31,8 +31,8 @@
 #include <GEO/GEO_AttributeHandleList.h>
 #include <GEO/GEO_TriMesh.h>
 
-#include <NgEmp.h>
-#include <NgFactory.h>
+#include <NgEmpReader.h>
+#include <NbFactory.h>
 #include <NgString.h>
 
 using namespace geo2emp;
@@ -132,7 +132,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 		remappedPtNum.resize( _gdp->points().entries(), -1 );
 
 		//Create a Naiad mesh body
-		pMeshBody = Ng::Factory::createBody("Mesh", bodyName);
+		pMeshBody = Nb::Factory::createBody("Mesh", bodyName);
 		meshBodyList.push_back( pMeshBody );
 	
 		//get the mutable shapes for the mesh body.
@@ -372,7 +372,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 	// add all particles into the first block, and then call "update" on the body so that it automatically
 	// re-sorts them all into their appropriate blocks...
 	
-	pParticleBody = Ng::Factory::createBody("Particle", _bodyName);
+	pParticleBody = Nb::Factory::createBody("Particle", _bodyName);
 		
 	//get the mutable shapes for the mesh body.
 	Ng::ParticleShape& particleShape( pParticleBody->mutableParticleShape() );

@@ -32,7 +32,8 @@
 //Naiad headers
 #include <Ni.h>
 #include <NgBody.h>
-#include <NgEmp.h>
+#include <NbEmpReader.h>
+#include <NbEmpWriter.h>
 #include <NgString.h>
 //Houdini headers
 #include <GEO/GEO_AttributeHandle.h>
@@ -122,7 +123,7 @@ void Geo2Emp::redirect(ostream &os)
 
 Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 {
-	Ng::EmpReader* empReader = NULL;	
+	Nb::EmpReader* empReader = NULL;	
 
 	NiBegin(NI_BODY_ONLY);
 
@@ -130,7 +131,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 	try
 	{
 		Ng::String ngfilen = Ng::String(filen);
-		empReader = new Ng::EmpReader( ngfilen, frame, 0, _framepadding );
+		empReader = new Nb::EmpReader("", ngfilen, "*", frame, 0, _framepadding );
 		numBodies = empReader->bodyCount();
 	}
 	catch( std::exception& e )
@@ -391,8 +392,12 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 
 	NiBegin(NI_BODY_ONLY);
 
+	std::cout << "creating EmpWriter..." << empfile << std::endl;
+
 	//Construct the EMP Writer and add bodies as they get processed.
-	Ng::EmpWriter empWriter(empfile, frame, (1.0f/_fps), _framepadding, time);
+	Nb::EmpWriter empWriter("", empfile, frame, (1.0f/_fps), _framepadding, time);
+
+	std::cout << "Done with emp writer." << std::endl;
 
 	if (_typeMask & BT_MESH)
 	{

@@ -21,7 +21,7 @@
 
 #You shouldn't need to touch anything below this line.
 
-NAIAD_INC=-I$(NAIAD_PATH)/include/Ni -I$(NAIAD_PATH)/include/Ng -I$(NAIAD_PATH)/include/em
+NAIAD_INC=-I$(NAIAD_PATH)/include/Ni -I$(NAIAD_PATH)/include/Ng -I$(NAIAD_PATH)/include/em -I$(NAIAD_PATH)/include/Nb
 
 #Linking should work without libintlc.so.5. If it doesn't then your LD_LIBRARY_PATH is probably set incorrectly.
 #NAIAD_LIBS=-lNi -liomp5 -limf -lsvml -l:libintlc.so.5 -lpthread
