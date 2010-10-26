@@ -4,6 +4,7 @@
 *.bgeo
 *.emp
 *.swo
+*~
 bin/geo2emp
 bin/emp2geo
 tags
