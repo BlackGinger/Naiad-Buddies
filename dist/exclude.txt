@@ -1,0 +1,5 @@
+bin
+houdini
+dist
+GEOio
+.gitignore
