@@ -366,16 +366,161 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 
 	LogInfo() << " ************** Saving Particle Shape ************** " << std::endl;	
 
-	//Create a Naiad particle body
-	//
-	//Note from Marcus: the "quick and dirty" way of doing this is to just to make some small tile-layout,
-	// add all particles into the first block, and then call "update" on the body so that it automatically
-	// re-sorts them all into their appropriate blocks...
 	
 	pParticleBody = Nb::Factory::createBody("Particle", _bodyName);
 		
 	//get the mutable shapes for the mesh body.
 	Ng::ParticleShape& particleShape( pParticleBody->mutableParticleShape() );
+
+	//Created unblocked particle data in Naiad	
+	particleShape.beginBlockChannelData( pParticleBody->mutableLayout() );
+
+	//Start by mapping the Houdini attributes to Naiad attributes
+
+	//Maps houdini attributes to some cached data
+  GEO_AttributeHandleList attribList;
+  GEO_AttributeHandle* pAttr;
+  GB_Attribute* pBaseAttr;
+	std::map<int, AttributeInfo> attrLut;
+	AttributeInfo* pAttrInfo;
+	int attrSize;
+	int numAttribs;
+	const GEO_PointAttribDict *pPtAttrDict;
+
+	attribList.bindDetail(_gdp);
+	
+	//Add all the GDP point attributes to the attribute list
+	attribList.appendAllAttributes( GEO_POINT_DICT );
+
+	numAttribs = attribList.entries();
+
+	LogVerbose() << "Number of hou attributes: " << attribList.entries() << " empty:" << attribList.isEmpty() << std::endl;	
+
+	for (int i = 0; i < numAttribs; i++)
+	{
+		pAttr = attribList[i];
+		pAttrInfo = &( attrLut[i] );
+		pAttrInfo->entries = pAttr->entries();
+
+		LogDebug() << "pAttr: " << pAttr << " - " << std::endl;
+		LogDebug() << "Attribute #" << i << " - " << pAttr->getName() << " [size]  " << attrSize << std::endl;
+
+		//Note: if attribute overrides need to be done, this is probably the place.
+		//The attribute creation code *might* need to be moved to another function...or at least some of it
+		//so that it may be shared by other conversion code
+		if ( pAttr->isP() )
+		{
+			//If we have position, then set up the type manually
+			LogDebug() << "We have a position attribute. Set attributes manually." << std::endl;
+			pAttrInfo->entries = 3;
+			pAttrInfo->type = GB_ATTRIB_VECTOR;
+		}
+		else
+		{
+			//Retrieve attribute info through the standard channels...
+			LogDebug() << "Retrieving attribute data using the Point Dictionary." << std::endl;
+
+			//Now that we now which attribute we want, find it using the GU_Detail object.
+			//TODO: Is there some beter way of doing this???
+			pPtAttrDict = dynamic_cast< const GEO_PointAttribDict* >( _gdp->getAttributeDict( GEO_POINT_DICT ) );
+			pBaseAttr = _gdp->getAttributeDict( GEO_POINT_DICT )->find( pAttr->getName() );
+			pAttrInfo->type = pBaseAttr->getType();
+		}
+
+		LogDebug() << "Switching on attribute type." << std::endl;
+
+	}
+
+
+	//This preprocessor defition was placed here simply because it is only applicable to this code section
+	//and will fail to work anywhere else. Not to be classified under "best coding practices".
+	#define PROCESSCHANNEL_PARTICLE(type1, type2, defaults) \
+	{ \
+		if ( !particleShape.hasChannels ## type1 (empAttrName) ) \
+		{ \
+			std::cout << "creating channel: " <<  empAttrName << std::endl; \
+			particleShape.createChannel ## type1 ( empAttrName, (defaults) ); \
+		} \
+		std::cout << "getting channel index from attr: " <<  empAttrName << std::endl; \
+		pAttrInfo->empIndex = particleShape.channelIndex( empAttrName ); \
+		std::cout << "getting mutable blocks.." << std::endl; \
+		em::block3_array ## type1 &vectorBlocks( particleShape.mutableBlocks ## type1 ( empAttrName ) ); \
+		std::cout << "getting vector data..." << std::endl; \
+		em::block3 ## type2 &vectorData( vectorBlocks(0) ); \
+		std::cout << "Reserving ... " << std::endl; \
+		vectorData.reserve( _gdp->points().entries() ); \
+		pAttrInfo->supported = true; \
+	}
+
+	//Iterate over the BGEO attributes and create corresponding channels in the EMP body
+	//Also, store the channel index for direct lookups when transferring data.
+	for (int i = 0; i < numAttribs; i++)
+	{
+		//Mangle the geo attribute name right now
+		pAttr = attribList[i];
+		std::string empAttrName;
+		if ( _geoAttribMangle.find( pAttr->getName() ) != _geoAttribMangle.end() )
+			empAttrName = _geoAttribMangle[ pAttr->getName() ];
+		else
+			empAttrName = pAttr->getName();
+		LogDebug() << "Mangling name: " << pAttr->getName() << " ==> " << empAttrName << std::endl;
+		pAttrInfo = &( attrLut[i] );
+		pAttrInfo->supported = false;
+		pAttrInfo->flipvector = true; //By default, flip vectors
+
+		if ( std::string(pAttr->getName()).compare("P") == 0 )
+			pAttrInfo->flipvector = false;
+
+		pAttrInfo->empIndex = -1;
+		switch ( pAttrInfo->type )
+		{
+			case GB_ATTRIB_FLOAT:
+				LogDebug() << "Float " << pAttrInfo->entries << std::endl;
+				switch ( pAttrInfo->entries )
+				{
+					case 1:
+						PROCESSCHANNEL_PARTICLE( 1f, f, 0.0f );
+						break;
+					case 3:
+						PROCESSCHANNEL_PARTICLE( 3f, vec3f, em::vec3f(0.0f) );
+						break;
+				}
+				break;
+			case GB_ATTRIB_INT:
+				LogDebug() << "Int " << pAttrInfo->entries << std::endl;
+				break;
+			case GB_ATTRIB_VECTOR:
+				{
+					LogDebug() << "Vector (Vector3)" << std::endl;
+					PROCESSCHANNEL_PARTICLE( 3f, vec3f, em::vec3f(0.0f) );
+					break;
+				}
+			case GB_ATTRIB_MIXED:
+			case GB_ATTRIB_INDEX:
+			default:
+				//Unsupported attribute, so give it a skip.
+				LogDebug() << "Unsupported attribute type for blind copy [" << pAttrInfo->type << "]" << std::endl;
+				continue;
+				break;
+		}
+
+		if ( pAttrInfo->supported )
+			LogDebug() << "Supported Blind Copy! Channel: [" << empAttrName << "] Index: " << pAttrInfo->empIndex << std::endl;
+		else
+		{
+			LogDebug() << "Unsupported Blind Copy! Channel: [" << empAttrName << "]" <<  std::endl;
+			continue;
+		}
+	} //for numAttribs
+
+	particleShape.endBlockChannelData();
+
+	return EC_SUCCESS;
+
+
+
+
+
 	Ng::TileLayout& layout( pParticleBody->mutableLayout() );
 	
 	// PLEASE NOTE: this should really be a box close to a particle, instead of (0,0,0)...(1,1,1) but I was in a hurry!
