@@ -250,7 +250,8 @@ class Geo2Emp
 		/**
 		 * Transfer geo point attributes to corresponding emp channel
 		 */
-		void transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Ng::PointShape& ptShape, const GEO_Point* ppt);
+		void transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Nb::PointShape& shape, const GEO_Point* ppt);
+		void transferParticlePointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Nb::ParticleShape& shape, const GEO_Point* ppt);
 
 		LogLevel _logLevel;
 		/** This is the internal logging stream for the class */

@@ -280,7 +280,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 
 /**************************************************************************************************/
 
-void Geo2Emp::transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Ng::PointShape& ptShape, const GEO_Point* ppt)
+void Geo2Emp::transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Nb::PointShape& ptShape, const GEO_Point* ppt)
 {
 	GEO_AttributeHandle* pAttr;
 	AttributeInfo* pAttrInfo;
@@ -356,6 +356,101 @@ void Geo2Emp::transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& 
 
 /**************************************************************************************************/
 
+void Geo2Emp::transferParticlePointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Nb::ParticleShape& shape, const GEO_Point* ppt)
+{
+	GEO_AttributeHandle* pAttr;
+	AttributeInfo* pAttrInfo;
+
+	for (int i = 0; i < numAttribs; i++)
+	{
+		pAttr = attribList[i];
+		pAttrInfo = &( attrLut[i] );
+
+		if (!pAttrInfo->supported)
+			//Skip unsupported attributes
+			continue;
+
+		pAttr->setElement( ppt );
+		if (! pAttr->isAttributeValid() )
+		{
+			LogDebug() << "Invalid attribute handle on supported attribute!! [" << pAttr->getName() << "]" << std::endl;
+		}
+
+		LogDebug() << "Transferring attribute: " << pAttr->getName() << std::endl;
+
+		switch ( pAttrInfo->type )
+		{
+			case GB_ATTRIB_FLOAT:
+				//LogDebug() << "Transfer Float" << pAttrInfo->entries << "[" << pAttr->getName() << "]" << std::endl;
+				switch ( pAttrInfo->entries )
+				{
+					case 1:
+						{
+							//LogDebug() << "Float1: " << pAttr->getV3() << std::endl;
+							//Get the channel from the point shape
+							em::block3_array1f& vecData = shape.mutableBlocks1f( pAttrInfo->empIndex );
+							//Write the data into the buffer
+							vecData(0).push_back( pAttr->getF() );
+						}
+						break;
+					case 3:
+						{
+							LogDebug() << "Float3: " << pAttr->getV3() << std::endl;
+							//Get the channel from the particle shape
+							em::block3_array3f& vecData = shape.mutableBlocks3f( pAttrInfo->empIndex );
+							//Write the data into the buffer
+							vecData(0).push_back( em::vec3f( pAttr->getF(0), pAttr->getF(1), pAttr->getF(2) ) );
+						}
+						break;
+				}
+				break;
+			case GB_ATTRIB_INT:
+				LogDebug() << "Int " << pAttrInfo->entries << std::endl;
+				switch ( pAttrInfo->entries )
+				{
+					case 1:
+						{
+							//LogDebug() << "Float1: " << pAttr->getV3() << std::endl;
+							//Get the channel from the point shape
+							em::block3_array1i& vecData = shape.mutableBlocks1i( pAttrInfo->empIndex );
+							//Write the data into the buffer
+							vecData(0).push_back( pAttr->getI() );
+						}
+						break;
+					case 3:
+						{
+							LogDebug() << "Int3: " << std::endl;
+							//Get the channel from the particle shape
+							em::block3_array3i& vecData = shape.mutableBlocks3i( pAttrInfo->empIndex );
+							//Write the data into the buffer
+							vecData(0).push_back( em::vec3i( pAttr->getI(0), pAttr->getI(1), pAttr->getI(2) ) );
+						}
+						break;
+				}
+				break;
+			case GB_ATTRIB_VECTOR:
+				{
+					//LogDebug() << "Transfer Vector3 [" << pAttr->getName() << "] " <<  pAttr->getF(0) << "," << pAttr->getF(1) << "," << pAttr->getF(2)<< std::endl;
+					//If we have a vector, we need to invert it (reverse winding).
+					em::block3_array3f& vecData = shape.mutableBlocks3f( pAttrInfo->empIndex );
+					//Write the data into the buffer
+					vecData(0).push_back( em::vec3f( pAttr->getF(0), pAttr->getF(1), pAttr->getF(2) ) );
+					break;
+				}
+			case GB_ATTRIB_MIXED:
+			case GB_ATTRIB_INDEX:
+			default:
+				//Unsupported attribute, so give it a skip.
+				LogDebug() << " !!!!! SHOULDNT GET THIS !!!! Unsupported attribute type for blind copy [" << pAttrInfo->type << "]" << std::endl;
+				continue;
+				break;
+		}
+
+	}
+
+}
+/**************************************************************************************************/
+
 Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 {
 	if (!_gdp)
@@ -372,14 +467,18 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 	//get the mutable shapes for the mesh body.
 	Ng::ParticleShape& particleShape( pParticleBody->mutableParticleShape() );
 
-	//Created unblocked particle data in Naiad	
-	particleShape.beginBlockChannelData( pParticleBody->mutableLayout() );
-
 	//Start by mapping the Houdini attributes to Naiad attributes
+	Ng::TileLayout& layout( pParticleBody->mutableLayout() );
+	
+	// PLEASE NOTE: this should really be a box close to a particle, instead of (0,0,0)...(1,1,1) but I was in a hurry!
+	// so this will make some "dummy" tiles...
+	layout.worldBoxRefine( em::vec3f(0,0,0), em::vec3f(1,1,1),1,false);
 
 	//Maps houdini attributes to some cached data
   GEO_AttributeHandleList attribList;
   GEO_AttributeHandle* pAttr;
+	const GEO_PointList& ptlist = _gdp->points();
+	int numpoints = ptlist.entries();
   GB_Attribute* pBaseAttr;
 	std::map<int, AttributeInfo> attrLut;
 	AttributeInfo* pAttrInfo;
@@ -436,18 +535,10 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 	//and will fail to work anywhere else. Not to be classified under "best coding practices".
 	#define PROCESSCHANNEL_PARTICLE(type1, type2, defaults) \
 	{ \
-		if ( !particleShape.hasChannels ## type1 (empAttrName) ) \
-		{ \
-			std::cout << "creating channel: " <<  empAttrName << std::endl; \
-			particleShape.createChannel ## type1 ( empAttrName, (defaults) ); \
-		} \
-		std::cout << "getting channel index from attr: " <<  empAttrName << std::endl; \
+		particleShape.guaranteeChannel ## type1 (empAttrName); \
 		pAttrInfo->empIndex = particleShape.channelIndex( empAttrName ); \
-		std::cout << "getting mutable blocks.." << std::endl; \
 		em::block3_array ## type1 &vectorBlocks( particleShape.mutableBlocks ## type1 ( empAttrName ) ); \
-		std::cout << "getting vector data..." << std::endl; \
 		em::block3 ## type2 &vectorData( vectorBlocks(0) ); \
-		std::cout << "Reserving ... " << std::endl; \
 		vectorData.reserve( _gdp->points().entries() ); \
 		pAttrInfo->supported = true; \
 	}
@@ -469,7 +560,9 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 		pAttrInfo->flipvector = true; //By default, flip vectors
 
 		if ( std::string(pAttr->getName()).compare("P") == 0 )
+		{	
 			pAttrInfo->flipvector = false;
+		}
 
 		pAttrInfo->empIndex = -1;
 		switch ( pAttrInfo->type )
@@ -488,10 +581,25 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 				break;
 			case GB_ATTRIB_INT:
 				LogDebug() << "Int " << pAttrInfo->entries << std::endl;
+				switch ( pAttrInfo->entries )
+				{
+					case 1:
+						PROCESSCHANNEL_PARTICLE( 1i, i, 0 );
+						break;
+					case 3:
+						PROCESSCHANNEL_PARTICLE( 3i, vec3i, em::vec3i(0.0f) );
+						break;
+				}
 				break;
 			case GB_ATTRIB_VECTOR:
 				{
 					LogDebug() << "Vector (Vector3)" << std::endl;
+					if ( empAttrName.compare("position") == 0) 
+					{ 
+						//If this is position, then set the tile layout
+						layout.pointRefine( particleShape.mutableBlocks3f("position") ); 
+						particleShape.sync( layout ); 
+					}
 					PROCESSCHANNEL_PARTICLE( 3f, vec3f, em::vec3f(0.0f) );
 					break;
 				}
@@ -513,7 +621,14 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 		}
 	} //for numAttribs
 
-	particleShape.endBlockChannelData();
+	//Loop over the points and transfer attributes
+
+	for (int i = 0; i < numpoints; i++)
+	{
+		transferParticlePointAttribs( numAttribs, attribList, attrLut, particleShape, ptlist[i] );
+	}
+
+	pParticleBody->update();
 
 	return EC_SUCCESS;
 
@@ -521,7 +636,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 
 
 
-	Ng::TileLayout& layout( pParticleBody->mutableLayout() );
+	//Ng::TileLayout& layout( pParticleBody->mutableLayout() );
 	
 	// PLEASE NOTE: this should really be a box close to a particle, instead of (0,0,0)...(1,1,1) but I was in a hurry!
 	// so this will make some "dummy" tiles...
@@ -530,9 +645,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 
 	//For the sake of simplicity, copy ALL the points in the GDP across.
 	//It will be much slower if we have to filter out all the non-mesh vertices and then remap the vertices to new point numbers.
-	const GEO_PointList& ptlist = _gdp->points();
 	UT_Vector3 pos, v3;
-	int numpoints = ptlist.entries();
 	GEO_AttributeHandle attr_v, attr_N;
 
 	//The position attribute needs special/explicit treatment
