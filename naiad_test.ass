@@ -1,0 +1,101 @@
+persp_camera
+{
+ name persp
+ position 30 30 30 
+ look_at 0 0 0
+ up 0 0.7 0
+ fov 60
+}
+
+# Water Shader:
+#standard
+#{
+#    name myshader
+#    Kd 0
+#    Kr 1
+#    Fresnel on
+#}
+
+sky
+{
+ name mysky
+ color 1 1 1
+ intensity 1
+
+#or:
+#color myhdri
+#format latlong
+}
+
+# find HDRI's from Debevec's page! http://ict.debevec.org/~debevec/Probes/
+# change format to 
+#image
+#{
+#    name myhdri
+#    filename "awesome.exr"
+#}
+
+options
+{
+ AA_samples 9
+ GI_samples 1
+ xres 640
+ yres 480
+ background mysky
+
+# GI_direct_lighting off
+ GI_hemi_samples 3
+ GI_diffuse_depth 1
+ GI_diffuse_samples 3
+
+ TM_sgamma 2.2
+ TM_lgamma 2.2
+ TM_tgamma 2.2
+
+ camera persp
+ outputs "RGBA RGBA filter testrender"
+}
+
+point_light
+{
+ name mylight
+ position 8 8 -4
+ intensity 0.75
+ color 1 1 1
+ radius 10
+ samples 3
+}
+
+lambert
+{
+ name myshader
+ Kd 0.8
+ Kd_color 1 1 1
+}
+
+standard
+{
+ name myblu
+ Kd 0.4
+ Kd_color 0.1 0.5 1
+ Ks 1
+}
+
+implicit
+{
+ name myimplicit
+ min -10 -10 -10
+ max  10  10  10
+ field distance_field
+ solver levelset
+ shader myblu
+}
+
+naiad_distance
+{
+ name     distance_field
+ empcache /home/marcus/EMP/Unnamed
+ frame    44
+ body     Particle-Liquid
+ channel  fluid-distance
+}
