@@ -1,0 +1,21 @@
+//Naiad Menu
+global proc createNaiadMenu( )
+{
+	global string $gMainWindow; //Main maya menu
+	global string $gNaiadMenu; // Naiad main menu item
+
+	$gNaiadMenu = `menu -p $gMainWindow -label "NaiadBuddyForMaya"`;
+	menuItem -l "CacheSelectedToEMP" -c "NBuddy_CacheWindow()";
+	menuItem -l "Load Mesh(es) From Emp" -c "NBuddy_LoadEmpMeshesUI()";
+	menuItem -l "Load Transform(s) From Emp" -c "NBuddy_LoadEmpTransformsUI()";
+	menuItem -l "CreateEmpLoader" -c "NBuddy_EmpLoaderUI()";
+	menuItem -l "Create Naiad Body Field" -c "NBuddy_CreateNaiadBodyField()";
+	menuItem -l "Create Naiad Body Display" -c "NBuddy_CreateNaiadBodyDisplay()";
+	menuItem -l "Create Naiad Particle System" -c "NBuddy_empBodyQueryWindow( \"Create Particle Emitter System\" , \"NBuddy_CreateNaiadParticleEmissionSystem\"  )";
+}
+
+global proc removeNaiadMenu()
+{
+	global string $gNaiadMenu;
+	deleteUI -menu $gNaiadMenu;
+}

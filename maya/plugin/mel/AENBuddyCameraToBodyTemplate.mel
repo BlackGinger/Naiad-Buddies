@@ -1,0 +1,13 @@
+global proc AENBuddyCameraToBodyTemplate ( string $nodeName )
+{
+editorTemplate -beginScrollLayout;
+	editorTemplate -beginLayout "CameraData"  -collapse 0;
+		editorTemplate -addControl "bodyName";
+		editorTemplate -addControl "inFarClip";
+		editorTemplate -addControl "inNearClip";
+		editorTemplate -addControl "inFocalLength";
+		editorTemplate -addControl "inTransform";
+	editorTemplate -endLayout;	
+	editorTemplate -addExtraControls;
+editorTemplate -endScrollLayout;
+}

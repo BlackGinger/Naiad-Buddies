@@ -1,0 +1,10 @@
+global proc AENBuddyBodyDisplayTemplate ( string $nodeName )
+{
+editorTemplate -beginScrollLayout;
+	AEtransformMain $nodeName;
+	editorTemplate -beginLayout "BodyFieldSettings"  -collapse 0;
+		editorTemplate -callCustom "NBuddy_BodyPopUpMenuNew" "NBuddy_BodyPopUpMenuReplace" "inBody";
+	editorTemplate -endLayout;	
+	editorTemplate -addExtraControls;
+editorTemplate -endScrollLayout;
+}

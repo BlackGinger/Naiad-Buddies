@@ -1,0 +1,22 @@
+
+// Source the nessesary files
+eval ( "source \"naiadForMayaUtils.mel\"" );
+eval ( "source \"naiadMenu.mel\"" );
+eval ( "source \"caching.mel\"" );
+eval ( "source \"empLoad.mel\"" );
+
+// AE template stuff
+eval ( "source \"naiadTemplateUtils.mel\"" );
+eval ( "source \"AENBuddyBodyFieldTemplate.mel\"" );
+eval ( "source \"AENBuddyBodyToMeshTemplate.mel\"" );
+eval ( "source \"AENBuddyCameraToBodyTemplate.mel\"" );
+eval ( "source \"AENBuddyEMPLoaderTemplate.mel\"" );
+eval ( "source \"AENBuddyEMPSaverTemplate.mel\"" );
+eval ( "source \"AENBuddyParticlesToBodyTemplate.mel\"" );
+eval ( "source \"AENBuddySurfaceToBodyTemplate.mel\"" );
+eval ( "source \"AENBuddyBodyDisplayTemplate.mel\"" );
+
+// Create the menu
+createNaiadMenu();
+
+print("Sourced the naiad mel code");

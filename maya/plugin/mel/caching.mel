@@ -1,0 +1,212 @@
+global proc NBuddy_CacheWindow()
+{
+	if ( !`window -exists "NBuddyCacheWindow"` )
+	{
+		window -title "Naiad Cache" -widthHeight 200 55 "NBuddyCacheWindow";
+		columnLayout -adjustableColumn true;
+
+		int $startFrame = `playbackOptions -q -minTime`;
+		int $endFrame =   `playbackOptions -q -maxTime`;
+		string $defaultpath = (`workspace -q -dir`+"data/outEmp.#.emp");
+		
+		rowLayout -numberOfColumns 3 -cw 1 90 -ad3 2;
+			text -label "CacheFolder";
+			textField -text $defaultpath "NBuddyCacheWindow_EmpOutputPathField";
+			symbolButton -c "NBuddy_OpenCacheWindowFolderBrowser" -i "navButtonBrowse.xpm";
+		setParent..;
+		checkBox -v 0 -cc "NBudy_CacheFromNaiadWindowChangeSingleFrame()" -label "CacheOnlyAtCurrentFrame" "NBuddy_CacheFromNaiadWindow_cacheSingleFrame";
+		rowLayout -numberOfColumns 7 -cw 1 90 -cw 2 70 -cw 3 20 -cw 4 40 -cw 5 80 -cw 6 60 -adj 7 "NBuddy_CacheFromNaiadWindow_timeRangeLayout";
+				text -label "Time Range:";
+				intField -value $startFrame "NBuddyCacheWindow_startField";
+				text -label "->";
+				intField -value $endFrame "NBuddyCacheWindow_endField";
+				text -label " @ ";
+				intField -value 1 "NBuddyCacheWindow_overSamplesField";
+				text -label " sample(s)";
+		setParent..;
+		checkBox -v 0 -label "UseTransforms" "NBuddy_CacheFromNaiadWindow_useTransforms";
+		button -label "Cache Selected Objects" -command "NBuddy_CacheFromNaiadWindow()";
+		setParent ..;
+	}
+	showWindow "NBuddyCacheWindow";
+}
+
+global proc NBudy_CacheFromNaiadWindowChangeSingleFrame()
+{
+	string $currentpath =`textField -q -text "NBuddyCacheWindow_EmpOutputPathField"`;
+	int $singleFrame = `checkBox -q -v "NBuddy_CacheFromNaiadWindow_cacheSingleFrame"`;
+
+	if ( $singleFrame )
+	{
+		$currentpath = `substitute "\.#\." $currentpath "\."`;
+		rowLayout -e -enable 0 "NBuddy_CacheFromNaiadWindow_timeRangeLayout";
+	}
+	else 
+	{
+		rowLayout -e -enable 1 "NBuddy_CacheFromNaiadWindow_timeRangeLayout";
+		if ( `match "\.#\." $currentpath` == "" )
+			$currentpath = `substitute "\.emp$" $currentpath "\.#\.emp"`;
+	}
+
+	textField -e -text $currentpath "NBuddyCacheWindow_EmpOutputPathField";
+}
+
+global proc NBuddy_OpenCacheWindowFolderBrowser()
+{
+	fileBrowser( "NBuddy_SetCacheWindowCachePath", "Open", "folder", 4);
+}
+
+global proc int NBuddy_SetCacheWindowCachePath( string $file, string $fileType )
+{
+	//Nifty little swap for people that would like to save on top of an existing sequence.
+	$file = `substitute "\\.[0-9]+\\." $file ".#."`;
+	
+	int $singleFrame = `checkBox -q -v "NBuddy_CacheFromNaiadWindow_cacheSingleFrame"`;
+	if ( `match "\\.#\\."$file` != "" || $singleFrame )
+		textField -e -text $file "NBuddyCacheWindow_EmpOutputPathField";
+	else
+		warning ("For sequences please specify a path containing .#. \n");
+	return true;
+}
+
+//Sourcing this file in the plugin
+global proc NBuddy_CacheObjectsInRange( string $objects[], string $empPath, int $startFrame, int $endFrame , int $overSamples, int $useTransform)
+{
+	//Holder of conversion nodes
+	string $conversionNodes[];
+
+	//Create the empSaver node
+	string $empSaver = `createNode "NBuddyEMPSaver"`;
+
+	//Connect time to the empsaver
+	connectAttr -f time1.outTime ($empSaver+".time");
+	
+	//Set the empSaverNode settings
+	setAttr -type "string" ($empSaver+".empOutputPath") $empPath;
+	
+	//Cycle the selection and attach to the maya node if its a mesh or camera
+	for ( $object in $objects )
+	{	
+		//Get the shapeNode if we dont already
+		string $obj = $object;
+		
+		//If its a transform then select the child shape(assuming there is only one)
+		if ( `objectType $obj` == "transform" )
+		{
+			string $relatives[] = `listRelatives -fullPath -c $object`;
+			for ( $relative in $relatives )
+			{
+				//Little fix for meshes with construction history
+				if ( `objExists( $relative+".intermediateObject" )` == 0 || `getAttr ($relative+".intermediateObject" )` == 0 )
+				{
+					$obj = $relative;
+					break;
+				}
+			}
+		}
+		
+		//Find the next index for the conversion node
+		int $nextConversionNode = `size $conversionNodes`;
+		
+		if ( `objectType $obj` == "mesh" ) // If its a polygon mesh
+		{
+			//Create the conversion node for this type of object
+			$conversionNodes[$nextConversionNode] = `createNode "NBuddySurfaceToBody"`;
+			
+			// Connect the mesh
+			connectAttr -f ($obj+".worldMesh") ($conversionNodes[$nextConversionNode]+".inSurface");
+
+			//sets if we save the points in local space, or make use of the transform
+			setAttr ($conversionNodes[$nextConversionNode]+".useTransform") $useTransform;
+			if ( $useTransform )
+			{
+				connectAttr -f ($obj+".worldMatrix") ($conversionNodes[$nextConversionNode]+".inTransform");
+			}
+		}
+		else if ( `objectType $obj` == "particle" ) // If this is a particle shape
+		{
+			//Create the conversion node for this type of object
+			$conversionNodes[$nextConversionNode] = `createNode "NBuddyParticlesToBody"`;
+			
+			// Connect the mesh
+			connectAttr -f ($obj+".samplerPerParticleData") ($conversionNodes[`size $conversionNodes`]+".inParticles");
+		}
+		else if ( `nodeType -api $obj` == "kEmitter" ) // If this is an emitter then save out the emission
+		{
+			//Create the conversion node for this type of object
+			$conversionNodes[$nextConversionNode] = `createNode "NBuddyParticlesToBody"`;
+			
+			// Connect the mesh
+			connectAttr -f ($obj+".output[0]") ($conversionNodes[`size $conversionNodes`]+".inParticles");
+		}
+		else if ( `objectType $obj` == "camera" ) // If camara then connect to the mesh array
+		{
+			//Create the conversion node for this type of object
+			$conversionNodes[$nextConversionNode] = `createNode "NBuddyCameraToBody"`;
+		
+			// Connect the transform and other data
+			connectAttr -f ($obj+".worldMatrix")  ($conversionNodes[`size $conversionNodes`]+".inTransform");
+			connectAttr -f ($obj+".farClipPlane") ($conversionNodes[`size $conversionNodes`]+".inFarClip");
+			connectAttr -f ($obj+".nearClipPlane")($conversionNodes[`size $conversionNodes`]+".inNearClip");
+			connectAttr -f ($obj+".focalLength")  ($conversionNodes[`size $conversionNodes`]+".inFocalLength");
+		}
+		else
+		{
+			print("MayaToNaiad:: Unsupported object("+$obj+") of type : "+`objectType $obj`+"\n");
+			continue;
+		}
+		
+		//Set the name of the body
+		string $name = `substitute "^|" $object ""`; //if its the root object with a shared name.. then strip the front line..its ugly
+		setAttr -type "string" ($conversionNodes[`size $conversionNodes`]+".bodyName") $name;
+
+		// Find the next available entry in the stream node and connect body from the conversion node
+		int $nextBodyIndex = `getAttr -size ($empSaver+".inBodies")`;		
+		connectAttr -f ($conversionNodes[$nextConversionNode]+".outBody") ($empSaver+".inBodies["+$nextBodyIndex+"]");
+	}
+
+	
+	float $oneOverSamples = 1.0/$overSamples;
+	// Loop the frames and trigger the save	
+	for ( $i=$startFrame; $i<=$endFrame; $i++ )
+	{	
+		if ($i==$endFrame)
+			$overSamples=1;
+			
+		for ($j=0; $j<$overSamples; $j++ )
+		{
+			// Set the frame
+			currentTime -u true ($i+$j*$oneOverSamples);
+			setAttr ($empSaver+".timeStep") $j;
+			refresh -f;
+			print("Frame: "+$i+ " timestep: "+$j+" currentTime:"+($i+$j*$oneOverSamples)+"\n");
+
+			//Trigger the empSaver so that it saves out the file
+			$trig = `getAttr ($empSaver+".outTrigger")`;
+		}
+	}
+	
+	// Cleanup. Delete the empSaver, bodiesToStream and the conversion nodes
+	delete $conversionNodes $empSaver;
+}
+
+global proc NBuddy_CacheFromNaiadWindow( )
+{
+	string $outputPath = `textField -q -text "NBuddyCacheWindow_EmpOutputPathField"`;
+	int $start = `intField -q -value "NBuddyCacheWindow_startField"`;
+	int $end = `intField -q -value "NBuddyCacheWindow_endField"`;
+	int $oversamples = `intField -q -value "NBuddyCacheWindow_overSamplesField"`;
+	int $useTransform = `checkBox -q -v "NBuddy_CacheFromNaiadWindow_useTransforms"`;
+	int $singleFrame = `checkBox -q -v "NBuddy_CacheFromNaiadWindow_cacheSingleFrame"`;
+	
+	//Get the selection before anything else
+	string $selList[] = `ls -sl`;
+	
+	if ( $singleFrame )
+	{
+		$start = `currentTime -q`;
+		$end = `currentTime -q`;		
+	}
+
+	NBuddy_CacheObjectsInRange( $selList, $outputPath , $start , $end , $oversamples, $useTransform );
+}

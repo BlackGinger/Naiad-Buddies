@@ -1,0 +1,35 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Naiad-Buddy For Maya Setup</title>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<link rel="stylesheet" href="../../../naiad-docs.css" type="text/css">
+</head>
+<body>
+<h1>Naiad-Buddy for Maya: MayaPlugin Menu</h1>
+<h2>CacheSelectedToEMP</h2>
+<p>Will bring up a window that allows you to set a path and a framerange. 
+When the user starts the caching it will take all the selected objects in the scene, connect fitting conversion nodes to it and then gather all the bodies into an empSaver. 
+It will then go though the framerange triggering the empSaver</p>
+
+<h2>Load Mesh(es) From Emp</h2>
+<p>
+Will use the naiadEMPInfo Command to get informations about type and name of the bodies. 
+The window that pops up will use that info to generate a list of what can be loaded from the file. 
+Once the selection is done the user can tell it to import them and a DG network will be setup and the maya meshes will be there.
+If the UseFrameRange option is specified, then it will set the found framerange onto the EmpLoader, and it will then clamp all frame values inside that range when loading files
+</p>
+
+<h2>CreateEmpLoader</h2>
+<p>Brings up a file UI and creates a EmpLoader with the given path</p>
+
+<h2>CreateNaiadBodyField</h2>
+<p>Creates a naiad body field, and if particles are selected the field will be attached</p>
+
+<h2>CreateNaiadBodyDisplay</h2>
+<p>Creates a locator node capable of displaying Naiad Bodies(sofar only meshes are supported)</p>
+
+<hr></div>
+<font size="1" face="arial">Copyright (c) Exotic Matter AB 2009-2010. All rights reserved.</font>
+</body>
+</html>

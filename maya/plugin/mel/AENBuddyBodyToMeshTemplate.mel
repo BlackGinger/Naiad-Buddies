@@ -1,0 +1,9 @@
+global proc AENBuddyBodyToMeshTemplate ( string $nodeName )
+{
+editorTemplate -beginScrollLayout;
+	editorTemplate -beginLayout "BodyToMeshSettings"  -collapse 0;
+		editorTemplate -callCustom "NBuddy_BodyPopUpMenuNew" "NBuddy_BodyPopUpMenuReplace" "inBody";
+	editorTemplate -endLayout;	
+	editorTemplate -addExtraControls;
+editorTemplate -endScrollLayout;
+}

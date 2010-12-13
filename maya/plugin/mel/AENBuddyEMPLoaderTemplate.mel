@@ -1,0 +1,16 @@
+global proc AENBuddyEMPLoaderTemplate ( string $nodeName )
+{
+editorTemplate -beginScrollLayout;
+	editorTemplate -suppress "outBodies";
+	editorTemplate -suppress "outBodyNames";
+
+	editorTemplate -beginLayout "Emp Input Settings" -collapse 0;
+		editorTemplate -addControl "empInputPath";
+		editorTemplate -addControl "frame";
+		editorTemplate -addControl "startFrame";
+		editorTemplate -addControl "endFrame";
+		editorTemplate -addControl "framePadding";
+	editorTemplate -endLayout;
+	editorTemplate -addExtraControls;
+editorTemplate -endScrollLayout;
+}

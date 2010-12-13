@@ -1,0 +1,9 @@
+// Remove the naiad Menu
+removeNaiadMenu();
+
+//Remove all the naiad windows if they exist
+if ( `window -exists "NBuddyEmpLoaderWindow"` )
+	deleteUI -window "NBuddyEmpLoaderWindow";
+
+if ( `window -exists "NBuddyCacheWindow"` )
+	deleteUI -window "NBuddyCacheWindow";

@@ -1,0 +1,25 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Naiad-Buddy For Maya Setup</title>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<link rel="stylesheet" href="../../naiad-docs.css" type="text/css">
+</head>
+<body>
+
+<p> The easiest way to enable all features of Naiad Buddy For Maya is to source the config files.</p>
+<li>For Bash : source $NAIAD_PATH/config/naiadForMayaConfig_bash</li>
+<li>For Csh/Tcsh : source $NAIAD_PATH/config/naiadForMayaConfig_csh</li>
+
+Though in more detail the requirements are these:
+pdcToEmp application:
+<li>add the $NAIAD_PATH/lib to the LD_LIBRARY_PATH enviroment variable</li>
+Maya Plugin:
+<li>add the $NAIAD_PATH/lib to the LD_LIBRARY_PATH enviroment variable</li>
+<li>add the $NAIAD_PATH/maya/config path to the MAYA_MODULE_PATH enviroment variable</li>
+<p>Maya then uses the $NAIAD_PATH/maya/config/NaiadBuddyForMayaModule.txt file to determine the location of the scripts, icons and plugin</p>
+<p>To then load the plugin inside maya do one of the following</p>
+<li>Load it via script editor(MEL) by typing: loadPlugin("naiadForMaya.so")</li>
+<li>MayaMainMenu->window->Settings/Preferences->Plugin Loader (plugin should be listed there)</li>
+<p>If loaded succesfully you should see the NaiadForMaya menu in the main Maya Menu on the right hand side.</p>
+</body>

@@ -1,0 +1,12 @@
+global proc AENBuddyEMPSaverTemplate ( string $nodeName )
+{
+editorTemplate -beginScrollLayout;
+	editorTemplate -suppress "inBodies";
+	editorTemplate -beginLayout "Emp output Settings" -collapse 0;
+		editorTemplate -addControl "empOutputPath";
+		editorTemplate -addControl "framePadding";
+		editorTemplate -addControl "time";
+	editorTemplate -endLayout;
+	editorTemplate -addExtraControls;
+editorTemplate -endScrollLayout;
+}

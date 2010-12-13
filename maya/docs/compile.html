@@ -1,0 +1,16 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Naiad-Buddy For Maya Setup</title>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<link rel="stylesheet" href="../../naiad-docs.css" type="text/css">
+</head>
+<body>
+Besides the standard Naiad compilations setup the only thing nessesary for
+NaiadBuddy for Maya is to set 
+set(MAYA_INSTALL_PATH "/usr/autodesk/maya2010-x64")
+(line 21 in the maya/naiadBuddy/plugin/src/CMakeLists.txt file)
+
+The pdcConverter does not link to maya at all so nothing else is nessesary
+
+</body>

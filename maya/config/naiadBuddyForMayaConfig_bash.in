@@ -1,0 +1,20 @@
+#set the maya module path
+if [[ ! -n $MAYA_MODULE_PATH  ]]; then 
+export MAYA_MODULE_PATH="" 
+fi
+export MAYA_MODULE_PATH=@CMAKE_INSTALL_PREFIX@/maya/config:$MAYA_MODULE_PATH
+
+
+# Add the Naiad libs to the LD_LIBRARY_PATH path
+if [[ -n $NAIAD_PATH  ]]; then 
+	if [[ ! -n LD_LIBRARY_PATH  ]]; then 
+		export LD_LIBRARY_PATH=$NAIAD_PATH/lib
+	else
+		export LD_LIBRARY_PATH=$NAIAD_PATH/lib:$LD_LIBRARY_PATH
+	fi
+else
+	echo "NAIAD_PATH is not set!"
+fi
+
+#set the path for the executable programs
+export PATH=@CMAKE_INSTALL_PREFIX@/maya/bin:$PATH
