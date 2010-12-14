@@ -11,11 +11,15 @@ Since you will be compiling and building the Naiad Buddy yourself, you will need
 * the boost c++ library
 * git
 
-Each Linux distribution handles installation of these tools slightly differently.  We will show how to install these using Debian/Ubuntu; for other Linux distros, please consult Google.
+These are very common tools you can find on any flavor of Linux.
+
+Unfortunately, each Linux distribution handles the exact method of installation slightly differently.  We will show how to install these using Ubuntu:
 
 {{{
 sudo apt-get install git-core gcc g++ cmake libboost-dev -y
 }}}
+
+(for installing these common build tools on other Linux distros, please consult Google).
 
 Next, you have to set up the environment for the plugin manually by editing the appropriate shell resource configuration file.
 
@@ -214,5 +218,3 @@ If you receive compiler errors when running the script, or the {{{make install}}
 * Ensure that the $NAIAD_PATH environment variable is correct.  You can check it by typing: {{{$ echo $NAIAD_PATH}}} and you should see the correct Naiad installation path appear.
 
 Once you have corrected your paths as shown above, you can just re-run the installation script.
-
-----
