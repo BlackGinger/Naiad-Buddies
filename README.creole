@@ -1,10 +1,8 @@
 
 
-= Installing the Build Tools And Configuring Your Environment
+= 1.0 Installing the Build Tools And Configuring Your Environment
 
-
-
-You only need to do this once.
+You only need to follow the instructions in this section 1.0 once.
 
 Since you will be compiling and building the Naiad Buddy yourself, you will need the following tools and utilities installed:
 
@@ -31,7 +29,7 @@ $ echo $SHELL
 
 if you see /bin/bash - then you are using a bash shell.  Otherwise it's tcsh/csh.
 
-==Bash Configuration
+== 1.1 Bash Configuration
 
 Please edit the .bashrc configuration file to add the necessary environment variables.  The .bashrc configuration file is a text file which is located in your home directory.  You can use any text editor (such as gedit) to edit the .bashrc file:
 
@@ -46,7 +44,7 @@ export MAYA_MODULE_PATH=$NAIAD_PATH/maya/config:$MAYA_MODULE_PATH
 source $NAIAD_PATH/config/naiadBuddyForMayaConfig_bash
 }}}
 
-==tcsh/csh Configuration
+== 1.2 tcsh/csh Configuration
 
 If you are NOT using a bash shell, you need to edit the .cshrc configuration file, which is located in your home directory.  You can use any text editor (such as gedit) to edit the .cshrc file:
 
@@ -61,7 +59,7 @@ setenv MAYA_MODULE_PATH $NAIAD_PATH/maya/config:$MAYA_MODULE_PATH
 source $NAIAD_PATH/config/naiadBuddyForMayaConfig_csh
 }}}
 
-== Verifying Your Configuration
+== 1.3 Verifying Your Configuration
 
 Once the environment has been set up, Maya will use the $NAIAD_PATH/maya/config/NaiadBuddyForMayaModule.txt file to determine the location of the scripts, icons and the plugin binary.
 
@@ -81,11 +79,11 @@ That should print the correct path relative to your Naiad installation directory
 
 
 
-= Compiling And Installing Naiad Buddy for Maya
+= 2.0 Compiling And Installing Naiad Buddy for Maya
 
+You need to do this every time a new version of Naiad is released.  
 
-
-You need to do this every time a new version of Naiad is released.  For quick and easy installation procedure, please skip to the section called **Automatic Installation Script** at the end of this README.
+For quicker and easier installation procedure, please skip to the section called **Automatic Installation Script** at the end of this README.
 
 **Basic Installation Procedure**
 
@@ -121,7 +119,7 @@ cd ..
 sudo rm -rf build
 }}}
 
-==Example: Installation for Maya 2010 and 2011
+== 2.1 Example: Installation for Maya 2010 and 2011
 
 Let's say we want to put the buddy source code in our home directory under the folder {{{~/naiad-buddy-maya-src}}}.  Then, the first step is:
 
@@ -155,7 +153,7 @@ cd ..
 sudo rm -rf build
 }}}
 
-==Automatic Installation Script
+== 2.2 Automatic Installation Script
 
 Creating an automatic installation script for this is easy, and eliminates the necessity of running all those commands every time Exotic Matter releases a new version of Naiad.
 
@@ -208,7 +206,7 @@ And that's it!  You're done.  Every time you need to install the latest Naiad Bu
 $ ~/naiadBuddyForMayaInstall_bash
 }}}
 
-==Troubleshooting
+== 2.3 Troubleshooting
 
 If you receive compiler errors when running the script, or the {{{make install}}} command in the shell, please do the following:
 
