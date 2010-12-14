@@ -1,7 +1,7 @@
 #
-# CMAKE project for Exotic Matter's Naiad Buddy Open-Source Project
+# CMAKE project for Exotic Matter's Naiad Buddy For Maya Open-Source Project
 #
-# Copyright (c) 2009 Exotic Matter AB.  All rights reserved.
+# Copyright (c) 2010 Exotic Matter AB.  All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -37,20 +37,16 @@
 cmake_minimum_required(VERSION 2.6)
 cmake_policy(VERSION 2.6)
 
-# This is the top-level Naiad Buddy project
-
-project(NAIADBUDDY)
+project(NAIAD_BUDDY_FOR_MAYA)
 
 include_directories   (.
                        $ENV{NAIAD_PATH}/include
                        $ENV{NAIAD_PATH}/include/em
                        $ENV{NAIAD_PATH}/include/Ng
                        $ENV{NAIAD_PATH}/include/Nb
-                       $ENV{NAIAD_PATH}/include/Ni
-                       /usr/include/nvidia)
+                       $ENV{NAIAD_PATH}/include/Ni)
 
-link_directories      ($ENV{NAIAD_PATH}/lib
-                       /usr/lib64/nvidia)
+link_directories      ($ENV{NAIAD_PATH}/lib)
 
 
 if ($ENV{EM_COMPILER} STREQUAL "intel")
@@ -69,24 +65,37 @@ set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -m64 -fexceptions -fno-strict-aliasi
 
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
 
-# LINUX
 
-if ($ENV{EM_PLAT} STREQUAL "LINUX")
+# UNIX/LINUX
+
+if (UNIX)
 set (DEBUG_COMP_FLAGS "${DEBUG_COMP_FLAGS} -DLINUX")
-endif ($ENV{EM_PLAT} STREQUAL "LINUX")
+set (RELEASE_COMP_FLAGS "${RELEASE_COMP_FLAGS} -DLINUX")
+endif (UNIX)
 
-# OSX
 
-if ($ENV{EM_PLAT} STREQUAL "OSX")
-set (DEBUG_COMP_FLAGS "${DEBUG_COMP_FLAGS} -DOSX")
-endif ($ENV{EM_PLAT} STREQUAL "OSX")
+# APPLE
+
+if (APPLE)
+set (DEBUG_COMP_FLAGS "${DEBUG_COMP_FLAGS} -DAPPLE")
+set (RELEASE_COMP_FLAGS "${RELEASE_COMP_FLAGS} -DAPPLE")
+endif (APPLE)
+
+# WINDOWS
+
+if (WIN32)
+set (DEBUG_COMP_FLAGS "${DEBUG_COMP_FLAGS} -DWINDOWS")
+set (RELEASE_COMP_FLAGS "${RELEASE_COMP_FLAGS} -DWINDOWS")
+endif (WIN32)
+
 
 # MAYA Versions
 
-if(MAYA_VERSION)
+if (MAYA_VERSION)
 set (DEBUG_COMP_FLAGS "${DEBUG_COMP_FLAGS} -DMAYA_VERSION=${MAYA_VERSION}")
 set (RELEASE_COMP_FLAGS "${RELEASE_COMP_FLAGS} -DMAYA_VERSION=${MAYA_VERSION}")
-endif(MAYA_VERSION)
+endif (MAYA_VERSION)
+
 
 # Set the C/C++ compiler flags
 
@@ -94,17 +103,7 @@ set(CMAKE_C_FLAGS_DEBUG ${DEBUG_COMP_FLAGS})
 set(CMAKE_CXX_FLAGS_DEBUG ${DEBUG_COMP_FLAGS})
 set(CMAKE_C_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
 set(CMAKE_CXX_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "${RELEASE_COMP_FLAGS} -O2 -g")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${RELEASE_COMP_FLAGS} -O2 -g")
 
 # The source directories we are building
 
-if (EM_BUILD_NAIADBUDDY STREQUAL "JUST_MAYA")
-
 subdirs(maya)
-
-else (EM_BUILD_NAIADBUDDY STREQUAL "JUST_MAYA")
-
-subdirs(maya mentalray renderman arnold)
-
-endif (EM_BUILD_NAIADBUDDY STREQUAL "JUST_MAYA")

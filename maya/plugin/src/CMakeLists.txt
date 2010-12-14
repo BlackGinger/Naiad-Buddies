@@ -1,14 +1,9 @@
-cmake_minimum_required(VERSION 2.6)
-cmake_policy(VERSION 2.6)
-
 project(NAIADBUDDY_MAYA_PLUGIN_LIB)
 
 set(CMAKE_VERBOSE_MAKEFILE 1)
 
-#set(LIBRARY_OUTPUT_PATH ../lib)
-
-include_directories   (.. $ENV{MAYA_INSTALL_PATH}/include)
-link_directories      ($ENV{MAYA_INSTALL_PATH}/lib )
+include_directories   (.. ${MAYA_INSTALL_PATH}/include)
+link_directories      (${MAYA_INSTALL_PATH}/lib )
 
 add_definitions(-DBits64_ -D_BOOL -DFUNCPROTO -DREQUIRE_IOSTREAM -D_GNU_SOURCE )
 add_definitions(-DLINUX -DUNIX -DLINUX_64)

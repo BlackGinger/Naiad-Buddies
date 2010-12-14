@@ -1,6 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-cmake_policy(VERSION 2.6)
-
 project(NAIADBUDDY_MAYA_PLUGIN_DOCS)
 
 FIND_PACKAGE(Doxygen)
