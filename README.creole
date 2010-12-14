@@ -1,8 +1,10 @@
-If this is the first time you're going to use the Naiad Buddy for Maya module, you will need to set some things up.
 
-**Please note that you only need to follow the instructions on this page once -- you should not do these things every time you get a new version of the Naiad Buddy for Maya module.**
 
-== Installing the Build Tools
+= Installing the Build Tools And Configuring Your Environment
+
+
+
+You only need to do this once.
 
 Since you will be compiling and building the Naiad Buddy yourself, you will need the following tools and utilities installed:
 
@@ -17,8 +19,6 @@ Each Linux distribution handles installation of these tools slightly differently
 sudo apt-get install git-core gcc g++ cmake libboost-dev -y
 }}}
 
-== Configuring the Environment for Naiad Buddy for Maya
-
 Next, you have to set up the environment for the plugin manually by editing the appropriate shell resource configuration file.
 
 The first step is to determine which shell you are using; there are two main types: bash and tcsh/csh. 
@@ -31,7 +31,7 @@ $ echo $SHELL
 
 if you see /bin/bash - then you are using a bash shell.  Otherwise it's tcsh/csh.
 
-===Bash Configuration
+==Bash Configuration
 
 Please edit the .bashrc configuration file to add the necessary environment variables.  The .bashrc configuration file is a text file which is located in your home directory.  You can use any text editor (such as gedit) to edit the .bashrc file:
 
@@ -46,7 +46,7 @@ export MAYA_MODULE_PATH=$NAIAD_PATH/maya/config:$MAYA_MODULE_PATH
 source $NAIAD_PATH/config/naiadBuddyForMayaConfig_bash
 }}}
 
-===tcsh/csh Configuration
+==tcsh/csh Configuration
 
 If you are NOT using a bash shell, you need to edit the .cshrc configuration file, which is located in your home directory.  You can use any text editor (such as gedit) to edit the .cshrc file:
 
@@ -78,11 +78,15 @@ $ echo $MAYA_MODULE_PATH
 }}}
 
 That should print the correct path relative to your Naiad installation directory.  If it does not, then you've made a mistake.
-----
 
 
-Prev: [[First Time Setup (Linux)]]  |  Back To Top: [[Introduction]]  
-----
+
+= Compiling And Installing Naiad Buddy for Maya
+
+
+
+You need to do this every time a new version of Naiad is released.  For quick and easy installation procedure, please skip to the section called **Automatic Installation Script** at the end of this README.
+
 **Basic Installation Procedure**
 
 We assume the following:
