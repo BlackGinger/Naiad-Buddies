@@ -215,6 +215,6 @@ $ ~/naiadBuddyForMayaInstall_bash
 If you receive compiler errors when running the script, or the {{{make install}}} command in the shell, please do the following:
 
 * Ensure that {{{-DMAYA_INSTALL_PATH=maya_path}}} is correct; in other words, that maya_path is substituted for the correct absolute path to your Maya installation directory.
-* Ensure that the $NAIAD_PATH environment variable is correct.  You can check it by typing: {{{$ echo $NAIAD_PATH}}} and you should see the correct Naiad installation path appear.
+* Ensure that the $NAIAD_PATH environment variable is correct.  You can check it by typing: {{{echo $NAIAD_PATH}}} in a shell, and you should see the correct Naiad installation path appear.
 
 Once you have corrected your paths as shown above, you can just re-run the installation script.
