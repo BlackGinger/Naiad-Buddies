@@ -2,7 +2,7 @@
 
 = 1.0 Installing the Build Tools And Configuring Your Environment
 
-You only need to follow the instructions in this section 1.0 once.
+You only need to follow the instructions in this section 1.0 once (the first time you want to use the Naiad Buddy for Maya).  **However, please follow the instructions in section 2.0 every time you need to update the Naiad Buddy for Maya due to a new Naiad release.**
 
 Since you will be compiling and building the Naiad Buddy yourself, you will need the following tools and utilities installed:
 
