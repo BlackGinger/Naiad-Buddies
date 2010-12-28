@@ -2,8 +2,8 @@ project(NAIADBUDDY_MAYA_PLUGIN_LIB)
 
 set(CMAKE_VERBOSE_MAKEFILE 1)
 
-include_directories   (.. ${MAYA_INSTALL_PATH}/include)
-link_directories      (${MAYA_INSTALL_PATH}/lib )
+include_directories   (.. $MAYA_INSTALL_PATH/include)
+link_directories      ($MAYA_INSTALL_PATH/lib )
 
 add_definitions(-DBits64_ -D_BOOL -DFUNCPROTO -DREQUIRE_IOSTREAM -D_GNU_SOURCE )
 add_definitions(-DLINUX -DUNIX -DLINUX_64)
