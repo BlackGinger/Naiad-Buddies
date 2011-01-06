@@ -25,7 +25,8 @@ NAIAD_INC=-I$(NAIAD_PATH)/include/Ni -I$(NAIAD_PATH)/include/Ng -I$(NAIAD_PATH)/
 
 #Linking should work without libintlc.so.5. If it doesn't then your LD_LIBRARY_PATH is probably set incorrectly.
 #NAIAD_LIBS=-lNi -liomp5 -limf -lsvml -l:libintlc.so.5 -lpthread
-NAIAD_LIBS=-lNi -liomp5 -limf -lsvml -lpthread
+#NAIAD_LIBS=-lNi -liomp5 -limf -lsvml -lpthread
+NAIAD_LIBS=-lNi -liomp5 -lpthread
 
 LIBDIRS=-L$(HFS)/python/lib -L$(NAIAD_PATH)/lib -Wl,-rpath=$(HFS)/dsolib
 INCDIRS= -O2 -Iinclude -Ithirdparty/anyoption -Ithirdparty/pystring -I$(HFS)/toolkit/include $(NAIAD_INC)
