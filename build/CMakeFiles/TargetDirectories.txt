@@ -1,0 +1,2 @@
+/home/marcus/naiad-buddy-maya-src/build/maya/plugin/docs/CMakeFiles/html.dir
+/home/marcus/naiad-buddy-maya-src/build/maya/plugin/src/CMakeFiles/naiadBuddyForMaya2011.dir

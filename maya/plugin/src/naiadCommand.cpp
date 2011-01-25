@@ -79,8 +79,13 @@ MStatus naiadCmd::doIt( const MArgList& args )
         {
             int level;
             argData.getFlagArgument( "-vl", 0, level);
-            NiSetVerboseLevel((NtVerboseLevel)level);
-            //Set verbose level
+	    switch(level) {
+	        case 0: NiSetVerboseLevel(NI_SILENT); break;
+	        case 1: NiSetVerboseLevel(NI_QUIET); break;
+	        case 2: NiSetVerboseLevel(NI_NORMAL); break;
+	        case 3:
+	        default: NiSetVerboseLevel(NI_VERBOSE); break;
+	    }
         }
     }
     else if ( argData.isFlagSet("-bpi") )

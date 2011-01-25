@@ -38,7 +38,8 @@
 #include "naiadBodyDataType.h"
 #include "naiadMayaIDs.h"
 
-#include <NgEmpReader.h>
+#include <NbFilename.h>
+#include <NbEmpReader.h>
 
 // Function Sets
 //
@@ -105,14 +106,15 @@ MStatus NBuddyEMPLoaderNode::compute( const MPlug& plug, MDataBlock& data )
         Nb::EmpReader * empReader = NULL;
 
         try {
-            empReader = new Nb::EmpReader(
-                "",
-                inputPath.asChar(), // absolute fullpath of emp
-                "*",                // read all bodies
-                frameNr,            // frame
-                0,                  // timestep
-                numPad              // zero-padding
-                );
+	    const Nb::String empFullname=
+	        Nb::sequenceToFilename(
+	            "",                 // ignore project path
+		    inputPath.asChar(), // absolute fullpath of emp
+		    frameNr,            // frame
+		    0,                  // timestep
+		    numPad);            // zero-padding
+
+	    empReader = new Nb::EmpReader(empFullname,"*");
             numBodies = empReader->bodyCount();
         }
         catch(std::exception& e) {
@@ -144,7 +146,7 @@ MStatus NBuddyEMPLoaderNode::compute( const MPlug& plug, MDataBlock& data )
                 NM_CheckMStatus( status, "Failed to get naiadBodyData handle from MFnPluginData");
 
                 try {
-                    newData->nBody = Nb::BodyCowPtr(empReader->exportBody(i));
+                    newData->nBody = Nb::BodyCowPtr(empReader->cloneBody(i));
 		    newData->bodyTimeIndex = frameNr/24.0f;
 		    std::cout << "Loading frame: " << frameNr << "set frameTime to be : " << newData->bodyTimeIndex << std::endl;
                     channelNames += MString(newData->nBody->name().c_str() ) + MString(" ");

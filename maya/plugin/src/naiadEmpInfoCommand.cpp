@@ -69,7 +69,7 @@ MStatus naiadEmpInfoCmd::doIt( const MArgList& args )
 
     // Load the emp
     Nb::EmpReader* empReader = 
-        new Nb::EmpReader("",empFilePath.asChar(),"*",0,0,0);
+        new Nb::EmpReader(empFilePath.asChar(),"*");
     unsigned int numBodies = empReader->bodyCount();
 
     bool getBodyNames = argData.isFlagSet("-bodyNames");
