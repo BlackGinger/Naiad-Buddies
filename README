@@ -8,7 +8,7 @@ The project home can be found at: http://code.google.com/p/geo2emp/
 The source has been tested with:
 Gentoo 64bit, GCC 4.4.4
 Houdini 11.0.458 (www.sidefx.com)
-Naiad 0.4.2 (www.exoticmatter.com)
+Naiad 0.5.0 (www.exoticmatter.com)
 
 This library is *not* backwards compatible with Naiad. It *may* work with, or compile against, previous versions but proper functionality is not
 guaranteed.
@@ -89,4 +89,4 @@ Contributors
 ------------
 *) Van Aarde Krynauw
 *) Morné Chamberlain
-
+*) Marcus Nordenstam
