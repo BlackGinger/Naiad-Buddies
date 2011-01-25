@@ -29,15 +29,18 @@
 
 #include <stdio.h>
 #include <iostream>
+
 //Naiad headers
-#include <Ni.h>
-#include <NgBody.h>
+#include <NbBody.h>
+#include <NbFilename.h>
 #include <NbEmpReader.h>
 #include <NbEmpWriter.h>
-#include <NgString.h>
+#include <NbString.h>
+
 //Houdini headers
 #include <GEO/GEO_AttributeHandle.h>
 #include <GEO/GEO_PrimPoly.h>
+
 //Thirdparty headers
 #include "pystring.h"
 
@@ -125,13 +128,20 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 {
 	Nb::EmpReader* empReader = NULL;	
 
-	NiBegin(NI_BODY_ONLY);
+        // Initialize the Naiad Base library only (we don't need the full
+        // Naiad Interface here - besides, it could consume an expensive
+        // Naiad software license! :-)
+        Nb::begin();
 
 	unsigned int numBodies = 0;
 	try
 	{
-		Ng::String ngfilen = Ng::String(filen);
-		empReader = new Nb::EmpReader("", ngfilen, "*", frame, 0, _framepadding );
+		Nb::String ngfilen = Nb::String(filen);
+                const Nb::String empFilename = 
+                    Nb::sequenceToFilename(
+                        "", ngfilen, frame, 0, _framepadding
+                        );
+		empReader = new Nb::EmpReader(empFilename, "*");
 		numBodies = empReader->bodyCount();
 	}
 	catch( std::exception& e )
@@ -144,8 +154,8 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 	}
 
 	//Run through each body and process them according to their shape type.
-	const Ng::Body* pBody = 0;
-	Ng::Body::ConstShapeMapIter shapeIt;
+	const Nb::Body* pBody = 0;
+	Nb::Body::ConstShapeMapIter shapeIt;
 	for (int i = 0; i < numBodies; i++)
 	{
 		pBody = empReader->constBody(i);
@@ -175,7 +185,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 		}
 	}
 
-	NiEnd();
+        Nb::end();
 
 	if ( empReader )
 		delete empReader;
@@ -390,7 +400,10 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 	LogDebug() << "paste count: " << _gdp->pasteCount() << std::endl;
 	LogDebug() << "quadric count: " << _gdp->quadricCount() << std::endl;
 
-	NiBegin(NI_BODY_ONLY);
+        // Initialize the Naiad Base library only (we don't need the full
+        // Naiad Interface here - besides, it could consume an expensive
+        // Naiad software license! :-)
+        Nb::begin();
 
 	std::cout << "creating EmpWriter..." << empfile << std::endl;
 
@@ -404,16 +417,16 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 		LogVerbose() << "Writing Mesh to EMP!" << std::endl;	
 		//Attempt to extract meshes from the current GDP
 		//If we have more than just particle primitives it means that we most likely have a mesh that we're dealing with
-		Ng::Body* pBody = 0;
-		std::list<Ng::Body*> bodyList;
+		Nb::Body* pBody = 0;
+		std::list<Nb::Body*> bodyList;
 		saveMeshShape( bodyList );
-		for (std::list<Ng::Body*>::iterator bodyIt = bodyList.begin(); bodyIt != bodyList.end(); bodyIt++)
+		for (std::list<Nb::Body*>::iterator bodyIt = bodyList.begin(); bodyIt != bodyList.end(); bodyIt++)
 		{
 			if (*bodyIt)
 			{
 				//Make sure all the emp particles are sorted into the correct blocks
 				(*bodyIt)->update();
-				empWriter.write( (*bodyIt), Ng::String("*/*"));
+				empWriter.write( (*bodyIt), Nb::String("*/*"));
 
 				//Question: Can the bodies be deleted directly after a write, or does the writer need to be closed first?
 				delete (*bodyIt);
@@ -427,13 +440,13 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 		//Attempt to extract particles from the current GDP
 		//Note that all points in the GDP will be copied into an EMP as particles, regardless of whether they 
 		// are Houdini particles or not. 		
-		Ng::Body* pBody = 0;
+		Nb::Body* pBody = 0;
 		saveParticleShape( pBody );
 		if (pBody)
 		{
 			//Make sure all the emp particles are sorted into the correct blocks
 			pBody->update();
-			empWriter.write(pBody, Ng::String("*/*"));
+			empWriter.write(pBody, Nb::String("*/*"));
 
 			//Question: Can the bodies be deleted directly after a write, or does the writer need to be closed first?
 			delete pBody;
@@ -449,7 +462,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 	//All done
 	empWriter.close();
 	
-	NiEnd();
+        Nb::end();
 
 	//Return success
 	return EC_SUCCESS;

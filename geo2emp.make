@@ -24,8 +24,13 @@
 NAIAD_INC=-I$(NAIAD_PATH)/include/Ni -I$(NAIAD_PATH)/include/Ng -I$(NAIAD_PATH)/include/em -I$(NAIAD_PATH)/include/Nb
 
 #Linking should work without libintlc.so.5. If it doesn't then your LD_LIBRARY_PATH is probably set incorrectly.
-#NAIAD_LIBS=-lNi -liomp5 -limf -lsvml -l:libintlc.so.5 -lpthread
-NAIAD_LIBS=-lNi -liomp5 -limf -lsvml -lpthread
+#NAIAD_LIBS=-lNb -liomp5 -l:libintlc.so.5 -lpthread
+
+# a) this library no longer requires the dynamics server (libNi), but
+#    can just link against the free Naiad Base libarary (libNb)
+# b) One should no longer link with imf or svml as they are now statically
+#    linked to both libNb and libNi
+NAIAD_LIBS=-lNb -liomp5 -lpthread
 
 LIBDIRS=-L$(HFS)/python/lib -L$(NAIAD_PATH)/lib -Wl,-rpath=$(HFS)/dsolib
 INCDIRS= -O2 -Iinclude -Ithirdparty/anyoption -Ithirdparty/pystring -I$(HFS)/toolkit/include $(NAIAD_INC)

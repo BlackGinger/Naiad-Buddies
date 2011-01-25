@@ -41,7 +41,7 @@
 #include <GU/GU_Detail.h>
 
 #include <Ni.h>
-#include <NgBody.h>
+#include <NbBody.h>
 
 #include "nullstream.h"
 #include "geo2emp_utils.h"
@@ -225,19 +225,19 @@ class Geo2Emp
 		/** 
 		 * Load shapes from EMP files. 
 		 */
-		ErrorCode loadMeshShape( const Ng::Body* pBody );
-		ErrorCode loadMeshShape_old( const Ng::Body* pBody );
-		ErrorCode loadParticleShape( const Ng::Body* pBody ); 
-		ErrorCode loadParticleShape_old( const Ng::Body* pBody ); 
-		ErrorCode loadFieldShape( const Ng::Body* pBody );
+		ErrorCode loadMeshShape( const Nb::Body* pBody );
+		ErrorCode loadMeshShape_old( const Nb::Body* pBody );
+		ErrorCode loadParticleShape( const Nb::Body* pBody ); 
+		ErrorCode loadParticleShape_old( const Nb::Body* pBody ); 
+		ErrorCode loadFieldShape( const Nb::Body* pBody );
 
 		/**
 		 * Save shapes to EMP files.
 		 */
-		ErrorCode saveMeshShape_old( Ng::Body*& pBody );
-		ErrorCode saveMeshShape( std::list<Ng::Body*>& pBody );
-		ErrorCode saveParticleShape( Ng::Body*& pBody );
-		ErrorCode saveFieldShape( Ng::Body*& pBody )  { return EC_NOT_YET_IMPLEMENTED; };
+		ErrorCode saveMeshShape_old( Nb::Body*& pBody );
+		ErrorCode saveMeshShape( std::list<Nb::Body*>& pBody );
+		ErrorCode saveParticleShape( Nb::Body*& pBody );
+		ErrorCode saveFieldShape( Nb::Body*& pBody )  { return EC_NOT_YET_IMPLEMENTED; };
 
 		/** 
 		 * Utility functions
@@ -250,7 +250,7 @@ class Geo2Emp
 		/**
 		 * Transfer geo point attributes to corresponding emp channel
 		 */
-		void transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Ng::PointShape& ptShape, const GEO_Point* ppt);
+		void transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Nb::PointShape& ptShape, const GEO_Point* ppt);
 
 		LogLevel _logLevel;
 		/** This is the internal logging stream for the class */

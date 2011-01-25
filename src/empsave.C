@@ -31,15 +31,15 @@
 #include <GEO/GEO_AttributeHandleList.h>
 #include <GEO/GEO_TriMesh.h>
 
-#include <NgEmpReader.h>
+#include <NbEmpReader.h>
 #include <NbFactory.h>
-#include <NgString.h>
+#include <NbString.h>
 
 using namespace geo2emp;
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
+Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Nb::Body*>& meshBodyList)
 {
 	const GEO_Primitive* pprim;
 	const GEO_Point* ppt;
@@ -47,7 +47,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 	GEO_AttributeHandle* pAttr;
 	GB_Attribute* pBaseAttr;
 	UT_Vector3 pos;
-	Ng::Body* pMeshBody;
+	Nb::Body* pMeshBody;
 	std::string bodyName, attrname;
 	int ptnum, totalpoints;
 	int numAttribs;
@@ -136,10 +136,10 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 		meshBodyList.push_back( pMeshBody );
 	
 		//get the mutable shapes for the mesh body.
-		Ng::TriangleShape& triShape( pMeshBody->mutableTriangleShape() );
-		Ng::PointShape& ptShape( pMeshBody->mutablePointShape() );
+		Nb::TriangleShape& triShape( pMeshBody->mutableTriangleShape() );
+		Nb::PointShape& ptShape( pMeshBody->mutablePointShape() );
 
-		Ng::Buffer3f& pPosBuf( ptShape.mutableBuffer3f("position") );
+		Nb::Buffer3f& pPosBuf( ptShape.mutableBuffer3f("position") );
 		pPosBuf.reserve( polyList.size() * 3 ); //Each primitive is treated as a triangle
 
 		//This preprocessor defition was placed here simply because it is only applicable to this code section
@@ -218,7 +218,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 
 
 		//Now its time to set the index channel to form faces
-		Ng::Buffer3i& indexBuffer = triShape.mutableBuffer3i("index");
+		Nb::Buffer3i& indexBuffer = triShape.mutableBuffer3i("index");
 		indexBuffer.reserve( polyList.size() );
 		em::vec3i triVec(0,0,0); //Triangle description for the index buffer
 		totalpoints = 0;
@@ -280,7 +280,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveMeshShape(std::list<Ng::Body*>& meshBodyList)
 
 /**************************************************************************************************/
 
-void Geo2Emp::transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Ng::PointShape& ptShape, const GEO_Point* ppt)
+void Geo2Emp::transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Nb::PointShape& ptShape, const GEO_Point* ppt)
 {
 	GEO_AttributeHandle* pAttr;
 	AttributeInfo* pAttrInfo;
@@ -312,7 +312,7 @@ void Geo2Emp::transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& 
 						{
 							//LogDebug() << "Float1: " << pAttr->getV3() << std::endl;
 							//Get the channel from the point shape
-							Ng::Buffer1f& pbuf = ptShape.mutableBuffer1f( pAttrInfo->empIndex );
+							Nb::Buffer1f& pbuf = ptShape.mutableBuffer1f( pAttrInfo->empIndex );
 							//Write the data into the buffer
 							pbuf.push_back( pAttr->getF() );
 						}
@@ -321,7 +321,7 @@ void Geo2Emp::transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& 
 						{
 							//LogDebug() << "Float3: " << pAttr->getV3() << std::endl;
 							//Get the channel from the point shape
-							Ng::Buffer3f& pbuf = ptShape.mutableBuffer3f( pAttrInfo->empIndex );
+							Nb::Buffer3f& pbuf = ptShape.mutableBuffer3f( pAttrInfo->empIndex );
 							//Write the data into the buffer
 							pbuf.push_back( em::vec3f( pAttr->getF(0), pAttr->getF(1), pAttr->getF(2) ) );
 						}
@@ -334,7 +334,7 @@ void Geo2Emp::transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& 
 			case GB_ATTRIB_VECTOR:
 				{
 					LogDebug() << "Transfer Vector3 [" << pAttr->getName() << "] " <<  pAttr->getF(0) << "," << pAttr->getF(1) << "," << pAttr->getF(2)<< std::endl;
-					Ng::Buffer3f& pbuf = ptShape.mutableBuffer3f( pAttrInfo->empIndex );
+					Nb::Buffer3f& pbuf = ptShape.mutableBuffer3f( pAttrInfo->empIndex );
 					//If we have a vector, we need to invert it (reverse winding).
 					//Write the data into the buffer
 					pbuf.push_back( em::vec3f( pAttr->getF(0), pAttr->getF(1), pAttr->getF(2) ) );
@@ -356,7 +356,7 @@ void Geo2Emp::transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& 
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
+Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Nb::Body*& pParticleBody)
 {
 	if (!_gdp)
 	{
@@ -375,8 +375,8 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Ng::Body*& pParticleBody)
 	pParticleBody = Nb::Factory::createBody("Particle", _bodyName);
 		
 	//get the mutable shapes for the mesh body.
-	Ng::ParticleShape& particleShape( pParticleBody->mutableParticleShape() );
-	Ng::TileLayout& layout( pParticleBody->mutableLayout() );
+	Nb::ParticleShape& particleShape( pParticleBody->mutableParticleShape() );
+	Nb::TileLayout& layout( pParticleBody->mutableLayout() );
 	
 	// PLEASE NOTE: this should really be a box close to a particle, instead of (0,0,0)...(1,1,1) but I was in a hurry!
 	// so this will make some "dummy" tiles...

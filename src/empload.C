@@ -33,16 +33,18 @@
 #include <GU/GU_PrimPoly.h>
 #include <GU/GU_PrimPart.h>
 
+// Naiad Interface headers
 #include <Ni.h>
-#include <NgBody.h>
-// #include <NgEmp.h>
-#include <NgString.h>
+
+// Naiad Base headers
+#include <NbBody.h>
+#include <NbString.h>
 
 using namespace geo2emp;
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
+Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Nb::Body* pBody )
 {	
 	if (!_gdp)
 	{
@@ -52,7 +54,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 
 	LogInfo() << "=============== Loading mesh shape ===============" << std::endl; 
 
-	const Ng::TriangleShape* pShape;
+	const Nb::TriangleShape* pShape;
 
 	pShape = pBody->queryConstTriangleShape();
 
@@ -63,8 +65,8 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 	}
 
 	//Get access to shapes we need to loading a mesh (point and triangle)
-	const Ng::TriangleShape& triShape = pBody->constTriangleShape();
-	const Ng::PointShape& ptShape = pBody->constPointShape();
+	const Nb::TriangleShape& triShape = pBody->constTriangleShape();
+	const Nb::PointShape& ptShape = pBody->constPointShape();
 
 	//Retrieve the number of points and channels
 	int64_t size = ptShape.size();
@@ -93,7 +95,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 	for (int i = 0; i < channelCount; i++)
 	{
 		//std::cout << "channel: " << i << std::endl;
-		const Ng::ChannelCowPtr& chan = ptShape.channel(i);
+		const Nb::ChannelCowPtr& chan = ptShape.channel(i);
 
 		if ( _empAttribMangle.find( chan->name() ) != _empAttribMangle.end() )
 			attrName = _empAttribMangle[ chan->name() ];
@@ -110,7 +112,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 
 		switch ( chan->type() )
 		{
-			case Ng::ValueBase::IntType:
+			case Nb::ValueBase::IntType:
 				LogDebug() << "IntType " << std::endl;
 				pInfo->type = GB_ATTRIB_INT;
 				pInfo->entries = 1;
@@ -118,14 +120,14 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 				pInfo->supported = true;
 				data = &zero1i;
 				break;
-			case Ng::ValueBase::Int64Type: //NOTE: This might need to be handled differently ... just remember this 'hack'
+			case Nb::ValueBase::Int64Type: //NOTE: This might need to be handled differently ... just remember this 'hack'
 				pInfo->type = GB_ATTRIB_INT;
 				pInfo->entries = 1;
 				pInfo->size = sizeof(int);
 				pInfo->supported = true;
 				data = &zero1i;
 				break;
-			case Ng::ValueBase::FloatType:
+			case Nb::ValueBase::FloatType:
 				LogDebug() << "FloatType " << std::endl;
 				pInfo->type = GB_ATTRIB_FLOAT;
 				pInfo->size = sizeof(float);
@@ -133,7 +135,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 				pInfo->supported = true;
 				data = &zero1f;
 				break;
-			case Ng::ValueBase::Vec3fType:
+			case Nb::ValueBase::Vec3fType:
 				LogDebug() << "Vec3fType " << std::endl;
 				pInfo->type = GB_ATTRIB_VECTOR;
 				pInfo->size = sizeof(float);
@@ -167,7 +169,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 	}	
 
 	//Get index buffer from the triangle shape
-	const Ng::Buffer3i& bufIndex ( triShape.constBuffer3i("index") );
+	const Nb::Buffer3i& bufIndex ( triShape.constBuffer3i("index") );
 	int64_t indexBufSize = bufIndex.size();
 
 	//Before we start adding points to the GDP, just record how many points are already there.
@@ -196,7 +198,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 			{
 				case GB_ATTRIB_INT:
 					{
-						const Ng::Buffer1i& channelData =  ptShape.constBuffer1i(channelIndex);
+						const Nb::Buffer1i& channelData =  ptShape.constBuffer1i(channelIndex);
 						//Get the Houdini point attribute using the name list we built earlier.
 						attribLut[channelIndex].setI( channelData(ptNum) );
 					}
@@ -204,14 +206,14 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 				case GB_ATTRIB_FLOAT:
 					{
 						//TODO: Handle more that 1 entry here, if we ever get something like that ... although I doubt it would happen.
-						const Ng::Buffer1f& channelData( ptShape.constBuffer1f(channelIndex) );
+						const Nb::Buffer1f& channelData( ptShape.constBuffer1f(channelIndex) );
 						//Get the Houdini point attribute using the name list we built earlier.
 						attribLut[channelIndex].setF( channelData(ptNum) );
 					}
 					break;
 				case GB_ATTRIB_VECTOR:
 					{
-						const Ng::Buffer3f& channelData = ptShape.constBuffer3f(channelIndex);
+						const Nb::Buffer3f& channelData = ptShape.constBuffer3f(channelIndex);
 						//Get the Houdini point attribute using the name list we built earlier.
 						attribLut[channelIndex].setV3( UT_Vector3( channelData(ptNum)[0], channelData(ptNum)[1], channelData(ptNum)[2]  ) );
 					}
@@ -243,7 +245,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadMeshShape( const Ng::Body* pBody )
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
+Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Nb::Body* pBody )
 {
 	if (!_gdp)
 	{
@@ -251,7 +253,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 		return EC_NULL_WRITE_GDP;
 	}
 
-	const Ng::ParticleShape* pShape;
+	const Nb::ParticleShape* pShape;
 
 	LogInfo() << "=============== Loading particle shape ===============" << std::endl; 
 
@@ -301,7 +303,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 	for (int i = 0; i < channelCount; i++)
 	{
 		//std::cout << "channel: " << i << std::endl;
-		const Ng::ChannelCowPtr& chan = pShape->channel(i);
+		const Nb::ChannelCowPtr& chan = pShape->channel(i);
 
 		if ( _empAttribMangle.find( chan->name() ) != _empAttribMangle.end() )
 			attrName = _empAttribMangle[ chan->name() ];
@@ -322,14 +324,14 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 
 		switch ( chan->type() )
 		{
-			case Ng::ValueBase::IntType:
+			case Nb::ValueBase::IntType:
 				pInfo->type = GB_ATTRIB_INT;
 				pInfo->entries = 1;
 				pInfo->size = sizeof(int);
 				pInfo->supported = true;
 				data = &zero1i;
 				break;			
-			case Ng::ValueBase::Int64Type: //NOTE: This might need to be handled differently ... just remember this 'hack'
+			case Nb::ValueBase::Int64Type: //NOTE: This might need to be handled differently ... just remember this 'hack'
 				pInfo->type = GB_ATTRIB_INT;
 				pInfo->entries = 1;
 				pInfo->size = sizeof(int);
@@ -337,14 +339,14 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 				pInfo->use64 = true;
 				data = &zero1i;
 				break;
-			case Ng::ValueBase::FloatType:
+			case Nb::ValueBase::FloatType:
 				pInfo->type = GB_ATTRIB_FLOAT;
 				pInfo->size = sizeof(float);
 				pInfo->entries = 1;
 				pInfo->supported = true;
 				data = &zero1f;
 				break;
-			case Ng::ValueBase::Vec3fType:
+			case Nb::ValueBase::Vec3fType:
 				pInfo->type = GB_ATTRIB_VECTOR;
 				pInfo->size = sizeof(float);
 				pInfo->entries = 3;
@@ -378,7 +380,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 	}	
 
 	//The channel values for particle shapes are stored in blocks/tiles.
-	const Ng::TileLayout& layout = pBody->constLayout();
+	const Nb::TileLayout& layout = pBody->constLayout();
 	unsigned int numBlocks = layout.fineTileCount();
 	unsigned int absPtNum = 0;
 
@@ -478,7 +480,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Ng::Body* pBody )
 
 /**************************************************************************************************/
 
-Geo2Emp::ErrorCode Geo2Emp::loadFieldShape( const Ng::Body* pBody )
+Geo2Emp::ErrorCode Geo2Emp::loadFieldShape( const Nb::Body* pBody )
 {
 	if (!_gdp)
 	{
