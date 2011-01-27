@@ -8,6 +8,8 @@
 #include <Nb.h>
 #include <NbField.h>
 #include <NbBody.h>
+#include <NbFilename.h>
+#include <NbEmpSequenceReader.h>
 
 #include <iostream>
 
@@ -58,14 +60,29 @@ node_initialize
 {
    try
    {
+       // initialize the Naiad Base (Nb) library
        Nb::begin();
+
+       // construct a valid EMP Sequence name (for more info on EMP
+       // sequences, we refer you to the Naiad Developer notes in the
+       // Naiad documentation)
        std::stringstream ss; 
        ss << AiNodeGetStr(node,"empcache") << ".#.emp";
-       Nb::EmpReader empReader("",ss.str(),"*",AiNodeGetInt(node,"frame"));
-       body = empReader.exportBody(AiNodeGetStr(node,"body"));
+       Nb::String empFilename =
+           Nb::sequenceToFilename("", // project path
+                                  ss.str(), // EMP sequence name
+                                  AiNodeGetInt(node,"frame"), // frame
+                                  0, // timestep
+                                  4); // padding
+       // get access all the bodies in the EMP corresponding to this frame
+       Nb::EmpReader empReader(empFilename,"*");
+       // eject the one we want to render
+       body = empReader.ejectBody(AiNodeGetStr(node,"body"));
+       // get access to the desired distance field
        fldDistance = &body->constFieldShape().constField1f(
            AiNodeGetStr(node,"channel")
            );
+       // and velocity field...
        u = &body->constFieldShape().constField3f("velocity",0);
        v = &body->constFieldShape().constField3f("velocity",1);
        w = &body->constFieldShape().constField3f("velocity",2);
