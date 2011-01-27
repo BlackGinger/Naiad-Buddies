@@ -109,7 +109,7 @@ Now, to compile this buddy, run the following commands:
 cd ~/arnold-buddy.git
 mkdir -p build && cd build
 cmake -DCMAKE_BUILD_TYPE=RELEASE ~/arnold-buddy.git
-make install
+make
 cd .. 
 rm -rf build
 }}}
