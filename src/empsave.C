@@ -356,6 +356,101 @@ void Geo2Emp::transferMeshPointAttribs(int numAttribs, GEO_AttributeHandleList& 
 
 /**************************************************************************************************/
 
+void Geo2Emp::transferParticlePointAttribs(int numAttribs, GEO_AttributeHandleList& attribList, std::map<int, AttributeInfo>& attrLut, Nb::ParticleShape& shape, const GEO_Point* ppt)
+{
+	GEO_AttributeHandle* pAttr;
+	AttributeInfo* pAttrInfo;
+
+	for (int i = 0; i < numAttribs; i++)
+	{
+		pAttr = attribList[i];
+		pAttrInfo = &( attrLut[i] );
+
+		if (!pAttrInfo->supported)
+			//Skip unsupported attributes
+			continue;
+
+		pAttr->setElement( ppt );
+		if (! pAttr->isAttributeValid() )
+		{
+			LogDebug() << "Invalid attribute handle on supported attribute!! [" << pAttr->getName() << "]" << std::endl;
+		}
+
+		LogDebug() << "Transferring attribute: " << pAttr->getName() << std::endl;
+
+		switch ( pAttrInfo->type )
+		{
+			case GB_ATTRIB_FLOAT:
+				//LogDebug() << "Transfer Float" << pAttrInfo->entries << "[" << pAttr->getName() << "]" << std::endl;
+				switch ( pAttrInfo->entries )
+				{
+					case 1:
+						{
+							//LogDebug() << "Float1: " << pAttr->getV3() << std::endl;
+							//Get the channel from the point shape
+							em::block3_array1f& vecData = shape.mutableBlocks1f( pAttrInfo->empIndex );
+							//Write the data into the buffer
+							vecData(0).push_back( pAttr->getF() );
+						}
+						break;
+					case 3:
+						{
+							LogDebug() << "Float3: " << pAttr->getV3() << std::endl;
+							//Get the channel from the particle shape
+							em::block3_array3f& vecData = shape.mutableBlocks3f( pAttrInfo->empIndex );
+							//Write the data into the buffer
+							vecData(0).push_back( em::vec3f( pAttr->getF(0), pAttr->getF(1), pAttr->getF(2) ) );
+						}
+						break;
+				}
+				break;
+			case GB_ATTRIB_INT:
+				LogDebug() << "Int " << pAttrInfo->entries << std::endl;
+				switch ( pAttrInfo->entries )
+				{
+					case 1:
+						{
+							//LogDebug() << "Float1: " << pAttr->getV3() << std::endl;
+							//Get the channel from the point shape
+							em::block3_array1i& vecData = shape.mutableBlocks1i( pAttrInfo->empIndex );
+							//Write the data into the buffer
+							vecData(0).push_back( pAttr->getI() );
+						}
+						break;
+					case 3:
+						{
+							LogDebug() << "Int3: " << std::endl;
+							//Get the channel from the particle shape
+							em::block3_array3i& vecData = shape.mutableBlocks3i( pAttrInfo->empIndex );
+							//Write the data into the buffer
+							vecData(0).push_back( em::vec3i( pAttr->getI(0), pAttr->getI(1), pAttr->getI(2) ) );
+						}
+						break;
+				}
+				break;
+			case GB_ATTRIB_VECTOR:
+				{
+					//LogDebug() << "Transfer Vector3 [" << pAttr->getName() << "] " <<  pAttr->getF(0) << "," << pAttr->getF(1) << "," << pAttr->getF(2)<< std::endl;
+					//If we have a vector, we need to invert it (reverse winding).
+					em::block3_array3f& vecData = shape.mutableBlocks3f( pAttrInfo->empIndex );
+					//Write the data into the buffer
+					vecData(0).push_back( em::vec3f( pAttr->getF(0), pAttr->getF(1), pAttr->getF(2) ) );
+					break;
+				}
+			case GB_ATTRIB_MIXED:
+			case GB_ATTRIB_INDEX:
+			default:
+				//Unsupported attribute, so give it a skip.
+				LogDebug() << " !!!!! SHOULDNT GET THIS !!!! Unsupported attribute type for blind copy [" << pAttrInfo->type << "]" << std::endl;
+				continue;
+				break;
+		}
+
+	}
+
+}
+/**************************************************************************************************/
+
 Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Nb::Body*& pParticleBody)
 {
 	if (!_gdp)
@@ -366,17 +461,178 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Nb::Body*& pParticleBody)
 
 	LogInfo() << " ************** Saving Particle Shape ************** " << std::endl;	
 
-	//Create a Naiad particle body
-	//
-	//Note from Marcus: the "quick and dirty" way of doing this is to just to make some small tile-layout,
-	// add all particles into the first block, and then call "update" on the body so that it automatically
-	// re-sorts them all into their appropriate blocks...
 	
 	pParticleBody = Nb::Factory::createBody("Particle", _bodyName);
 		
 	//get the mutable shapes for the mesh body.
 	Nb::ParticleShape& particleShape( pParticleBody->mutableParticleShape() );
 	Nb::TileLayout& layout( pParticleBody->mutableLayout() );
+	
+	layout.worldBoxRefine( em::vec3f(0,0,0), em::vec3f(1,1,1),1,false);
+
+	//Maps houdini attributes to some cached data
+  GEO_AttributeHandleList attribList;
+  GEO_AttributeHandle* pAttr;
+	const GEO_PointList& ptlist = _gdp->points();
+	int numpoints = ptlist.entries();
+  GB_Attribute* pBaseAttr;
+	std::map<int, AttributeInfo> attrLut;
+	AttributeInfo* pAttrInfo;
+	int attrSize;
+	int numAttribs;
+	const GEO_PointAttribDict *pPtAttrDict;
+
+	attribList.bindDetail(_gdp);
+	
+	//Add all the GDP point attributes to the attribute list
+	attribList.appendAllAttributes( GEO_POINT_DICT );
+
+	numAttribs = attribList.entries();
+
+	LogVerbose() << "Number of hou attributes: " << attribList.entries() << " empty:" << attribList.isEmpty() << std::endl;	
+
+	for (int i = 0; i < numAttribs; i++)
+	{
+		pAttr = attribList[i];
+		pAttrInfo = &( attrLut[i] );
+		pAttrInfo->entries = pAttr->entries();
+
+		LogDebug() << "pAttr: " << pAttr << " - " << std::endl;
+		LogDebug() << "Attribute #" << i << " - " << pAttr->getName() << " [size]  " << attrSize << std::endl;
+
+		//Note: if attribute overrides need to be done, this is probably the place.
+		//The attribute creation code *might* need to be moved to another function...or at least some of it
+		//so that it may be shared by other conversion code
+		if ( pAttr->isP() )
+		{
+			//If we have position, then set up the type manually
+			LogDebug() << "We have a position attribute. Set attributes manually." << std::endl;
+			pAttrInfo->entries = 3;
+			pAttrInfo->type = GB_ATTRIB_VECTOR;
+		}
+		else
+		{
+			//Retrieve attribute info through the standard channels...
+			LogDebug() << "Retrieving attribute data using the Point Dictionary." << std::endl;
+
+			//Now that we now which attribute we want, find it using the GU_Detail object.
+			//TODO: Is there some beter way of doing this???
+			pPtAttrDict = dynamic_cast< const GEO_PointAttribDict* >( _gdp->getAttributeDict( GEO_POINT_DICT ) );
+			pBaseAttr = _gdp->getAttributeDict( GEO_POINT_DICT )->find( pAttr->getName() );
+			pAttrInfo->type = pBaseAttr->getType();
+		}
+
+		LogDebug() << "Switching on attribute type." << std::endl;
+
+	}
+
+
+	//This preprocessor defition was placed here simply because it is only applicable to this code section
+	//and will fail to work anywhere else. Not to be classified under "best coding practices".
+	#define PROCESSCHANNEL_PARTICLE(type1, type2, defaults) \
+	{ \
+		particleShape.guaranteeChannel ## type1 (empAttrName); \
+		pAttrInfo->empIndex = particleShape.channelIndex( empAttrName ); \
+		em::block3_array ## type1 &vectorBlocks( particleShape.mutableBlocks ## type1 ( empAttrName ) ); \
+		em::block3 ## type2 &vectorData( vectorBlocks(0) ); \
+		vectorData.reserve( _gdp->points().entries() ); \
+		pAttrInfo->supported = true; \
+	}
+
+	//Iterate over the BGEO attributes and create corresponding channels in the EMP body
+	//Also, store the channel index for direct lookups when transferring data.
+	for (int i = 0; i < numAttribs; i++)
+	{
+		//Mangle the geo attribute name right now
+		pAttr = attribList[i];
+		std::string empAttrName;
+		if ( _geoAttribMangle.find( pAttr->getName() ) != _geoAttribMangle.end() )
+			empAttrName = _geoAttribMangle[ pAttr->getName() ];
+		else
+			empAttrName = pAttr->getName();
+		LogDebug() << "Mangling name: " << pAttr->getName() << " ==> " << empAttrName << std::endl;
+		pAttrInfo = &( attrLut[i] );
+		pAttrInfo->supported = false;
+		pAttrInfo->flipvector = true; //By default, flip vectors
+
+		if ( std::string(pAttr->getName()).compare("P") == 0 )
+		{	
+			pAttrInfo->flipvector = false;
+		}
+
+		pAttrInfo->empIndex = -1;
+		switch ( pAttrInfo->type )
+		{
+			case GB_ATTRIB_FLOAT:
+				LogDebug() << "Float " << pAttrInfo->entries << std::endl;
+				switch ( pAttrInfo->entries )
+				{
+					case 1:
+						PROCESSCHANNEL_PARTICLE( 1f, f, 0.0f );
+						break;
+					case 3:
+						PROCESSCHANNEL_PARTICLE( 3f, vec3f, em::vec3f(0.0f) );
+						break;
+				}
+				break;
+			case GB_ATTRIB_INT:
+				LogDebug() << "Int " << pAttrInfo->entries << std::endl;
+				switch ( pAttrInfo->entries )
+				{
+					case 1:
+						PROCESSCHANNEL_PARTICLE( 1i, i, 0 );
+						break;
+					case 3:
+						PROCESSCHANNEL_PARTICLE( 3i, vec3i, em::vec3i(0.0f) );
+						break;
+				}
+				break;
+			case GB_ATTRIB_VECTOR:
+				{
+					LogDebug() << "Vector (Vector3)" << std::endl;
+					if ( empAttrName.compare("position") == 0) 
+					{ 
+						//If this is position, then set the tile layout
+						layout.pointRefine( particleShape.mutableBlocks3f("position") ); 
+						particleShape.sync( layout ); 
+					}
+					PROCESSCHANNEL_PARTICLE( 3f, vec3f, em::vec3f(0.0f) );
+					break;
+				}
+			case GB_ATTRIB_MIXED:
+			case GB_ATTRIB_INDEX:
+			default:
+				//Unsupported attribute, so give it a skip.
+				LogDebug() << "Unsupported attribute type for blind copy [" << pAttrInfo->type << "]" << std::endl;
+				continue;
+				break;
+		}
+
+		if ( pAttrInfo->supported )
+			LogDebug() << "Supported Blind Copy! Channel: [" << empAttrName << "] Index: " << pAttrInfo->empIndex << std::endl;
+		else
+		{
+			LogDebug() << "Unsupported Blind Copy! Channel: [" << empAttrName << "]" <<  std::endl;
+			continue;
+		}
+	} //for numAttribs
+
+	//Loop over the points and transfer attributes
+
+	for (int i = 0; i < numpoints; i++)
+	{
+		transferParticlePointAttribs( numAttribs, attribList, attrLut, particleShape, ptlist[i] );
+	}
+
+	pParticleBody->update();
+
+	return EC_SUCCESS;
+
+
+
+
+
+	//Ng::TileLayout& layout( pParticleBody->mutableLayout() );
 	
 	// PLEASE NOTE: this should really be a box close to a particle, instead of (0,0,0)...(1,1,1) but I was in a hurry!
 	// so this will make some "dummy" tiles...
@@ -385,9 +641,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Nb::Body*& pParticleBody)
 
 	//For the sake of simplicity, copy ALL the points in the GDP across.
 	//It will be much slower if we have to filter out all the non-mesh vertices and then remap the vertices to new point numbers.
-	const GEO_PointList& ptlist = _gdp->points();
 	UT_Vector3 pos, v3;
-	int numpoints = ptlist.entries();
 	GEO_AttributeHandle attr_v, attr_N;
 
 	//The position attribute needs special/explicit treatment
