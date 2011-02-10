@@ -46,8 +46,29 @@ set                   (NAIAD_FOR_MAYA_INC
                         bodyTransformExtractor.h
 			naiadEmpInfoCommand.h )
 		       
-add_library( naiadBuddyForMaya${MAYA_VERSION} SHARED ${NAIAD_FOR_MAYA_SRCS} ${NAIAD_FOR_MAYA_INC})
-target_link_libraries( naiadBuddyForMaya${MAYA_VERSION} Ni Foundation)
-target_link_libraries( naiadBuddyForMaya${MAYA_VERSION} OpenMaya Foundation OpenMayaFX )
+add_library(naiadBuddyForMaya${MAYA_VERSION} SHARED 
+            ${NAIAD_FOR_MAYA_SRCS} 
+	    ${NAIAD_FOR_MAYA_INC})
+
+if ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# special Intel link flags
+target_link_libraries(naiadBuddyForMaya${MAYA_VERSION} -Bsymbolic)
+
+else ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# special gcc link flags
+target_link_libraries(naiadBuddyForMaya${MAYA_VERSION} -symbolic)
+
+endif ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# libraries used...
+
+target_link_libraries(naiadBuddyForMaya${MAYA_VERSION} Nb
+						       Foundation
+						       OpenMaya
+						       OpenMayaFX )
+
 set_target_properties( naiadBuddyForMaya${MAYA_VERSION} PROPERTIES PREFIX "" )
+
 install (TARGETS naiadBuddyForMaya${MAYA_VERSION} DESTINATION maya/plug-ins)

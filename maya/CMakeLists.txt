@@ -1,3 +1,3 @@
 project(NAIADBUDDY_MAYA)
 
-subdirs(plugin apps config docs)
+subdirs(plugin apps config)

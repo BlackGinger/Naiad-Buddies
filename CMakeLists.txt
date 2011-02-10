@@ -53,15 +53,19 @@ if ($ENV{EM_COMPILER} STREQUAL "intel")
 
 # Intel compiler flags
 
-set (DEBUG_COMP_FLAGS "-fexceptions -Wall -fPIC -pipe -fno-common -g3 -DDEBUG=1 -DOMP_ENABLED -O0 -diag-disable 981,383,1572,869,1418,193")
-set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -DQT_NO_DEBUG_OUTPUT -DOMP_ENABLED -fexceptions -Wall -fPIC -pipe -fno-common -O3 -fomit-frame-pointer -diag-disable 981,383,1572,869,1418,193")
+add_definitions (-Wl,Bsymbolic -fexceptions -Wall -fPIC -pipe -fno-common -diag-disable 981,383,1572,869,1418,193)
+
+set (DEBUG_COMP_FLAGS "-g3 -DDEBUG=1 -DOMP_ENABLED -O0")
+set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -DQT_NO_DEBUG_OUTPUT -DOMP_ENABLED -O3 -fomit-frame-pointer")
 
 else ($ENV{EM_COMPILER} STREQUAL "intel")
 
 # gcc compiler flags
 
-set (DEBUG_COMP_FLAGS "-DDEBUG -m64 -fexceptions -fno-gnu-keywords -ftemplate-depth-25 -fno-common -fPIC -pipe -pthread -g3 -O0 -Wall -Wno-multichar -Wno-comment -Wno-sign-compare -funsigned-char -Wno-reorder -Wno-deprecated")
-set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -m64 -fexceptions -fno-strict-aliasing -fno-gnu-keywords -ftemplate-depth-25 -fno-common -fomit-frame-pointer -fPIC -pipe -pthread -O3 -Wall -Wall -Wno-multichar -Wno-comment -Wno-sign-compare -funsigned-char -Wno-reorder -Wno-deprecated")
+add_definitions (-Wl,-symbolic -m64 -fexceptions -fno-gnu-keywords -ftemplate-depth-25 -fno-common -fPIC -pipe -pthread -Wall -Wno-multichar -Wno-comment -Wno-sign-compare -funsigned-char -Wno-reorder -Wno-deprecated)
+
+set (DEBUG_COMP_FLAGS "-DDEBUG -g3 -O0")
+set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -fno-strict-aliasing -fomit-frame-pointer -O3")
 
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
 

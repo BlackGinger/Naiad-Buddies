@@ -37,6 +37,8 @@
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 
+#include <Nb.h>
+
 #include "naiadBodyDataType.h"
 
 #include "bodyFieldNode.h"
@@ -57,7 +59,6 @@
 #include "naiadCommand.h"
 #include "naiadEmpInfoCommand.h"
 
-#include <Ni/Ni.h>
 #include "naiadMayaIDs.h"
 
 // initializePlugin
@@ -149,19 +150,19 @@ MStatus initializePlugin(MObject obj)
     status = plugin.registerCommand( "naiadEmpInfo", naiadEmpInfoCmd::creator, naiadEmpInfoCmd::newSyntax );
     NM_CheckMStatus(status, "registerCommand Failed for naiadEmpInfo command");
 
-    // Initialise Naiad Body API (Nb)
-    Nb::begin();    
-
+    // Initialise Naiad Base (Nb) API
     try {
-        NiSetVerboseLevel(NI_NORMAL);
+        Nb::begin();    
+        Nb::verboseLevel = "NORMAL";
 #if MAYA_VERSION < 2010
         // older Maya's seem to trip up OpenMP, so we have to run 
-        // single-threaded.. God only knows why - oh yes, Autodesk is God!
+        // single-threaded.. God only knows why
         Nb::setThreadCount(1); 
 #endif        
     }
     catch(std::exception& e) {
-        std::cerr << "NaiadBuddyForMayaPlugin::initializePlugin(): " << e.what() << std::endl;
+        std::cerr << "NaiadBuddyForMayaPlugin::initializePlugin(): " 
+                  << e.what() << std::endl;
     }
 
     // Source the naiad mel code, creating menues and so on
@@ -224,10 +225,8 @@ MStatus uninitializePlugin(MObject obj)
         status.perror("deregisterData Failed for naiadBody Data");
     }
 
-    // "close" down naiad
-    if(NiEnd()==NI_FALSE)
-        std::cerr << "NaiadBuddyForMayaPlugin::uninitializePlugin() " 
-                  << std::endl;
+    // "close" down Naiad Base (Nb) API
+    Nb::end();
 
     // Call the unload mel code for cleanup
     MGlobal::executeCommand("source \"unload.mel\"");

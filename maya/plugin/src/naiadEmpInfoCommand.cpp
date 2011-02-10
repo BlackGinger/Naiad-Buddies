@@ -36,7 +36,6 @@
 
 #include "naiadEmpInfoCommand.h"
 
-#include <Ni/Ni.h>
 #include <Nb/NbEmpReader.h>
 #include <Nb/NbBody.h>
 

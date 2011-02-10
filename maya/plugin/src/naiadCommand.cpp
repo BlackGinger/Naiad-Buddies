@@ -38,7 +38,7 @@
 #include "naiadMayaIDs.h"
 #include "naiadBodyDataType.h"
 
-#include <Ni/Ni.h>
+#include <Nb.h>
 
 #include <maya/MArgDatabase.h>
 #include <maya/MSyntax.h>
@@ -80,11 +80,11 @@ MStatus naiadCmd::doIt( const MArgList& args )
             int level;
             argData.getFlagArgument( "-vl", 0, level);
 	    switch(level) {
-	        case 0: NiSetVerboseLevel(NI_SILENT); break;
-	        case 1: NiSetVerboseLevel(NI_QUIET); break;
-	        case 2: NiSetVerboseLevel(NI_NORMAL); break;
+	        case 0: Nb::verboseLevel = "SILENT"; break;
+	        case 1: Nb::verboseLevel = "QUIET"; break;
+	        case 2: Nb::verboseLevel = "NORMAL"; break;
 	        case 3:
-	        default: NiSetVerboseLevel(NI_VERBOSE); break;
+	        default: Nb::verboseLevel = "VERBOSE"; break;
 	    }
         }
     }
