@@ -110,4 +110,4 @@ set(CMAKE_CXX_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
 
 # The source directories we are building
 
-subdirs(maya)
+subdirs(plugin apps config)

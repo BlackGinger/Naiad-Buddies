@@ -53,7 +53,7 @@
 
 #include "bodyDisplayLocator.h"
 #include "particleEmitter.h"
-//#include "bodyChannelExtractor.h"
+#include "bodyVectorChannelExtractor.h"
 #include "bodyTransformExtractor.h"
 
 #include "naiadCommand.h"
@@ -133,14 +133,12 @@ MStatus initializePlugin(MObject obj)
                                   MPxNode::kDependNode );
     NM_CheckMStatus(status, "registerNode Failed for NBuddyTransformExtractor");
 
-  
-     // Conversion from maya camera to naiad body
-/*
+    // VectorChannelExtractor
+
     status = plugin.registerNode( "NBuddyVectorChannelExtractor", NBuddyVectorChannelExtractorNode::id,
                                   &NBuddyVectorChannelExtractorNode::creator, &NBuddyVectorChannelExtractorNode::initialize,
                                   MPxNode::kDependNode );
     NM_CheckMStatus(status, "registerNode Failed for NBuddyVectorChannelExtractor");
-*/
     
     // The command for setting naiad options (verbosity)
     status = plugin.registerCommand( "naiad", naiadCmd::creator, naiadCmd::newSyntax  );
@@ -210,8 +208,8 @@ MStatus uninitializePlugin(MObject obj)
     status = plugin.deregisterNode( NBuddyTransformExtractorNode::id );
     NM_CheckMStatus(status, "deregisterNode Failed for NBuddyTransformExtractor");
 
-//    status = plugin.deregisterNode( NBuddyVectorChannelExtractorNode::id );
-//    NM_CheckMStatus(status, "deregisterNode Failed for NBuddyChannelExtractor");
+    status = plugin.deregisterNode( NBuddyVectorChannelExtractorNode::id );
+    NM_CheckMStatus(status, "deregisterNode Failed for NBuddyChannelExtractor");
 
     status = plugin.deregisterCommand( "naiad" );
     NM_CheckMStatus(status, "deregisterCommand Failed for naiad(command)");
