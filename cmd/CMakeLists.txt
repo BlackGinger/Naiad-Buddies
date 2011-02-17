@@ -43,3 +43,5 @@ else ($ENV{EM_COMPILER} STREQUAL "intel")
 # gcc
 target_link_libraries (emp2prt Nb)
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
+
+install               (TARGETS emp2prt DESTINATION buddies/krakatoa/bin)
