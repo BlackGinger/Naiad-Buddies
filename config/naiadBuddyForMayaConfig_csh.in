@@ -1,21 +1,21 @@
 #set the maya module path
 if ( $?MAYA_MODULE_PATH ) then
-	setenv MAYA_MODULE_PATH @CMAKE_INSTALL_PREFIX@/maya/config
+	setenv MAYA_MODULE_PATH @CMAKE_INSTALL_PREFIX@/buddies/maya
 else
-	setenv MAYA_MODULE_PATH @CMAKE_INSTALL_PREFIX@/maya/config:$MAYA_MODULE_PATH
+	setenv MAYA_MODULE_PATH @CMAKE_INSTALL_PREFIX@/buddies/maya:$MAYA_MODULE_PATH
 endif
 
 # Add the Naiad libs to the LD_LIBRARY_PATH path
 if ( $?NAIAD_PATH ) then
 	if ( ! $?LD_LIBRARY_PATH ) then
-		setenv LD_LIBRARY_PATH $NAIAD_PATH/lib
+		setenv LD_LIBRARY_PATH $NAIAD_PATH/server/lib:$NAIAD_PATH/lib
 	else
-		setenv LD_LIBRARY_PATH $NAIAD_PATH/lib:$LD_LIBRARY_PATH
+		setenv LD_LIBRARY_PATH $NAIAD_PATH/server/lib:$NAIAD_PATH/lib:$LD_LIBRARY_PATH
 	endif
 else
 	echo "NAIAD_PATH is not set!"
 endif
 
 #set the path for the executable programs
-setenv PATH @CMAKE_INSTALL_PREFIX@/maya/bin:$PATH
+setenv PATH @CMAKE_INSTALL_PREFIX@/buddies/maya/bin:$PATH
 

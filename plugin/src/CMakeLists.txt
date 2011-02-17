@@ -71,4 +71,4 @@ target_link_libraries(naiadBuddyForMaya${MAYA_VERSION} Nb
 
 set_target_properties( naiadBuddyForMaya${MAYA_VERSION} PROPERTIES PREFIX "" )
 
-install (TARGETS naiadBuddyForMaya${MAYA_VERSION} DESTINATION maya/plug-ins)
+install (TARGETS naiadBuddyForMaya${MAYA_VERSION} DESTINATION buddies/maya/plug-ins)

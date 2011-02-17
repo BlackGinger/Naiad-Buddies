@@ -10,7 +10,6 @@ Since you will be compiling and building the Naiad Buddy yourself, you will need
 * the boost c++ library
 * git
 * doxygen
-* libz-dev (zlib compression development package)
 * libXt-dev (Xterm development package)
 * libgl-dev (OpenGL development package)
 
@@ -19,7 +18,7 @@ These are very common tools you can find on any flavor of Linux.
 Unfortunately, each Linux distribution handles the exact method of installation slightly differently.  We will show how to install these using Ubuntu:
 
 {{{
-sudo apt-get install git-core gcc g++ cmake mesa-utils doxygen libz-dev libXt-dev -y
+sudo apt-get install git-core gcc g++ cmake mesa-utils doxygen libXt-dev -y
 }}}
 
 (for installing these common build tools on other Linux distros, please consult Google).
@@ -58,8 +57,8 @@ export CC=gcc
 export CXX=g++
 export EM_PLAT=LINUX
 export EM_ARCH=`uname -m`
-export MAYA_MODULE_PATH=$NAIAD_PATH/maya/config:$MAYA_MODULE_PATH
-source $NAIAD_PATH/maya/config/naiadBuddyForMayaConfig_bash
+export MAYA_MODULE_PATH=$NAIAD_PATH/buddies/maya/config:$MAYA_MODULE_PATH
+source $NAIAD_PATH/buddies/maya/config/naiadBuddyForMayaConfig_bash
 }}}
 
 == 1.2 tcsh/csh Configuration
@@ -73,18 +72,18 @@ $ gedit ~/.cshrc
 Once inside the .cshrc file, please skip to the very end, and add the following lines:
 
 {{{
-setenv MAYA_MODULE_PATH $NAIAD_PATH/maya/config:$MAYA_MODULE_PATH
 setenv EM_COMPILER gcc
 setenv CC gcc
 setenv CXX g++
 setenv EM_PLAT LINUX
 setenv EM_ARCH `uname -m`
-source $NAIAD_PATH/maya/config/naiadBuddyForMayaConfig_csh
+setenv MAYA_MODULE_PATH $NAIAD_PATH/buddies/maya/config:$MAYA_MODULE_PATH
+source $NAIAD_PATH/buddies/maya/config/naiadBuddyForMayaConfig_csh
 }}}
 
 == 1.3 Verifying Your Configuration
 
-Once the environment has been set up, Maya will use the $NAIAD_PATH/maya/config/NaiadBuddyForMayaModule.txt file to determine the location of the scripts, icons and the plugin binary.
+Once the environment has been set up, Maya will use the $NAIAD_PATH/buddies/maya/config/NaiadBuddyForMayaModule.txt file to determine the location of the scripts, icons and the plugin binary.
 
 Quit the text editor and close the shell. Open a new shell, which should take into account the new variables you've added.  You should verify this by typing:
 

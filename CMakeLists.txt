@@ -40,13 +40,19 @@ cmake_policy(VERSION 2.6)
 project(NAIAD_BUDDY_FOR_MAYA)
 
 include_directories   (.
+                       $ENV{NAIAD_PATH}/server/include
+                       $ENV{NAIAD_PATH}/server/include/system
+                       $ENV{NAIAD_PATH}/server/include/em
+                       $ENV{NAIAD_PATH}/server/include/Ng
+                       $ENV{NAIAD_PATH}/server/include/Nb
                        $ENV{NAIAD_PATH}/include
+                       $ENV{NAIAD_PATH}/include/system
                        $ENV{NAIAD_PATH}/include/em
                        $ENV{NAIAD_PATH}/include/Ng
-                       $ENV{NAIAD_PATH}/include/Nb
-                       $ENV{NAIAD_PATH}/include/Ni)
+                       $ENV{NAIAD_PATH}/include/Nb)
 
-link_directories      ($ENV{NAIAD_PATH}/lib)
+link_directories      ($ENV{NAIAD_PATH}/server/lib
+		       $ENV{NAIAD_PATH}/lib)
 
 
 if ($ENV{EM_COMPILER} STREQUAL "intel")

@@ -9,6 +9,6 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/naiadBuddyForMayaConfig_csh.in ${CMA
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/NaiadBuddyForMayaModule.txt.in ${CMAKE_CURRENT_BINARY_DIR}/NaiadBuddyForMayaModule.txt)
 
 #install the files
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/naiadBuddyForMayaConfig_bash DESTINATION maya/config)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/naiadBuddyForMayaConfig_csh DESTINATION maya/config)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NaiadBuddyForMayaModule.txt DESTINATION maya/config)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/naiadBuddyForMayaConfig_bash DESTINATION buddies/maya/config)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/naiadBuddyForMayaConfig_csh DESTINATION buddies/maya/config)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/NaiadBuddyForMayaModule.txt DESTINATION buddies/maya/config)
