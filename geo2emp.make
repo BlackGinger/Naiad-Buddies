@@ -21,7 +21,7 @@
 
 #You shouldn't need to touch anything below this line.
 
-NAIAD_INC=-I$(NAIAD_PATH)/include/Ni -I$(NAIAD_PATH)/include/Ng -I$(NAIAD_PATH)/include/em -I$(NAIAD_PATH)/include/Nb
+NAIAD_INC=-I$(NAIAD_PATH)/server/include/Ng -I$(NAIAD_PATH)/server/include/Nb -I$(NAIAD_PATH)/server/include/em -I$(NAIAD_PATH)/server/include/system -I$(NAIAD_PATH)/include/Ng -I$(NAIAD_PATH)/include/Nb -I$(NAIAD_PATH)/include/em -I$(NAIAD_PATH)/include/system
 
 # a) this library no longer requires the dynamics server (libNi), but
 #    can just link against the free Naiad Base libarary (libNb)
@@ -30,7 +30,7 @@ NAIAD_INC=-I$(NAIAD_PATH)/include/Ni -I$(NAIAD_PATH)/include/Ng -I$(NAIAD_PATH)/
 
 NAIAD_LIBS=-lNb -liomp5 -lpthread
 
-LIBDIRS=-L$(HFS)/python/lib -L$(NAIAD_PATH)/lib -Wl,-rpath=$(HFS)/dsolib
+LIBDIRS=-L$(HFS)/python/lib -L$(NAIAD_PATH)/server/lib -L$(NAIAD_PATH)/lib -Wl,-rpath=$(HFS)/dsolib
 INCDIRS= -O2 -Iinclude -Ithirdparty/anyoption -Ithirdparty/pystring -I$(HFS)/toolkit/include $(NAIAD_INC)
 LIBS=$(NAIAD_LIBS)
 APPNAME=bin/geo2emp
