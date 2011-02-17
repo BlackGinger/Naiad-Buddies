@@ -31,21 +31,29 @@
 #    ANY  WAY OUT OF THE USE OF  THIS SOFTWARE,  EVEN IF ADVISED OF  THE
 #    POSSIBILITY OF SUCH DAMAGE.
 #
+
 project               (NBUDDY_ARNOLD)
 
 include_directories   (.
 		       $ENV{ARNOLD_ROOT}/include
+                       $ENV{NAIAD_PATH}/server/include
+                       $ENV{NAIAD_PATH}/server/include/system
+                       $ENV{NAIAD_PATH}/server/include/em
+                       $ENV{NAIAD_PATH}/server/include/Nb
+		       $ENV{NAIAD_PATH}/server/include/Ng)
                        $ENV{NAIAD_PATH}/include
+                       $ENV{NAIAD_PATH}/include/system
                        $ENV{NAIAD_PATH}/include/em
                        $ENV{NAIAD_PATH}/include/Nb
-		       $ENV{NAIAD_PATH}/include/Ng
-                       $ENV{NAIAD_PATH}/include/Ni)
+		       $ENV{NAIAD_PATH}/include/Ng)
 
 link_directories      ($ENV{ARNOLD_ROOT}/bin 
+		       $ENV{NAIAD_PATH}/server/lib
 		       $ENV{NAIAD_PATH}/lib)
 
 add_library           (naiad_distance SHARED naiad_distance)
-target_link_libraries (naiad_distance Ni)
+target_link_libraries (naiad_distance Nb)
 set_target_properties (naiad_distance PROPERTIES PREFIX "")
-#install               (TARGETS naiad_distance DESTINATION user-ops)
-#install               (FILES Particle-Import.BodyOp DESTINATION user-ops)
+
+install               (TARGETS naiad_distance DESTINATION buddies/arnold/plug-ins)
+
