@@ -57,7 +57,6 @@ link_directories      ($ENV{NAIAD_PATH}/server/lib
   		       $ENV{NAIAD_PATH}/lib
 		       )
 
-
 if ($ENV{EM_COMPILER} STREQUAL "intel")
 
 # Intel compiler flags
@@ -82,8 +81,9 @@ endif ($ENV{EM_COMPILER} STREQUAL "intel")
 # UNIX/LINUX
 
 if (UNIX)
-set (DEBUG_COMP_FLAGS "${DEBUG_COMP_FLAGS} -DLINUX")
-set (RELEASE_COMP_FLAGS "${RELEASE_COMP_FLAGS} -DLINUX")
+add_definitions(-DLINUX -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_LFS64_LARGEFILE=2)
+set (DEBUG_COMP_FLAGS "${DEBUG_COMP_FLAGS}")
+set (RELEASE_COMP_FLAGS "${RELEASE_COMP_FLAGS}")
 endif (UNIX)
 
 

@@ -1,5 +1,5 @@
 #
-# CMAKE project for Naiad Buddy For Krakatoa - command line tool
+# CMAKE project for Naiad Buddy For Krakatoa - Naiad File Ops
 #
 # Copyright (c) 2011 Exotic Matter AB, Prime Focus, and Thinkbox Software.
 #
@@ -32,14 +32,4 @@
 #    POSSIBILITY OF SUCH DAMAGE.
 #
 
-project               (NAIAD_BUDDY_FOR_KRAKATOA_CMD)
-
-add_executable        (emp2prt emp2prt.cc)
-
-if ($ENV{EM_COMPILER} STREQUAL "intel")
-#intel
-target_link_libraries (emp2prt Nb -static-intel)
-else ($ENV{EM_COMPILER} STREQUAL "intel")
-# gcc
-target_link_libraries (emp2prt Nb)
-endif ($ENV{EM_COMPILER} STREQUAL "intel")
+project               (NAIAD_BUDDY_FOR_KRAKATOA_USER_OPS)

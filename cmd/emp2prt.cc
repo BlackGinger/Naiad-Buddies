@@ -31,9 +31,10 @@
 #include <zlib.h>
 #include <vector>
 
-#include <Ng/NgBody.h>
-#include <Ng/NgEmpReader.h>
-#include <Ni/Ni.h>
+#include <Nb.h>
+#include <NbBody.h>
+#include <NbEmpReader.h>
+
 #include <em/em_mat44.h>
 
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
@@ -255,12 +256,9 @@ int main( int argc, char *argv[] )
     int t1 = 0 - clock();
     int t2 = 0;
 
+    // Initialise Naiad Base API
     std::cout << "Initializing Naiad..." << endl;
-    // Initialise Naiad
-    NiBegin(NI_BODY_ONLY);
-
-    //std::cout << "Setting Project Path" << endl;
-    //NiSetGlobalParam("Project Path",".");  //<- this crashes with segmentation fault...
+    Nb::begin();
 
     std::cout << "Getting input arguments" << endl;
     // Get the inputs
@@ -272,7 +270,6 @@ int main( int argc, char *argv[] )
     // Load the stream from EMP file
     int numBodies = 0;
     Nb::EmpReader empReader(
-    		".",
     		inputPath, // an absolute path
     		"*"
         	);
@@ -402,7 +399,7 @@ int main( int argc, char *argv[] )
    		t1 += clock();
 		for ( unsigned int chIndirectIndex(0); chIndirectIndex < knownChannels.size(); ++chIndirectIndex ) {
 			int chIndex = knownChannels[chIndirectIndex];
-			const Ng::ParticleChannelBase& chan = psh.constChannelBase(chIndex);
+			const Nb::ParticleChannelBase& chan = psh.constChannelBase(chIndex);
 
 			switch ( chan.type() )
 			{
@@ -488,8 +485,8 @@ int main( int argc, char *argv[] )
 
     std::cout << endl << "Done saving " << numParticles << " particles to : " << outputPath << " Time taken: " << timeString.str() << "s (Naiad Query time: " << t1d << " zlib Compression Time: " << t2d << " ) " << std::endl;
 
-    // Shut down Naiad
-    NiEnd();
+    // Shut down Naiad Base API
+    Nb::end();
 
     return 0;
 }
