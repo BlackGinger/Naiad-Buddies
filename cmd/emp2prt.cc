@@ -66,236 +66,203 @@ public:
 
     //! CTOR.
     PRTHeader()
-        : HEADERLENGTH(56),
-          HEADERVERSION(1),
-          particleCount(-1),
-          RESERVED(4),
-          channelCount(0),
-          CHANNELSIZE(44)
+        : _headerLength(56),
+          _headerVersion(1),
+          _particleCount(-1),
+          _reserved(4),
+          _channelCount(0),
+          _channelSize(44)
     {
-        const char headerText[8] = {192, 'P', 'R', 'T', '\r', '\n', 26, '\n'};
-        strcpy(MAGICNUMBER, headerText);
+        const char headerText[8] = { 192, 'P', 'R', 'T', '\r', '\n', 26, '\n' };
+        strcpy(_magicNumber, headerText);
 
-        const char descriptionText[32] = "Extensible Particle Format";
-        memset(DESCRIPTION, 0, sizeof(DESCRIPTION));
-        strcpy(DESCRIPTION, descriptionText);
+        const char description[32] = "Extensible Particle Format";
+
+        // Copy up to 32 characters from provided string ('name'). If this
+        // string has less than 32 characters zero-padding is added.
+
+        strncpy(_description, description, sizeof(_description));
+        _description[sizeof(_description) - 1] = '\0';  // Ensure null-term.
     }
 
     //! DTOR.
     ~PRTHeader() {}
 
+    int32_t channelCount()  const { return _channelCount;  }
+    int32_t particleCount() const { return _particleCount; }
+
+    // NB: No checking.
+    void setChannelCount(const int count)  { _channelCount = count;  }
+    void setParticleCount(const int count) { _particleCount = count; }
+
+private:
+
+    PRTHeader(const PRTHeader &);               //!< Disable copy.
+    PRTHeader &operator=(const PRTHeader &);    //!< Disable assign.
+
 private:    // Member variables.
 
-    char    MAGICNUMBER[8];
-	int32_t HEADERLENGTH;
-    char    DESCRIPTION[32];
-	int32_t HEADERVERSION;
-
-public:
-
-    int64_t particleCount;
-
-private:
-
-    int32_t RESERVED;
-
-public:
-
-	int32_t channelCount;
-
-private:
-
-	int32_t CHANNELSIZE;
+    char          _magicNumber[8];  //!< 8 bytes.
+    const int32_t _headerLength;    //!< 4 bytes.
+    char          _description[32]; //!< 32 bytes.
+    const int32_t _headerVersion;   //!< 4 bytes.
+    int64_t       _particleCount;   //!< 8 bytes.
+    const int32_t _reserved;        //!< 4 bytes.
+    int32_t       _channelCount;    //!< 4 bytes.
+    const int32_t _channelSize;     //!< 4 bytes.
+                                    // = 72 bytes.
 } __attribute__((packed));
 
 
 // PRTChannelHeader
 // ----------------
-//! PRT Per-Channel Header information
+//! PRT Per-Channel Header information. Don't change order of member variables.
 
 class PRTChannelHeader {
 public:
 
     //! CTOR.
-    PRTChannelHeader(const Nb::String          &_name,
-                     const Nb::ValueBase::Type  _type,
-                     const int32_t              _offset)
-        : offset(_offset)
+    PRTChannelHeader(const Nb::String          &name,
+                     const Nb::ValueBase::Type  vbType,
+                     const int32_t              offset)
+        : _type(_validType(vbType)),
+          _arity(_validArity(vbType)),
+          _offset(offset)
     {
-        //offset = _offset;
+        // Copy up to 32 characters from provided string ('name'). If this
+        // string has less than 32 characters zero-padding is added.
 
-        // TODO: Safe?
-        memset(name, 0, sizeof(name));
-        strcpy(name, _name.c_str());
+        strncpy(_name, name.c_str(), sizeof(_name));
+        _name[sizeof(_name) - 1] = '\0';    // Ensure null-termination.
+    }
 
-        switch (_type)
+    //! DTOR
+    ~PRTChannelHeader() {}
+
+    // Default copy and assign.
+
+private:
+
+    int32_t _validArity(const Nb::ValueBase::Type vbType)
+    {
+        switch (vbType)
         {
         case Nb::ValueBase::FloatType:
-            type  = 4;
-            arity = 1;
-            break;
+            return 1;
         case Nb::ValueBase::IntType:
-            type  = 1;
-            arity = 1;
-            break;
+            return 1;
         case Nb::ValueBase::Vec3fType:
-            type  = 4;
-            arity = 3;
-            break;
+            return 3;
         case Nb::ValueBase::Vec3iType:
-            type  = 1;
-            arity = 3;
-            break;
-        default :
+            return 3;
+        default:
             // TODO: throw?
-            break;
+            return 0;
         }
     }
 
+    int32_t _validType(const Nb::ValueBase::Type vbType)
+    {
+        switch (vbType)
+        {
+        case Nb::ValueBase::FloatType:
+            return 4;
+        case Nb::ValueBase::IntType:
+            return 1;
+        case Nb::ValueBase::Vec3fType:
+            return 4;
+        case Nb::ValueBase::Vec3iType:
+            return 1;
+        default:
+            // TODO: throw?
+            return 0;
+        }
+    }
 
-public:     // Member variables.
+private:     // Member variables.
 
-    char    name[32];
-	int32_t type;
-	int32_t arity;
-	int32_t offset;
-
+    char    _name[32];  //!< 32 bytes.
+    int32_t _type;      //!< 4 bytes.
+    int32_t _arity;     //!< 4 bytes.
+    int32_t _offset;    //!< 4 bytes.
+                        // = 44 bytes.
 } __attribute__((packed));
 
 
 // PRTParticles
 // ------------
-//!
+//! TODO
 
-class PRTParticles {
-    std::vector<int> channelSize;
-    std::vector<int> channelStartIndex;
-	int perParticleSize;
-	int particleCount;
-	unsigned char * particleData;
-
-	// parameters used for zlib compression
-    int ret, _flush;
-    unsigned have;
-	z_stream strm;
-	unsigned char out[CHUNK];
-
-	unsigned long compressIndex;
-	FILE * outputFile;
-
-    int compress()
-    {
-	    strm.zalloc = Z_NULL;
-	    strm.zfree = Z_NULL;
-	    strm.opaque = Z_NULL;
-
-	    ret = deflateInit(&strm, Z_BEST_SPEED);
-	    if (ret != Z_OK)
-	        return ret;
-
-		compressIndex = 0;
-		unsigned long totalDataSize = particleCount * perParticleSize;
-		unsigned long remainingDataSize = totalDataSize;
-
-		while (remainingDataSize > 0) {
-            unsigned long writeAmount
-                = (remainingDataSize < CHUNK) ? remainingDataSize : CHUNK;
-
-            std::cerr
-                << "\rCompression Progress: "
-                << (int)(100.0*(float)compressIndex/totalDataSize) << "%"
-                << std::flush;
-
-			strm.avail_in = writeAmount;
-			strm.next_in = &particleData[compressIndex];
-			_flush = (remainingDataSize <= CHUNK) ? Z_FINISH : Z_NO_FLUSH;
-			do {
-				strm.avail_out = CHUNK;
-				strm.next_out = out;
-                ret = deflate(&strm, _flush);   // No bad return value
-                assert(ret != Z_STREAM_ERROR);  // State not clobbered
-				have = CHUNK - strm.avail_out;
-
-                if (fwrite(out, 1, have, outputFile) != have ||
-                    ferror(outputFile)) {
-					(void)deflateEnd(&strm);
-					return Z_ERRNO;
-				}
-			} while (strm.avail_out == 0);
-
-            assert(strm.avail_in == 0);     // All input will be used
-			remainingDataSize -= writeAmount;
-			compressIndex += writeAmount;
-		}
-
-        std::cerr << "\rCompression Progress: 100% Done!\n";
-		(void)deflateEnd(&strm);
-
-        return Z_OK;
-    }
-
+class PRTParticles
+{
 public:
-
-    bool Compress(FILE *outputStream)
-    {
-		outputFile = outputStream;
-
-		if (compress() == Z_OK) {
-			return true;
-        }
-
-        return false;
-    }
 
     //! CTOR.
     PRTParticles()
     {
         particleData = 0;   // Null.
-		perParticleSize = 0;
-		particleCount = 0;
-	}
+        perParticleSize = 0;
+        particleCount = 0;
+    }
 
     //! DTOR.
     ~PRTParticles()
     {
-		ClearData();
-		channelSize.clear();
-		perParticleSize = 0;
-		particleCount = 0;
-	}
+        ClearData();
+        channelSize.clear();
+        perParticleSize = 0;
+        particleCount = 0;
+    }
+
+
+    bool Compress(FILE *file)
+    {
+        //outputFile = outputStream;
+
+        if (compress(file) == Z_OK) {
+            return true;
+        }
+
+        return false;
+    }
+
 
     void ClearData()
     {
-		if (particleData) {
-			delete [] particleData;
+        if (particleData) {
+            delete [] particleData;
             particleData = 0;   // Null.
-		}
-	}
+        }
+    }
 
     void SetParticleCount(const int count)
     {
-		particleCount = count;
-	}
+        particleCount = count;
+    }
 
     void AddChannel(const int size)
     {
-		channelSize.push_back(size);
-		channelStartIndex.push_back(perParticleSize);
+        channelSize.push_back(size);
+        channelStartIndex.push_back(perParticleSize);
 
-		perParticleSize += size;
-	}
+        perParticleSize += size;
+    }
 
     void InitializeDataBuffer()
     {
-		ClearData();
-        std::cerr
-            << "Initializing Data Buffer: " << (perParticleSize*particleCount)
-            << " (particles: " << particleCount
-            << " datasize:" << perParticleSize << ")\n";
+        ClearData();
 
-        particleData
-            = new unsigned char[(unsigned long)perParticleSize * particleCount];
-	}
+        const unsigned long size(
+            static_cast<unsigned long>(perParticleSize)*particleCount);
+
+        std::cerr
+            << "Initializing Data Buffer: " << size << " [bytes]"
+            << " (particles: " << particleCount << ", "
+            << " datasize:" << perParticleSize << " [bytes])\n";
+
+
+        particleData = new unsigned char[size];
+    }
 
     void AddChannelData(const int particleIndex,
                         const int channelIndex,
@@ -306,7 +273,81 @@ public:
             channelStartIndex[channelIndex]);
 
         memcpy(&particleData[idx], data, channelSize[channelIndex]);
-	}
+    }
+
+private:
+
+    int compress(FILE *file)
+    {
+        z_stream zstrm;
+        zstrm.zalloc = Z_NULL;
+        zstrm.zfree = Z_NULL;
+        zstrm.opaque = Z_NULL;
+
+        ret = deflateInit(&zstrm, Z_BEST_SPEED);
+        if (ret != Z_OK)
+            return ret;
+
+        compressIndex = 0;
+        unsigned long totalDataSize = particleCount * perParticleSize;
+        unsigned long remainingDataSize = totalDataSize;
+
+        while (remainingDataSize > 0) {
+            unsigned long writeAmount
+                = (remainingDataSize < CHUNK) ? remainingDataSize : CHUNK;
+
+            std::cerr
+                << "\rCompression Progress: "
+                << (int)(100.0*(float)compressIndex/totalDataSize) << "%"
+                << std::flush;
+
+            zstrm.avail_in = writeAmount;
+            zstrm.next_in = &particleData[compressIndex];
+            _flush = (remainingDataSize <= CHUNK) ? Z_FINISH : Z_NO_FLUSH;
+            do {
+                zstrm.avail_out = CHUNK;
+                zstrm.next_out = out;
+                ret = deflate(&zstrm, _flush);   // No bad return value
+                assert(ret != Z_STREAM_ERROR);  // State not clobbered
+                have = CHUNK - zstrm.avail_out;
+
+//                if (fwrite(out, 1, have, outputFile) != have ||
+//                    ferror(outputFile)) {
+                if (fwrite(out, 1, have, file) != have || ferror(file)) {
+                    (void)deflateEnd(&zstrm);
+                    return Z_ERRNO;
+                }
+            } while (zstrm.avail_out == 0);
+
+            assert(zstrm.avail_in == 0);     // All input will be used
+            remainingDataSize -= writeAmount;
+            compressIndex += writeAmount;
+        }
+
+        std::cerr << "\rCompression Progress: 100% Done!\n";
+        (void)deflateEnd(&zstrm);
+
+        return Z_OK;
+    }
+
+private:    // Member variables.
+
+    std::vector<int> channelSize;
+    std::vector<int> channelStartIndex;
+	int perParticleSize;
+	int particleCount;
+	unsigned char * particleData;
+
+	// parameters used for zlib compression
+    int ret;
+    int _flush;
+    unsigned have;
+    //z_stream strm;
+	unsigned char out[CHUNK];
+
+	unsigned long compressIndex;
+    //FILE * outputFile;
+
 };
 
 
@@ -490,7 +531,9 @@ int main( int argc, char *argv[] )
 
 		if (knownChannelType) {
 			knownChannels.push_back(index);
-			prtHeader.channelCount += 1;
+            //prtHeader.channelCount += 1;
+            prtHeader.setChannelCount(prtHeader.channelCount() + 1);
+
 			prtChannels.push_back(newChannel);
 		}
     }
@@ -650,7 +693,9 @@ int main( int argc, char *argv[] )
     // Write the proper particle count to the file. This tells any PRT loader
     // that the export is not corrupt, and its a proper file.
 
-    prtHeader.particleCount = numParticles;
+    //prtHeader.particleCount = numParticles;
+    prtHeader.setParticleCount(numParticles);
+
     fseek(filestr, 0, SEEK_SET);
     fwrite(&prtHeader, sizeof(prtHeader), 1, filestr);
 	fclose(filestr);

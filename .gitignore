@@ -1,7 +1,10 @@
 build
+CMakeFiles
 *.swp
 *.o
 *.backup
 *~
 *.emp
+*.prt
 *.user
+*.cmake
