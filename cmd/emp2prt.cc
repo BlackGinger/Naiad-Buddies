@@ -57,12 +57,6 @@
 #endif
 
 
-static const int CHUNK(2097152*4);
-static const double EMP2PRTVERSION(0.92);
-
-
-
-
 
 
 // requestConstBody
@@ -103,11 +97,19 @@ requestConstBody(Nb::EmpReader    &empReader,
 }
 
 
+std::string clockString(const double seconds)
+{
+    std::stringstream ss;
 
+    if (60.0 > seconds) {
+        ss << seconds << "s";
+        return ss.str();
+    }
 
-
-
-
+    const int minutes(static_cast<int>(seconds/60.0));
+    ss << minutes << "m " << seconds - 60.0*minutes << "s";
+    return ss.str();
+}
 
 
 // main
@@ -128,7 +130,7 @@ int main( int argc, char *argv[] )
                 << "a bodyName and an output file (.prt).\n\n"
                 << "Example: "
                 << "emp2prt inputFile.emp bodyName outputFile.prt\n";
-            return 40;  // Why 40?
+            return 40;  // TODO: Why 40?
         }
 
         // Some profiling clock initialization.
@@ -150,8 +152,7 @@ int main( int argc, char *argv[] )
         const Nb::String argBodyName(argv[2]);
         const Nb::String argOutputPath(argv[3]);
 
-        std::cerr
-            << "Loading EMP file '" << argInputPath << "'...\n";
+        std::cerr << "Loading EMP file '" << argInputPath << "'...\n";
 
         // Load the stream from EMP file.
 
@@ -160,8 +161,8 @@ int main( int argc, char *argv[] )
         if (0 >= empReader.bodyCount()) {
             std::cerr
                 << "\nERROR: No bodies in EMP file '"
-                << argInputPath.c_str() << "'\n";
-            return 1;   // Early exit.
+                << argInputPath.c_str() << "'\n\n";
+            std::abort();   // Early exit.
         }
 
         std::cerr
@@ -177,9 +178,8 @@ int main( int argc, char *argv[] )
             std::cerr
                 << "\nERROR: EMP File '" << argInputPath
                 << "' does not contain a body with name '"
-                << argBodyName
-                << "'!\n\n";
-            return 1;   // Early exit.
+                << argBodyName << "'!\n\n";
+            std::abort();   // Early exit.
         }
 
         // Requested body exists in EMP.
@@ -192,7 +192,7 @@ int main( int argc, char *argv[] )
             std::cerr
                 << "\nERROR: The body '" << requestedBody->name().c_str()
                 << "' does not have a particle shape!\n\n";
-            return 1;   // Early exit.
+            std::abort();   // Early exit.
         }
 
         // Requested body has a particle shape.
@@ -211,9 +211,6 @@ int main( int argc, char *argv[] )
         PRTChannelDefinitionSection prtCDS;
         PRTParticleData prtData;
 
-        //std::vector<PRTChannelHeader> prtChannelHeaders;
-        //PRTParticles prtParticles;
-
         std::vector<int> knownChannels;
 
         //Loop the channels to get the type and count how many we have.
@@ -224,12 +221,10 @@ int main( int argc, char *argv[] )
             const Nb::ParticleChannelBase &empChannel(psh.constChannelBase(ch));
 
             try {
-                // May throw.
+                // Create PRT channel (may throw) and add to list of
+                // known channels if successful.
 
                 prtCDS.addChannel(empChannel.name(), empChannel.type());
-
-                // Add to list of known channels.
-
                 knownChannels.push_back(ch);
 
                 std::cerr
@@ -241,16 +236,16 @@ int main( int argc, char *argv[] )
             }
             catch (const std::exception &ex) {
                 std::cerr
-                    << "WARNING: " << ex.what()
-                    << " - Skipping channel...\n";
+                    << "\nWARNING: " << ex.what()
+                    << " - Skipping channel...\n\n";
             }
         }
 
         t1 += clock();
 
-        // Start file write, write headers.
+        // Start file write, write complete PRT header.
 
-        FILE* prtFile = fopen(argOutputPath.c_str(), "wb");
+        FILE *prtFile = fopen(argOutputPath.c_str(), "wb");
         prtFileHeader.write(prtFile);
         prtReservedBytes.write(prtFile);
         prtCDS.write(prtFile);
@@ -270,8 +265,11 @@ int main( int argc, char *argv[] )
         t1 += clock();
 
         t2 -= clock();
+
         // Initialize buffer so that particle channel data can be added.
+
         prtData.resizeBuffer(prtCDS, particleCount);
+
         t2 += clock();
 
 
@@ -453,31 +451,18 @@ int main( int argc, char *argv[] )
 
         t2 += clock();
 
-
-
         // Output timing results.
 
-        double diff = (double)(clock() - clo) / CLOCKS_PER_SEC;
-        double t1d = (double)(t1) / CLOCKS_PER_SEC;
-        double t2d = (double)(t2) / CLOCKS_PER_SEC;
-
-        std::stringstream timeString;
-
-        if (diff > 100.0) {
-            timeString
-                << (int)(diff / 60.0) << "m "
-                << (diff - ((int)(diff/60.0)*60)) << "s";
-        }
-        else {
-            timeString << (float)diff << "s";
-        }
+        const double diff(static_cast<double>(clock() - clo)/CLOCKS_PER_SEC);
+        const double t1d(static_cast<double>(t1)/CLOCKS_PER_SEC);
+        const double t2d(static_cast<double>(t2)/CLOCKS_PER_SEC);
 
         std::cerr
             << "\nDone saving " << particleCount
             << " particles to: '" << argOutputPath << "'\n"
-            << "Time: " << timeString.str() << "\n"
-            << "(Naiad Query time: " << t1d << ")\n"
-            << "(zlib Compression Time: " << t2d << ")\n";
+            << "Time: " << clockString(diff) << "\n"
+            << "(Naiad Query time: " << clockString(t1d) << ")\n"
+            << "(zlib Compression Time: " << clockString(t2d) << ")\n";
 
         // Shut down Naiad Base API.
 
@@ -486,7 +471,7 @@ int main( int argc, char *argv[] )
         return 0;   // Successful termination.
     }
     catch (const std::exception &ex) {
-        std::cerr << "ERROR: " << ex.what() << "\n";
+        std::cerr << "\nERROR: " << ex.what() << "\n\n";
         std::abort();
     }
 }

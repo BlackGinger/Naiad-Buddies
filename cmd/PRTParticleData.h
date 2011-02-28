@@ -164,9 +164,7 @@ private:
         zstrm.zfree = Z_NULL;
         zstrm.opaque = Z_NULL;
 
-        int zerr(deflateInit(&zstrm, Z_BEST_SPEED));
-
-        if (zerr != Z_OK) {
+        if (Z_OK != deflateInit(&zstrm, Z_BEST_SPEED)) {
             throw std::runtime_error("zlib init error");
         }
 
@@ -198,10 +196,8 @@ private:
                 zstrm.avail_out = CHUNK;
                 zstrm.next_out = zout;
 
-                zerr = deflate(&zstrm, zflush);
-
-                if (zerr == Z_STREAM_ERROR) {
-                    deflateEnd(&zstrm);
+                if (Z_STREAM_ERROR == deflate(&zstrm, zflush)) {
+                    deflateEnd(&zstrm); // Cannot fail.
                     throw std::runtime_error("zlib stream error");
                 }
 
@@ -210,12 +206,15 @@ private:
                 const unsigned long have(CHUNK - zstrm.avail_out);
 
                 if (have != fwrite(zout, 1, have, file) || ferror(file)) {
-                    deflateEnd(&zstrm);
+                    deflateEnd(&zstrm); // Cannot fail.
                     throw std::runtime_error("Compressed write error!");
                 }
             } while (zstrm.avail_out == 0);
 
+            // Verify that all input data was compressed.
+
             if (0 < zstrm.avail_in) {
+                deflateEnd(&zstrm); // Cannot fail.
                 throw std::runtime_error("zlib error!");
             }
 
@@ -228,54 +227,6 @@ private:
 
         deflateEnd(&zstrm); // Cannot fail.
         return Z_OK;
-
-
-//        while (remainingDataSize > 0) {
-////            const unsigned int writeAmount(
-////                (remainingDataSize < CHUNK) ? remainingDataSize : CHUNK);
-
-//            std::cerr
-//                << "\rCompression Progress: "
-//                << static_cast<unsigned int>(
-//                   100.0*(static_cast<double>(bufferOffsetSize)/_buffer.size()))
-//                << "%"
-//                << std::flush;
-
-//            //zstrm.avail_in = writeAmount;
-//            zstrm.avail_in = std::min<unsigned int>(remainingBufferSize, CHUNK);
-//            zstrm.next_in = &_buffer[compressIndex];
-
-//            zflush = (remainingDataSize <= CHUNK) ? Z_FINISH : Z_NO_FLUSH);
-
-//            do {
-//                zstrm.avail_out = CHUNK;
-//                zstrm.next_out = zout;
-
-//                zerr = deflate(&zstrm, zflush);   // No bad return value
-
-//                //assert(zerr != Z_STREAM_ERROR);  // State not clobbered
-//                if (zerr == Z_STREAM_ERROR) {
-//                    deflateEnd(&zstrm);
-//                    throw std::runtime_error("zlib stream error");
-//                }
-
-//                const unsigned long have(CHUNK - zstrm.avail_out);
-
-//                if (have != fwrite(zout, 1, have, file) || ferror(file)) {
-//                    deflateEnd(&zstrm);
-//                    throw std::runtime_error("Compressed write error!");
-//                }
-//            } while (zstrm.avail_out == 0);
-//            assert(zstrm.avail_in == 0);     // All input will be used.
-
-//            remainingDataSize -= writeAmount;
-//            compressIndex += writeAmount;
-//        }
-
-//        std::cerr << "\rCompression Progress: 100% Done!\n";
-
-//        deflateEnd(&zstrm); // Cannot fail.
-//        return Z_OK;
     }
 
 private:    // Member variables.
@@ -285,81 +236,3 @@ private:    // Member variables.
 };
 
 #endif // PRT_PARTICLE_DATA_H
-
-
-
-
-
-
-
-//    //! Free buffer memory.
-//    void _clear()
-//    {
-//        // STL swap-trick, clear the capacity of the vector.
-
-//        std::vector<unsigned char>().swap(_particleBuffer);
-//    }
-
-
-
-
-//    //! Add a channel where each element occupies 'channelSize' number of bytes.
-//    //! NB: May invalidate the current buffer!
-//    void addChannel(const unsigned int channelSize)
-//    {
-//        // Store previous buffer settings.
-
-//        const unsigned int pcount(size());
-//        const unsigned int oldParticleSize(particleSize());
-
-//        // Add new channel. Channel offset is set to the old
-//        // particle size.
-
-//        _channels.push_back(_Channel(channelSize, oldParticleSize));
-
-//        // Resize the buffer so that it stores the same number of particles as
-//        // before, but with the new channel settings. Most likely this will
-//        // invalidate existing buffer data.
-
-//        const unsigned int newParticleSize(particleSize());
-//        _resizeBuffer(newParticleSize, pcount);
-//    }
-
-
-
-
-//    //! Return total number of bytes occupied by a single particle with
-//    //! the current channel configuration.
-//    unsigned int particleSize() const
-//    {
-//        // The size of a particle is equal to the size of all channels.
-
-//        unsigned int psize(0);
-//        for (unsigned int c(0); c < _channels.size(); ++c) {
-//            psize += _channels[c].size();
-//        }
-
-//        return psize;
-//    }
-
-
-//    //! Returns the number of particles that the buffer can currently store.
-//    //! Note that this merely gives the capacity of the buffer, not how many
-//    //! particles that have actually been copied into the buffer.
-//    //unsigned int size() const
-//    std::size_t particleCapacity() const
-//    {
-//        const unsigned int psize(particleSize());   // [bytes]
-
-//        // Check that channels have actually been added.
-
-//        if (0 == psize) {
-//            return 0;
-//        }
-
-//        // Divide buffer size (in bytes) with storage space required for
-//        // each particle.
-
-//        return (_particleBuffer.size()/psize);
-//    }
-
