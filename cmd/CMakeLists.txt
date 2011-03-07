@@ -38,10 +38,10 @@ add_executable (emp2prt emp2prt.cc)
 
 if ($ENV{EM_COMPILER} STREQUAL "intel")
 #intel
-target_link_libraries (emp2prt Nb -static-intel)
+target_link_libraries (emp2prt Nb -static-intel -lpthread)
 else ($ENV{EM_COMPILER} STREQUAL "intel")
 # gcc
-target_link_libraries (emp2prt Nb)
+target_link_libraries (emp2prt Nb -lpthread)
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
 
 install (TARGETS emp2prt DESTINATION buddies/krakatoa/bin)
