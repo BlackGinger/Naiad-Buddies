@@ -59,6 +59,8 @@ public:
     static  MObject 	inFarClip;
     static  MObject 	inNearClip;
     static  MObject 	inFocalLength;
+    static  MObject 	inHorizAperture;
+    static  MObject 	inVertAperture;
 
     //Output Body
     static  MObject 	outBody;

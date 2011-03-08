@@ -149,6 +149,8 @@ global proc NBuddy_CacheObjectsInRange( string $objects[], string $empPath, int 
 			connectAttr -f ($obj+".farClipPlane") ($conversionNodes[`size $conversionNodes`]+".inFarClip");
 			connectAttr -f ($obj+".nearClipPlane")($conversionNodes[`size $conversionNodes`]+".inNearClip");
 			connectAttr -f ($obj+".focalLength")  ($conversionNodes[`size $conversionNodes`]+".inFocalLength");
+			connectAttr -f ($obj+".hfa")  ($conversionNodes[`size $conversionNodes`]+".inHorizAperture");
+			connectAttr -f ($obj+".vfa")  ($conversionNodes[`size $conversionNodes`]+".inVertAperture");
 		}
 		else
 		{

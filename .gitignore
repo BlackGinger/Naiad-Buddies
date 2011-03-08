@@ -1,0 +1,9 @@
+build
+*.swp
+*.o
+*.backup
+*.bgeo
+*.emp
+*.swo
+*~
+tags

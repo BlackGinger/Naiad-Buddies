@@ -64,6 +64,8 @@ MObject     NBuddyCameraToBodyNode::inTransform;
 MObject     NBuddyCameraToBodyNode::inFarClip;
 MObject     NBuddyCameraToBodyNode::inNearClip;
 MObject     NBuddyCameraToBodyNode::inFocalLength;
+MObject     NBuddyCameraToBodyNode::inHorizAperture;
+MObject     NBuddyCameraToBodyNode::inVertAperture;
 
 // Output body
 MObject     NBuddyCameraToBodyNode::outBody;
@@ -92,46 +94,68 @@ MStatus NBuddyCameraToBodyNode::compute( const MPlug& plug, MDataBlock& data )
         //Get a new naiadBodyData
         naiadBodyData * newBodyData = (naiadBodyData*)dataFn.data( &status );
         NM_CheckMStatus( status, "Failed to get naiadBodyData handle from MFnPluginData");
-	
+
+        // create/configure the camera body	
         Nb::Body * cameraNaiadBody;
-        // configure the body to be a camera body
         try {
             cameraNaiadBody = Nb::Factory::createBody(
                 "Camera", std::string( bodyName.asChar() ) 
                 );
-
+            
             //Assign the cameraBody to the bodyData object
             newBodyData->nBody = Nb::BodyCowPtr(cameraNaiadBody);
+
+            //Fill out the body with whatever naiad regards as a camera
+            
+            //Transfer over the matrix data
+            MDataHandle inTransformHdl = 
+                data.inputValue( inTransform, &status );
+            inTransformHdl.asMatrix().get( cameraNaiadBody->globalMatrix.m );
+            
+            // Now set the props
+            std::stringstream strStream;
+            
+            //Get the property and assign
+            MDataHandle inFocalLengthHdl = 
+                data.inputValue( inFocalLength, &status );
+            double focalLength = inFocalLengthHdl.asDouble();
+            // convert to horizontal aperture to mm
+            MDataHandle inHorizApertureHdl = 
+                data.inputValue( inHorizAperture, &status );
+            double horizAperture = inHorizApertureHdl.asDouble()*25.4;
+            // compute the angle of view, in degrees
+            double aov = 57.29 * 2 * atan(horizAperture/(2*focalLength));
+            strStream << aov;
+            cameraNaiadBody->prop1f("Angle Of View")->setExpr(strStream.str());
+
+            // compute the aspect ratio
+            MDataHandle inVertApertureHdl = 
+                data.inputValue( inVertAperture, &status );
+            double aspectRatio = 
+                inHorizApertureHdl.asDouble() / inVertApertureHdl.asDouble();
+            strStream.str("");
+            strStream << aspectRatio;
+            cameraNaiadBody->prop1f("Aspect Ratio")->setExpr( strStream.str() );
+
+            MDataHandle inFarClipHdl = 
+                data.inputValue( inFarClip, &status );
+            strStream.str("");
+            strStream << inFarClipHdl.asDouble();
+            cameraNaiadBody->prop1f("Far Clip")->setExpr( strStream.str() );
+
+            MDataHandle inNearClipHdl = 
+                data.inputValue( inNearClip, &status );
+            strStream.str("");
+            strStream << inNearClipHdl.asDouble();
+            cameraNaiadBody->prop1f("Near Clip")->setExpr( strStream.str() );
         }
         catch ( std::exception & ex )
         {
-            NM_ExceptionDisplayError("NBuddyCameraToBodyNode::compute could not create a body with signature \"camera\" ", ex);
+            NM_ExceptionDisplayError("NBuddyCameraToBodyNode::compute could " \
+                                     "not create a body with "                \
+                                     "signature \"camera\" ", ex);
         }
-	
-        //Fill out the body with whatever naiad regards as a camera
-
-        //Transfer over the matrix data
-        MDataHandle inTransformHdl = data.inputValue( inTransform, &status );
-        inTransformHdl.asMatrix().get( cameraNaiadBody->globalMatrix.m );
-
-        // Now set the props
-        std::stringstream strStream;
-
-        //Get the property and assign
-        MDataHandle inFocalLengthHdl = data.inputValue( inFocalLength, &status );
-        strStream << inFocalLengthHdl.asDouble();
-        cameraNaiadBody->prop1f("focalLength")->setExpr( strStream.str() );
-
-        MDataHandle inFarClipHdl = data.inputValue( inFarClip, &status );
-        strStream.clear();
-        strStream << inFarClipHdl.asDouble();
-        cameraNaiadBody->prop1f("farClip")->setExpr( strStream.str() );
-
-        MDataHandle inNearClipHdl = data.inputValue( inNearClip, &status );
-        strStream.clear();
-        strStream << inNearClipHdl.asDouble();
-        cameraNaiadBody->prop1f("nearClip")->setExpr( strStream.str() );
-
+        
         //Give the data to the output handle and set it clean
         MDataHandle bodyDataHnd = data.outputValue( outBody, &status );
         NM_CheckMStatus( status, "Failed to get outputData handle for outBody");
@@ -149,7 +173,8 @@ void* NBuddyCameraToBodyNode::creator()
 
 
 //! Initialise the inputs
-//! Inputs: inFarClip,inNearClip,inFocalLength,inTransform, bodyName
+//! Inputs: inFarClip,inNearClip,inFocalLength,inHorizAperture,inTransform
+//! bodyName
 //! Outputs: outBody
 MStatus NBuddyCameraToBodyNode::initialize()
 
@@ -175,6 +200,16 @@ MStatus NBuddyCameraToBodyNode::initialize()
     NM_CheckMStatus( status, "Failed to create inFocalLength attribute");
     status = addAttribute( inFocalLength );
     NM_CheckMStatus( status, "Failed to add inFocalLength plug");
+
+    inHorizAperture = numFn.create("inHorizAperture", "iha", MFnNumericData::kDouble );
+    NM_CheckMStatus( status, "Failed to create inHorizAperture attribute");
+    status = addAttribute( inHorizAperture );
+    NM_CheckMStatus( status, "Failed to add inHorizAperture plug");
+
+    inVertAperture = numFn.create("inVertAperture", "iva", MFnNumericData::kDouble );
+    NM_CheckMStatus( status, "Failed to create inVertAperture attribute");
+    status = addAttribute( inVertAperture );
+    NM_CheckMStatus( status, "Failed to add inVertAperture plug");
 
 
    //The input transform for the object
@@ -207,6 +242,8 @@ MStatus NBuddyCameraToBodyNode::initialize()
     attributeAffects( inFarClip, outBody );
     attributeAffects( inNearClip, outBody );
     attributeAffects( inFocalLength, outBody );
+    attributeAffects( inHorizAperture, outBody );
+    attributeAffects( inVertAperture, outBody );
 
     return MS::kSuccess;
 }
