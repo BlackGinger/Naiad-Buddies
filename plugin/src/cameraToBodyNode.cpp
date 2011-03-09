@@ -110,7 +110,9 @@ MStatus NBuddyCameraToBodyNode::compute( const MPlug& plug, MDataBlock& data )
             //Transfer over the matrix data
             MDataHandle inTransformHdl = 
                 data.inputValue( inTransform, &status );
-            inTransformHdl.asMatrix().get( cameraNaiadBody->globalMatrix.m );
+            inTransformHdl.asMatrix().inverse().get(
+                cameraNaiadBody->globalMatrix.m
+                );
             
             // Now set the props
             std::stringstream strStream;
