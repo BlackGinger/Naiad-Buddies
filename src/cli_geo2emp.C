@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 	}
 	if ( opt.getValue("time") != NULL || opt.getValue( 't' ) != NULL )
 	{
-		geo2emp.setEmpTime( stringToInt( opt.getValue('t') ) );
+		geo2emp.setEmpTime( stringToFloat( opt.getValue('t') ) );
 	}
 	if ( opt.getValue("pad") != NULL || opt.getValue( 'd' ) != NULL )
 	{
