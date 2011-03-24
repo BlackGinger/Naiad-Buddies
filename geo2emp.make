@@ -21,7 +21,8 @@
 
 #You shouldn't need to touch anything below this line.
 
-NAIAD_INC=-I$(NAIAD_PATH)/server/include/Ng -I$(NAIAD_PATH)/server/include/Nb -I$(NAIAD_PATH)/server/include/em -I$(NAIAD_PATH)/server/include/system -I$(NAIAD_PATH)/include/Ni -I$(NAIAD_PATH)/include/Ng -I$(NAIAD_PATH)/include/Nb -I$(NAIAD_PATH)/include/em -I$(NAIAD_PATH)/include/system
+#NAIAD_INC=-I$(NAIAD_PATH)/server/include/Ng -I$(NAIAD_PATH)/server/include/Nb -I$(NAIAD_PATH)/server/include/em -I$(NAIAD_PATH)/server/include/system -I$(NAIAD_PATH)/include/Ni -I$(NAIAD_PATH)/include/Ng -I$(NAIAD_PATH)/include/Nb -I$(NAIAD_PATH)/include/em -I$(NAIAD_PATH)/include/system
+NAIAD_INC=-I$(NAIAD_PATH)/server/include/Ng -I$(NAIAD_PATH)/server/include/Nb -I$(NAIAD_PATH)/server/include/em -I$(NAIAD_PATH)/server/include/system -I$(NAIAD_PATH)/server/include/Ni -I$(NAIAD_PATH)/server/include/Ng -I$(NAIAD_PATH)/server/include/Nb -I$(NAIAD_PATH)/server/include/em -I$(NAIAD_PATH)/server/include/system
 
 # a) this library no longer requires the dynamics server (libNi), but
 #    can just link against the free Naiad Base libarary (libNb)
