@@ -225,11 +225,10 @@ int main(int argc, char *argv[])
 
 	geo2emp.setInputFilename( inputname.toStdString() );
 	geo2emp.setOutputFilename( outputname.toStdString() );
+
 	//Save EMP file(s) using the current geo2emp state.
-	geo2emp.saveGeo();
+        Geo2Emp::ErrorCode ec = geo2emp.saveGeo();
 
-	//TODO: Process error code do a proper error return
-
-	return 0;
+	return ec;
 }
 

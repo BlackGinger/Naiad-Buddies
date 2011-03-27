@@ -79,7 +79,7 @@ class Geo2Emp
 			EC_NO_TRIANGLE_SHAPE,
 			EC_NO_PARTICLE_SHAPE,
 			EC_NO_FIELD_SHAPE,
-
+                        EC_GENERAL_ERROR,
 			EC_NOT_YET_IMPLEMENTED,
 		};
 
