@@ -206,6 +206,8 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 	LogDebug() << "initframe: " << _initFrame << std::endl;
 	LogDebug() << "framepadding: " << _framepadding << std::endl;
 
+        bool error=false;
+
 	//Perform sequence conversion evaluation
 	if ( pystring::find( _inputFile, "#" ) != -1 || pystring::find( _outputFile, "#" ) != -1 )
 	{
@@ -247,7 +249,8 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 			else
 			{
 				//The input file could not be located on disk.
-				LogInfo() << "Error: Input file was not found - " << frameinput << std::endl;
+                                LogInfo() << "Error: Input file was not found - " << frameinput << std::endl;                                
+                                error = true;
 			}
 			setGdp(0);
 			delete pGdp;
@@ -281,9 +284,13 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 		{
 			//The input file could not be located on disk.
 			LogInfo() << "Error: Input file was not found - " << frameinput << std::endl;
+                        error = true;
 		}
 		//Do a straight conversion
 	}
+
+        if(error)
+            return EC_GENERAL_ERROR;
 
 	LogVerbose() << "Conversion completed..." << std::endl;
 
@@ -303,6 +310,8 @@ Geo2Emp::ErrorCode Geo2Emp::saveGeo()
 	LogDebug() << "FPS: " << _fps << std::endl;
 	LogDebug() << "initframe: " << _initFrame << std::endl;
 	LogDebug() << "framepadding: " << _framepadding << std::endl;
+
+        bool error=false;
 
 	//Perform sequence conversion evaluation
 	if ( pystring::find( _inputFile, "#" ) != -1 || pystring::find( _outputFile, "#" ) != -1 )
@@ -350,6 +359,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveGeo()
 			{
 				//The input file could not be located on disk.
 				LogInfo() << "Error: Input file was not found - " << frameinput << std::endl;
+                                error = true;
 			}
 		}
 
@@ -383,9 +393,13 @@ Geo2Emp::ErrorCode Geo2Emp::saveGeo()
 		{
 			//The input file could not be located on disk.
 			LogInfo() << "Error: Input file was not found - " << frameinput << std::endl;
+                        error = true;
 		}
 		//Do a straight conversion
 	}
+
+        if(error)
+            return EC_GENERAL_ERROR;
 
 	return EC_SUCCESS;
 }
@@ -454,15 +468,16 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 		}
 	}
 
-	if ( _typeMask & BT_FIELD )
-	{
-		LogInfo() << "Unsupported shape type!" << std::endl;	
-	}
-
 	//All done
 	empWriter.close();
 	
         Nb::end();
+
+	if ( _typeMask & BT_FIELD )
+	{
+		LogInfo() << "Unsupported shape type!" << std::endl;	
+                return EC_NOT_YET_IMPLEMENTED;
+	}
 
 	//Return success
 	return EC_SUCCESS;
