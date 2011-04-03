@@ -58,6 +58,18 @@ namespace geo2emp
 			return max;
 		return value;
 	}
+
+	/** Templated to-string conversion
+	 */
+
+	template <class T>
+	std::string toString(const T& val)
+	{
+		std::ostringstream sstream;
+		sstream << val;
+		return sstream.str();
+	}
+
 }
 
 #endif //__GEO2EMP_UTILS_H__
