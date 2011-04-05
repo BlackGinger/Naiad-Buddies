@@ -28,6 +28,7 @@
 #define __GEO2EMP_UTILS_H__
 
 #include <string>
+#include <sstream>
 
 namespace geo2emp
 {

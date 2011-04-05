@@ -15,4 +15,5 @@ install:
 clean:
 	make -f geo2emp.make clean
 	make -f emp2geo.make clean
+	make -f rop_naiadcamera.make clean
 
