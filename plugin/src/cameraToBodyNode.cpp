@@ -121,18 +121,18 @@ MStatus NBuddyCameraToBodyNode::compute( const MPlug& plug, MDataBlock& data )
             MDataHandle inFocalLengthHdl = 
                 data.inputValue( inFocalLength, &status );
             double focalLength = inFocalLengthHdl.asDouble();
-            // convert to horizontal aperture to mm
-            MDataHandle inHorizApertureHdl = 
-                data.inputValue( inHorizAperture, &status );
-            double horizAperture = inHorizApertureHdl.asDouble()*25.4;
+            // convert to vertical aperture to mm
+            MDataHandle inVertApertureHdl = 
+                data.inputValue( inVertAperture, &status );
+            double vertAperture = inVertApertureHdl.asDouble()*25.4;
             // compute the angle of view, in degrees
-            double aov = 57.29 * 2 * atan(horizAperture/(2*focalLength));
+            double aov = 57.29 * 2 * atan(vertAperture/(2*focalLength));
             strStream << aov;
             cameraNaiadBody->prop1f("Angle Of View")->setExpr(strStream.str());
 
-            // compute the aspect ratio
-            MDataHandle inVertApertureHdl = 
-                data.inputValue( inVertAperture, &status );
+            // compute the aspect ratio           
+            MDataHandle inHorizApertureHdl = 
+                data.inputValue( inHorizAperture, &status );
             double aspectRatio = 
                 inHorizApertureHdl.asDouble() / inVertApertureHdl.asDouble();
             strStream.str("");
