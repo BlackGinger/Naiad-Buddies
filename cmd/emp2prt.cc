@@ -117,7 +117,7 @@ std::string clockString(const double seconds)
 int main( int argc, char *argv[] )
 {
     try {
-        static const double EMP2PRTVERSION(0.93);
+        static const double EMP2PRTVERSION(0.94);
 
         std::cerr << "\nNaiad EMP to PRT Converter" << "\n";
         std::cerr << "Version " << EMP2PRTVERSION << "\n\n";
@@ -128,7 +128,7 @@ int main( int argc, char *argv[] )
                 << "a bodyName and an output file (.prt).\n\n"
                 << "Example: "
                 << "emp2prt inputFile.emp bodyName outputFile.prt\n";
-            return 40;  // TODO: Why 40?
+            return 40;  // TODO: Why 40? answer: Laszlo Sebo[12/05/2011]: arbitrary non-zero return code, feel free to change
         }
 
         // Some profiling clock initialization.
@@ -136,6 +136,7 @@ int main( int argc, char *argv[] )
         int clo = clock();
         int t1 = 0 - clock();
         int t2 = 0;
+		int t3 = 0;
 
         // Initialise Naiad Base API.
 
@@ -266,6 +267,7 @@ int main( int argc, char *argv[] )
 
         // Initialize buffer so that particle channel data can be added.
 
+		std::cerr << "Allocating Memory... \n";
         prtData.resizeBuffer(prtCDS, particleCount);
 
         t2 += clock();
@@ -429,7 +431,7 @@ int main( int argc, char *argv[] )
 
         std::cerr << "\n";
 
-        t2 -= clock();
+        t3 -= clock();
 
         // Write compressed particle data to disk.
 
@@ -447,20 +449,22 @@ int main( int argc, char *argv[] )
         prtFileHeader.write(prtFile);
         fclose(prtFile);
 
-        t2 += clock();
+        t3 += clock();
 
         // Output timing results.
 
         const double diff(static_cast<double>(clock() - clo)/CLOCKS_PER_SEC);
         const double t1d(static_cast<double>(t1)/CLOCKS_PER_SEC);
         const double t2d(static_cast<double>(t2)/CLOCKS_PER_SEC);
+		const double t3d(static_cast<double>(t3)/CLOCKS_PER_SEC);
 
         std::cerr
             << "\nDone saving " << particleCount
             << " particles to: '" << argOutputPath << "'\n"
             << "Time: " << clockString(diff) << "\n"
             << "(Naiad Query time: " << clockString(t1d) << ")\n"
-            << "(zlib Compression Time: " << clockString(t2d) << ")\n";
+            << "(Adding Particles to Channels Time: " << clockString(t2d) << ")\n"
+            << "(zlib Compression Time: " << clockString(t3d) << ")\n";
 
         // Shut down Naiad Base API.
 

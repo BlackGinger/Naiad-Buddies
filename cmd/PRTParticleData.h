@@ -168,8 +168,8 @@ private:
             throw std::runtime_error("zlib init error");
         }
 
-        unsigned int remainingBufferSize(_buffer.size());   // [bytes]
-        unsigned int bufferOffsetSize(0);                   // [bytes]
+        unsigned long remainingBufferSize(_buffer.size());   // [bytes]
+        unsigned long bufferOffsetSize(0);                   // [bytes]
 
         // Compress until end of buffer.
 
@@ -181,8 +181,8 @@ private:
                 << "%"
                 << std::flush;
 
-            const unsigned int inSize(
-                std::min<unsigned int>(remainingBufferSize, CHUNK));
+            const unsigned long inSize(
+                std::min<unsigned long>(remainingBufferSize, CHUNK));
 
             zflush = ((remainingBufferSize <= CHUNK) ? Z_FINISH : Z_NO_FLUSH);
 
