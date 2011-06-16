@@ -105,7 +105,7 @@ setenv EM_PLAT LINUX
 setenv EM_ARCH `uname -m`
 }}}
 
-== 1.3 Verifying Your Configuration
+=== Verifying Your Configuration
 
 Quit the text editor and close the shell. Open a new shell, which should take into account the new variables you've added.  You should verify this by typing:
 
@@ -115,7 +115,7 @@ $ echo $NAIAD_PATH
 
 This should print the path to your current Naiad installation.  If it does not, then you've made a mistake.
 
-== 2.2 Compiling Naiad Buddy for Houdini
+== 2.2 Building the Buddy
 
 You need to do this every time a new version of Naiad is released that contains API changes.  This is typically semi-major or major releases, such as 1.0 to 1.5 or 2.0, etc.  It may also be necessary between Houdini releases.
 
