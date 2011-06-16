@@ -8,10 +8,14 @@
 #include <string>
 #include <vector>
 
+//For errors
+#include <Nbx.h>
+
 using namespace std;
 
 class Bgeo
 {
+public:
     struct attribute
     {
         string name;
@@ -19,8 +23,6 @@ class Bgeo
                     type;
         char* defBuf;
     };
-
-public:
     Bgeo(const char* filename);
     ~Bgeo();
 
@@ -28,14 +30,29 @@ public:
     void freePointsBuffer() { delete[] pointsBuf;};
     float * getPoints3v();
     uint32_t getNumberOfPoints(){ return nPoints;};
+    uint32_t getNumberOfPointAtr(){ return nPointAtr;};
+    attribute* getPointAtr(){return pointAtr;};
+    template<class T> T * getPointAtr(const int size, const int offset);
 
     void readPrims();
     void freePrimsBuffer() { delete[] primsBuf;};
     uint32_t * getIndices3v();
     uint32_t getNumberOfPrims(){ return nPrims;};
+    uint32_t getNumberOfPrimAtr(){ return nPrimAtr;};
+    attribute* getPrimAtr(){return primArt;};
+    uint32_t getNumberOfVtxAtr(){ return nVtxAtr;};
+    attribute* getVtxAtr(){return vtxArt;};
+    template<class T> T * getPrimAtr(const int size, const int offset);
+
+    int getBytesPerPrimLine(){return 5 + idxBytes + vtxAtrBytes + primAtrBytes;};
+    int getIdxBytes(){return idxBytes;};
+    int getVtxAtrBytes(){return vtxAtrBytes;};
+    int getPrimAtrBytes(){return primAtrBytes;};
 
     template<class T> void printArray(T* buf, const int n, const int size);
 
+
+    int type2Bytes(uint16_t type) {return typeBytes.at(type);};
 
 
 private:
@@ -169,5 +186,16 @@ template<class T> void Bgeo::printArray(T* buf, const int n, const int size)
         cout << endl;
      }
 }
+
+template<class T> T * Bgeo::getPointAtr(const int size, const int offset)
+{
+	return copyBuffer<T>(pointsBuf+offset,nPoints,size,sizeof(float) * 4 + pointAtrBytes);
+}
+
+template<class T> T * Bgeo::getPrimAtr(const int size, const int offset)
+{
+	return copyBuffer<T>(primsBuf+offset,nPrims,size,getBytesPerPrimLine);
+}
+
 
 #endif // BGEO_H

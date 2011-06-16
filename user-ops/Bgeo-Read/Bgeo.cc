@@ -181,18 +181,19 @@ void Bgeo::readPrims()
     readNumber(buffer,run);
     // 4294967295 = 0xFFFFFFFF
     if (run != 4294967295)
-        cout << "FAIL";
+    	NB_THROW("BGEO File Corrupt; No primitives");
 
-    uint16_t nPrimsLocal;
-    readNumber(buffer,nPrimsLocal);
+    uint16_t nPrimPolygons;
+    readNumber(buffer,nPrimPolygons);
 
-    if (nPrimsLocal != nPrims)
-        cout << "FAIL";
+    if (nPrimPolygons != nPrims) {
+    	NB_THROW("BGEO File Corrupt; primitive count mismatch (nPrimPolygons=" <<  nPrimPolygons << ", nPrims=" << nPrims << ")");
+    }
 
     uint32_t PrimKey;
     readNumber(buffer,PrimKey);
     if (PrimKey != 1)
-        cout << "No polygon data, bye!";
+    	NB_THROW("BGEO File Corrupt; No polygon primitives ");
 
     delete[] buffer_start;
     cout << endl << nPrims << " primitives as polygons:" << endl;
