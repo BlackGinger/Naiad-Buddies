@@ -43,6 +43,7 @@ public:
     uint32_t getNumberOfVtxAtr(){ return nVtxAtr;};
     attribute* getVtxAtr(){return vtxArt;};
     template<class T> T * getPrimAtrArr(const int size, const int offset);
+    template<class T> T * getVtxAtrArr(const int size, const int offset);
 
     int getBytesPerPrimLine(){return 5 + (idxBytes + vtxAtrBytes) * 3 + primAtrBytes;};
     int getIdxBytes(){return idxBytes;};
@@ -196,6 +197,12 @@ template<class T> T * Bgeo::getPrimAtrArr(const int size, const int offset)
 {
 	return copyBuffer<T>(primsBuf+offset,nPrims,size,getBytesPerPrimLine());
 }
+
+template<class T> T * Bgeo::getVtxAtrArr(const int size, const int offset)
+{
+	return copyBufferVertex<T>(primsBuf+offset,size);
+}
+
 
 
 #endif // BGEO_H

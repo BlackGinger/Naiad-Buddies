@@ -173,42 +173,54 @@ void Bgeo::readPrims()
         primAtrBytes += typeBytes.at(primArt[i].type) * primArt[i].size;
     }
 
-    //Control that the bgeo is a polygon model
-    int bufferSize = sizeof(uint32_t) * 2 + sizeof(uint16_t) ;
+    const int verticesPerPolygon = 3;
+    const int bytesPerPrim = (sizeof(uint32_t) + sizeof(char) + verticesPerPolygon * (idxBytes + vtxAtrBytes)  + primAtrBytes);
+    primsBuf = new char[nPrims * bytesPerPrim];
+    char * primsBuf_start = primsBuf;
+
+
+    //shorten this
+    int bufferSize = sizeof(uint32_t)*2 + sizeof(uint16_t) ;
     char * buffer = new char[bufferSize], *buffer_start = buffer;
     file.read(buffer,bufferSize);
     uint32_t run;
-    readNumber(buffer,run);
-    // 4294967295 = 0xFFFFFFFF
-    if (run != 4294967295)
-    	NB_THROW("BGEO File Corrupt; No primitives");
+	readNumber(buffer,run);
 
-    uint16_t nPrimPolygons;
-    readNumber(buffer,nPrimPolygons);
+    while (run == 4294967295){
+    	// 4294967295 = 0xFFFFFFFF
+        //Control that the bgeo is a polygon model
 
-    if (nPrimPolygons != nPrims) {
-    	NB_THROW("BGEO File Corrupt; primitive count mismatch (nPrimPolygons=" <<  nPrimPolygons << ", nPrims=" << nPrims << ")");
+        //if (run != 4294967295)
+        	//NB_THROW("BGEO File Corrupt; No primitives");
+
+    	uint16_t nPrimPolygons;
+		readNumber(buffer,nPrimPolygons);
+    	cout << "Reading one chunk of Polygons ( " << nPrimPolygons<< ")" << endl;
+		//if (nPrimPolygons != nPrims) {
+			//NB_THROW("BGEO File Corrupt; primitive count mismatch (nPrimPolygons=" <<  nPrimPolygons << ", nPrims=" << nPrims << ")");
+		//}
+
+		uint32_t PrimKey;
+		readNumber(buffer,PrimKey);
+		//if (PrimKey != 1)
+			//NB_THROW("BGEO File Corrupt; No polygon primitives ");
+		delete[] buffer_start;
+
+		//Restricted to triangles only
+		bufferSize = nPrimPolygons * bytesPerPrim;
+		file.read(primsBuf,bufferSize);
+		primsBuf += bufferSize;
+
+
+		//shorten this
+		bufferSize = sizeof(uint32_t)*2 + sizeof(uint16_t) ;
+	    buffer = new char[bufferSize], buffer_start = buffer;
+	    file.read(buffer,bufferSize);
+		readNumber(buffer,run);
+
     }
-
-    uint32_t PrimKey;
-    readNumber(buffer,PrimKey);
-    if (PrimKey != 1)
-    	NB_THROW("BGEO File Corrupt; No polygon primitives ");
-
     delete[] buffer_start;
-    cout << endl << nPrims << " primitives as polygons:" << endl;
-
-    //Restricted to triangles only
-    const int verticesPerPolygon = 3;
-    bufferSize = nPrims * (sizeof(uint32_t) + sizeof(char) + verticesPerPolygon * (idxBytes + vtxAtrBytes)  + primAtrBytes);
-    primsBuf = new char[bufferSize];
-    file.read(primsBuf,bufferSize);
-
-    //Copy
-    cout << "idxBytes: " << idxBytes << " vtxAtrBytes: " << vtxAtrBytes << " primAtrBytes: " << primAtrBytes << endl;
-    uint32_t * indicesBuffer;
-
-
+    primsBuf = primsBuf_start;
     /* For debugging purposes
     if (idxBytes == 2)
         indicesBuffer = copyBufferVertex16<uint32_t>(primsBuf+5,1);
