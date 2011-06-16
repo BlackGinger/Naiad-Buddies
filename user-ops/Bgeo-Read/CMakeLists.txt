@@ -60,5 +60,5 @@ endif ($ENV{EM_COMPILER} STREQUAL "intel")
 # destination location for user op
 
 set_target_properties (Bgeo-Read PROPERTIES PREFIX "")
-install               (TARGETS Bgeo-Read DESTINATION server/user-ops)
-install               (FILES Bgeo-Read.BodyOp DESTINATION server/user-ops)
+install               (TARGETS Bgeo-Read DESTINATION buddies/houdini/user-ops)
+install               (FILES Bgeo-Read.BodyOp DESTINATION buddies/houdini/user-ops)

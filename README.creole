@@ -24,7 +24,7 @@ geo2emp source.bgeo dest.emp
 
 Convert EMP to BGEO:
 {{{
-geo2emp source.emp dest.bgeo
+emp2geo source.emp dest.bgeo
 }}}
 
 Command-Line Help:
