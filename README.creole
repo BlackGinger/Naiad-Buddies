@@ -54,8 +54,11 @@ cmd/sample_hip/ - Sample Houdini files to show how to use geo2emp
 
 === Compiling (Linux):
 1. source houdini_setup
+
 2. Make sure your NAIAD_PATH has been set up, and the $NAIAD_PATH/lib directory is in the linker path (either through ld.so.conf or LD_LIBRARY_PATH)
+
 3. type "make" 
+
 
 If the compile was successful, a binary file (geo2emp) will be output in the bin/ directory.
 
