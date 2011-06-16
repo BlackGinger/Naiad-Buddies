@@ -7,7 +7,7 @@ The Naiad Buddy for Houdini comprises two workflows, which can be used separatel
 * Houdini .bgeo files may be translated into Naiad EMP files (and vice versa) using the {{{geo2emp}}} command-line tools.
 * Houdini .bgeo files may be natively read and written inside Naiad itself, using the Naiad file operators {{{Bgeo-Read}}} and {{{Bgeo-Write}}}.
 
-== The Command-Line Tools
+== 1.1 The Command-Line Tools
 
 The Command-Line Tools convert Houdini's .bgeo files to Naiad's .emp files, and has the current set of features:
 * Writes triangulated geometry and point velocities to EMP files.
@@ -38,7 +38,7 @@ It is recommended to integrate the geo2emp directly into Houdini using Houdini's
 === Performance tip
 Please note that it is slower to load EMP files through a File SOP than their .bgeo equivalent since it has to convert all the .emp data on each frame. Rather convert your .emp sequences to a .bgeo sequence and load the .bgeo files to allow for faster loading & scrubbing.
 
-== The Naiad File Operators
+== 1.2 The Naiad File Operators
 
 The Naiad File Operators Bgeo-Read and Bgeo-Write allows native BGEO reading and writing from within Naiad itself, eliminating the command-line BGEO-to-EMP conversion step that is otherwise required.  They are easy to use - just create them inside your Naiad scene and specify the BGEO file (or sequence) to load or write.
 
