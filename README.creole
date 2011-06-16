@@ -13,10 +13,6 @@ The Command-Line Tools convert Houdini's .bgeo files to Naiad's .emp files.
 
 This library is *not* backwards compatible with Naiad. It *may* work with, or compile against, previous versions but proper functionality is not guaranteed.
 
-=== Description
-
-This tool converts Houdini's .bgeo files to Naiad's .emp files. This tool was built in order to import/export .EMP files directly from Houdini.
-
 === Current Features
 
 * Writes triangulated geometry and point velocities to EMP files.
@@ -25,10 +21,9 @@ This tool converts Houdini's .bgeo files to Naiad's .emp files. This tool was bu
 * Allow setting timestep value for EMP files (needed for EMP sequences)
 * Allow explicitly setting body name for writing data to EMP files
 
-Command Line Usage:
--------------------
+=== Command Line Usage:
 Convert BGEO to EMP:
-	geo2emp source.bgeo dest.emp
+{{{geo2emp source.bgeo dest.emp}}}
 
 Convert EMP to BGEO:
 	geo2emp source.emp dest.bgeo
