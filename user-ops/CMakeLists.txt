@@ -32,21 +32,6 @@
 #    POSSIBILITY OF SUCH DAMAGE.
 #
 
-project               (NBUDDY_HOUDINI_USER_OPS)
+project (NBUDDY_HOUDINI_USER_OPS)
 
-include_directories   (.
-                       $ENV{NAIAD_PATH}/server/include
-                       $ENV{NAIAD_PATH}/server/include/system
-                       $ENV{NAIAD_PATH}/server/include/em
-                       $ENV{NAIAD_PATH}/server/include/Nb
-		       $ENV{NAIAD_PATH}/server/include/Ng)
-
-link_directories      ($ENV{NAIAD_PATH}/server/lib
-		       $ENV{NAIAD_PATH}/lib)
-
-add_library           (naiad_distance SHARED naiad_distance)
-target_link_libraries (naiad_distance Nb)
-set_target_properties (naiad_distance PROPERTIES PREFIX "")
-
-install               (TARGETS naiad_distance DESTINATION buddies/arnold/plug-ins)
-
+subdirs (Bgeo-Read)

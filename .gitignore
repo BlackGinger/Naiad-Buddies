@@ -5,7 +5,6 @@
 *.emp
 *.swo
 *~
-bin/geo2emp
-bin/emp2geo
-bin/ROP_NaiadCamera.so
 tags
+cmd/bin
+build*

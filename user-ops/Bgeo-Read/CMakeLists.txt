@@ -1,7 +1,7 @@
 #
-# CMAKE project for the Naiad Buddy for Houdini, user operators
+# CMAKE project for Exotic Matter User BodyOp Bgeo-Read
 # 
-# Copyright (c) 2010-2011 Exotic Matter AB.  All rights reserved.
+# Copyright (c) 2011 Exotic Matter AB.  All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -31,22 +31,34 @@
 #    ANY  WAY OUT OF THE USE OF  THIS SOFTWARE,  EVEN IF ADVISED OF  THE
 #    POSSIBILITY OF SUCH DAMAGE.
 #
+project               (NBUDDY_HOUDINI_USER_OPS_BGEO_READ)
 
-project               (NBUDDY_HOUDINI_USER_OPS)
+# include and library paths to the Naiad dynamics server..
 
 include_directories   (.
-                       $ENV{NAIAD_PATH}/server/include
                        $ENV{NAIAD_PATH}/server/include/system
                        $ENV{NAIAD_PATH}/server/include/em
                        $ENV{NAIAD_PATH}/server/include/Nb
-		       $ENV{NAIAD_PATH}/server/include/Ng)
+	               $ENV{NAIAD_PATH}/server/include/Ng
+                       $ENV{NAIAD_PATH}/server/include/Ni)
+link_directories      ($ENV{NAIAD_PATH}/server/lib)
 
-link_directories      ($ENV{NAIAD_PATH}/server/lib
-		       $ENV{NAIAD_PATH}/lib)
+# user op is a dynamic shared library
 
-add_library           (naiad_distance SHARED naiad_distance)
-target_link_libraries (naiad_distance Nb)
-set_target_properties (naiad_distance PROPERTIES PREFIX "")
+add_library           (Bgeo-Read SHARED 
+		       Bgeo-Read 
+		       Bgeo)
 
-install               (TARGETS naiad_distance DESTINATION buddies/arnold/plug-ins)
+# on intel compiler, use static libraries...
 
+if ($ENV{EM_COMPILER} STREQUAL "intel")
+target_link_libraries (Bgeo-Read Ni -static-intel)
+else ($ENV{EM_COMPILER} STREQUAL "intel")
+target_link_libraries (Bgeo-Read Ni)
+endif ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# destination location for user op
+
+set_target_properties (Bgeo-Read PROPERTIES PREFIX "")
+install               (TARGETS Bgeo-Read DESTINATION server/user-ops)
+install               (FILES Bgeo-Read.BodyOp DESTINATION server/user-ops)
