@@ -37,18 +37,11 @@ Command-Line Help:
 geo2emp -h 
 }}}
 
-Recommended usage of the commandline tool: 
-------------------------------------------
-It is recommended to integrate the commandline tool into Houdini using Houdini's GEOio mechanism so that you can read and write .emp files from within Houdini (see Installing section). 
+=== Houdini Integration
+It is recommended to integrate the geo2emp directly into Houdini using Houdini's GEOio mechanism so that you can read and write EMP files from within Houdini (for instructions on how to do this, please see the installation section below). 
 
-Performance tip:
-----------------
-Please take note that it is indeed slower to load .emp files through a File SOP than their .bgeo equivalent since it has to convert all the .emp data on each frame. Rather convert your .emp sequences to a .bgeo sequence and load the .bgeo files to allow for faster loading & scrubbing.
-
-=== Components
-
-* Geo2Emp class for converting between Naiad's .emp and Houdini's .bgeo format
-* geo2emp commandline tool to server as frontend to the converter class
+=== Performance tip
+Please note that it is slower to load EMP files through a File SOP than their .bgeo equivalent since it has to convert all the .emp data on each frame. Rather convert your .emp sequences to a .bgeo sequence and load the .bgeo files to allow for faster loading & scrubbing.
 
 === Directory Structure
 
@@ -57,12 +50,6 @@ cmd/bin/ - Script and binary used to to run bgeo2emp tool
 cmd/hip/ - Sample .hip file for Houdini to illustrate export process
 cmd/houdini/ - Files that need to be placed in the Houdini path
 cmd/sample_hip/ - Sample Houdini files to show how to use geo2emp
-
-=== The source has been tested with:
-
-* Gentoo 64bit, GCC 4.4.4
-* Houdini 11.0.458 (www.sidefx.com)
-* Naiad 0.5.0 (www.exoticmatter.com)
 
 === Compiling (Linux):
 1. source houdini_setup
@@ -77,21 +64,17 @@ If the compile was successful, a binary file (geo2emp) will be output in the bin
 
 The "geo2emp" tool should now be ready to run. Make sure your Houdini and Naiad environment is properly set up, then type "geo2emp" in the console. If the installation was successful, this should print the usage instructions for the tool.
 
-Changes:
---------
-0.2b)
-	- Completely rewritten for Naiad beta.
-	- Restored functionality of previous version (see Features section)
+=== Source Code Components
 
-0.1)
-	- First release. 
+* Geo2Emp class for converting between Naiad's .emp and Houdini's .bgeo format
+* geo2emp commandline tool to server as frontend to the converter class
 
+The source code for the command line tools has been tested with:
+* Gentoo 64bit, GCC 4.4.4
+* Houdini 11.0.458 (www.sidefx.com)
+* Naiad 0.5.0 (www.exoticmatter.com)
 
-=== Contributors 
-* Van Aarde Krynauw
-* Morné Chamberlain
-* Marcus Nordenstam
-
+== The Naiad File Operators
 
 The User Operators are Naiad file operators (called Bgeo-Read and Bgeo-Write).  These file operators allows native BGEO reading and writing from within Naiad itself, eliminating the command-line BGEO-to-EMP conversion step that is otherwise required.
 
