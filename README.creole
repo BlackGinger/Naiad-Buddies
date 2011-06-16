@@ -44,8 +44,10 @@ The Naiad File Operators {{{Bgeo-Read}}} and {{{Bgeo-Write}}} allows native BGEO
 
 = 2.0 Compiling and Installing on Linux
 
+If you have already compiled this buddy before, you can skip ahead to section 2.2 ("Building the Buddy") below (since you already have all the build tools you need).
+
 == 2.1 Build Tools
-If you have already compiled this buddy before, you can skip ahead to section 2.2 ("Building the Buddy") below.  If you want to compile and build this Naiad Buddy yourself, you need the following tools and utilities installed:
+If you want to compile and build this Naiad Buddy yourself, you need the following tools and utilities installed:
 
 * a C++ compiler such as gcc/g++
 * cmake
