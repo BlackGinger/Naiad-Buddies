@@ -40,7 +40,7 @@ Please note that it is slower to load EMP files through a File SOP than their .b
 
 == 1.2 The Naiad File Operators
 
-The Naiad File Operators Bgeo-Read and Bgeo-Write allows native BGEO reading and writing from within Naiad itself, eliminating the command-line BGEO-to-EMP conversion step that is otherwise required.  They are easy to use - just create them inside your Naiad scene and specify the BGEO file (or sequence) to load or write.
+The Naiad File Operators {{{Bgeo-Read}}} and {{{Bgeo-Write}}} allows native BGEO reading and writing from within Naiad itself, eliminating the command-line BGEO-to-EMP conversion step that is otherwise required.  They are easy to use - just create them inside your Naiad scene and specify the BGEO file (or sequence) to load or write.
 
 === Directory Structure
 The Naiad Buddy for Houdini source code has the following directory structure:
