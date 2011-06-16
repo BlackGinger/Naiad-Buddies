@@ -1,8 +1,105 @@
+= Introduction
+
+The Naiad Buddy for Houdini facilitates data translation between the Naiad and Houdini 3D graphics software packages.
+
+At the moment, the Naiad Buddy for Houdini is divided into two components:
+* Command-Line Tools (found under the cmd/ subdirectory)
+* Naiad File Operators (found under the user-ops/ subdirectory)
+
+== The Command-Line Tools
+
+The Command-Line Tools convert Houdini's .bgeo files to Naiad's .emp files. 
+
+Version: v0.4.0
+The source has been tested with:
+Gentoo 64bit, GCC 4.4.4
+Houdini 11.0.458 (www.sidefx.com)
+Naiad 0.5.0 (www.exoticmatter.com)
+
+This library is *not* backwards compatible with Naiad. It *may* work with, or compile against, previous versions but proper functionality is not guaranteed.
+
+=== Description
+
+This tool converts Houdini's .bgeo files to Naiad's .emp files. This tool was built in order to import/export .EMP files directly from Houdini.
+
+=== Current Features
+
+* Writes triangulated geometry and point velocities to EMP files.
+* Loads particles and particle velocities from EMP files.
+* Loads multiple meshes from EMP files.
+* Allow setting timestep value for EMP files (needed for EMP sequences)
+* Allow explicitly setting body name for writing data to EMP files
+
+Command Line Usage:
+-------------------
+Convert BGEO to EMP:
+	geo2emp source.bgeo dest.emp
+
+Convert EMP to BGEO:
+	geo2emp source.emp dest.bgeo
+
+For more help:
+	geo2emp -h 
+
+Recommended usage of the commandline tool: 
+------------------------------------------
+It is recommended to integrate the commandline tool into Houdini using Houdini's GEOio mechanism so that you can read and write .emp files from within Houdini (see Installing section). 
+
+Performance tip:
+----------------
+Please take note that it is indeed slower to load .emp files through a File SOP than their .bgeo equivalent since it has to convert all the .emp data on each frame. Rather convert your .emp sequences to a .bgeo sequence and load the .bgeo files to allow for faster loading & scrubbing.
+
+=== Components
+
+* Geo2Emp class for converting between Naiad's .emp and Houdini's .bgeo format
+* geo2emp commandline tool to server as frontend to the converter class
+
+=== Directory Structure
+
+cmd/src/ - Source code for bgeo2emp converter tool
+cmd/bin/ - Script and binary used to to run bgeo2emp tool
+cmd/hip/ - Sample .hip file for Houdini to illustrate export process
+cmd/houdini/ - Files that need to be placed in the Houdini path
+cmd/sample_hip/ - Sample Houdini files to show how to use geo2emp
+
+Compiling (Linux):
+------------------
+1. source houdini_setup
+2. Make sure your NAIAD_PATH has been set up, and the $NAIAD_PATH/lib directory is in the linker path (either through ld.so.conf or LD_LIBRARY_PATH)
+3. type "make" 
+
+If the compile was successful, a binary file (geo2emp) will be output in the bin/ directory.
+
+Installing (Linux):
+-------------------
+2. Copy the "geo2emp" binary to a directory in your path variable, e.g., /usr/bin or /usr/local/bin.
+3. Copy the houdini/GEOio script to a directory in your HOUDINI_PATH or append the contents to an existing GEOio file.
+
+The "geo2emp" tool should now be ready to run. Make sure your Houdini and Naiad environment is properly set up, then type "geo2emp" in the console. If the installation was successful, this should print the usage instructions for the tool.
+
+Changes:
+--------
+0.2b)
+	- Completely rewritten for Naiad beta.
+	- Restored functionality of previous version (see Features section)
+
+0.1)
+	- First release. 
+
+
+=== Contributors 
+* Van Aarde Krynauw
+* Morné Chamberlain
+* Marcus Nordenstam
+
+
+The User Operators are Naiad file operators (called Bgeo-Read and Bgeo-Write).  These file operators allows native BGEO reading and writing from within Naiad itself, eliminating the command-line BGEO-to-EMP conversion step that is otherwise required.
+
 = 1.0 Installing the Build Tools And Configuring Your Environment
 
-You only need to follow the instructions in this section 1.0 once (the first time you want to use the Naiad Buddy for Arnold).  **However, please follow the instructions in section 2.0 every time you need to update the Naiad Buddy for Arnold due to a new Naiad release.**
+You only need to follow the instructions in this section 1.0 once (the first time you want to use the Naiad Buddy for Houdini).  **However, please follow the instructions in section 2.0 every time you need to update the Naiad Buddy for Houdini due to a new Naiad (or Houdini) release.**
 
-Since you will be compiling and building the Naiad Buddy yourself, you will need the following tools and utilities installed:
+Since you will be compiling and building this Naiad Buddy yourself, you will need the following tools and utilities installed:
 
 * a C++ compiler such as gcc/g++
 * cmake
@@ -46,7 +143,6 @@ export CC=gcc
 export CXX=g++
 export EM_PLAT=LINUX
 export EM_ARCH=`uname -m`
-export ARNOLD_ROOT=/path/to/where/arnold/is/installed
 }}}
 
 == 1.2 tcsh/csh Configuration
@@ -65,7 +161,6 @@ setenv CC gcc
 setenv CXX g++
 setenv EM_PLAT LINUX
 setenv EM_ARCH `uname -m`
-setenv ARNOLD_ROOT /path/to/where/arnold/is/installed
 }}}
 
 == 1.3 Verifying Your Configuration
@@ -76,39 +171,33 @@ Quit the text editor and close the shell. Open a new shell, which should take in
 $ echo $NAIAD_PATH
 }}}
 
-This should print the path to your current Naiad installation.
-
-{{{
-$ echo $ARNOLD_ROOT
-}}}
-
-That should print the correct path relative to your Arnold installation directory.  If it does not, then you've made a mistake.
+This should print the path to your current Naiad installation.  If it does not, then you've made a mistake.
 
 
 
-= 2.0 Compiling Naiad Buddy for Arnold
+= 2.0 Compiling Naiad Buddy for Houdini
 
-You need to do this every time a new version of Naiad is released that contains API changes.  This is typically semi-major or major releases, such as 1.0 to 1.5 or 2.0, etc.
+You need to do this every time a new version of Naiad is released that contains API changes.  This is typically semi-major or major releases, such as 1.0 to 1.5 or 2.0, etc.  It may also be necessary between Houdini releases.
 
 We assume the following:
 
-* Naiad and Arnold have been installed.  
-* The environment variable {{{$NAIAD_PATH}}} points to the location of the Naiad installation and {{{$ARNOLD_ROOT}}} points to the location of the Arnold installation.
-* You want to keep the arnold-buddy source in your home directory, e.g., in the path ~/arnold-buddy.git.  If you wish to use another location for the source code, then please make the appropriate substitutions in the commands shown below:
+* Naiad and Houdini have been installed.  
+* The environment variable {{{$NAIAD_PATH}}} points to the location of the Naiad installation.
+* You want to keep the buddy source in your home directory, e.g., in the path ~/naiad-buddy-houdini.git.  If you wish to use another location for the source code, then please make the appropriate substitutions in the commands shown below:
 
-First, get a fresh copy of the latest Naiad Buddy for Arnold source code:
+First, get a fresh copy of the latest Naiad Buddy for Houdini source code:
 
 {{{
-rm -rf ~/arnold-buddy.git
-git clone git://github.com/exoticmarcus/Naiad-Buddy-For-Arnold.git ~/arnold-buddy.git
+rm -rf ~/naiad-buddy-houdini.git
+git clone git://github.com/ExoticMatter/Naiad-Buddy-For-Houdini.git ~/naiad-buddy-houdini.git
 }}}
 
 Now, to compile this buddy, run the following commands:
 
 {{{
-cd ~/arnold-buddy.git
+cd ~/naiad-buddy-houdini.git
 mkdir -p build && cd build
-cmake -DCMAKE_BUILD_TYPE=RELEASE ~/arnold-buddy.git
+cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=$NAIAD_PATH ~/naiad-buddy-houdini.git
 make
 cd .. 
 rm -rf build
