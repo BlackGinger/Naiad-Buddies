@@ -1,4 +1,4 @@
-= Introduction
+= 1.0 Introduction
 
 The Naiad Buddy for Houdini facilitates data translation between the Naiad and Houdini 3D graphics software packages.
 
@@ -9,12 +9,7 @@ The Naiad Buddy for Houdini comprises two workflows, which can be used separatel
 
 == The Command-Line Tools
 
-The Command-Line Tools convert Houdini's .bgeo files to Naiad's .emp files. 
-
-This library is *not* backwards compatible with Naiad. It *may* work with, or compile against, previous versions but proper functionality is not guaranteed.
-
-=== Current Features
-
+The Command-Line Tools convert Houdini's .bgeo files to Naiad's .emp files, and has the current set of features:
 * Writes triangulated geometry and point velocities to EMP files.
 * Loads particles and particle velocities from EMP files.
 * Loads multiple meshes from EMP files.
@@ -43,78 +38,51 @@ It is recommended to integrate the geo2emp directly into Houdini using Houdini's
 === Performance tip
 Please note that it is slower to load EMP files through a File SOP than their .bgeo equivalent since it has to convert all the .emp data on each frame. Rather convert your .emp sequences to a .bgeo sequence and load the .bgeo files to allow for faster loading & scrubbing.
 
+== The Naiad File Operators
+
+The Naiad File Operators Bgeo-Read and Bgeo-Write allows native BGEO reading and writing from within Naiad itself, eliminating the command-line BGEO-to-EMP conversion step that is otherwise required.  They are easy to use - just create them inside your Naiad scene and specify the BGEO file (or sequence) to load or write.
+
 === Directory Structure
+The Naiad Buddy for Houdini source code has the following directory structure:
 {{{
+cmd/ - Source code for the command-line tools
 cmd/src/ - Source code for bgeo2emp converter tool
 cmd/bin/ - Script and binary used to to run bgeo2emp tool
 cmd/hip/ - Sample .hip file for Houdini to illustrate export process
 cmd/houdini/ - Files that need to be placed in the Houdini path
 cmd/sample_hip/ - Sample Houdini files to show how to use geo2emp
+
+user-ops/ - Source code for the Naiad file operators
+user-ops/Bgeo-Read/ - Source code for the Bgeo-Read file op
+user-ops/Bgeo-Write/ - Source code for the Bgeo-Write file op
 }}}
 
-=== Compiling (Linux):
-1. source houdini_setup
+= 2.0 Compiling and Installing on Linux
 
-2. Make sure your NAIAD_PATH has been set up, and the $NAIAD_PATH/lib directory is in the linker path (either through ld.so.conf or LD_LIBRARY_PATH)
-
-3. type "make" 
-
-
-If the compile was successful, a binary file (geo2emp) will be output in the bin/ directory.
-
-=== Installing (Linux):
-2. Copy the "geo2emp" binary to a directory in your path variable, e.g., /usr/bin or /usr/local/bin.
-3. Copy the houdini/GEOio script to a directory in your HOUDINI_PATH or append the contents to an existing GEOio file.
-
-The "geo2emp" tool should now be ready to run. Make sure your Houdini and Naiad environment is properly set up, then type "geo2emp" in the console. If the installation was successful, this should print the usage instructions for the tool.
-
-=== Source Code Components
-
-* Geo2Emp class for converting between Naiad's .emp and Houdini's .bgeo format
-* geo2emp commandline tool to server as frontend to the converter class
-
-The source code for the command line tools has been tested with:
-* Gentoo 64bit, GCC 4.4.4
-* Houdini 11.0.458 (www.sidefx.com)
-* Naiad 0.5.0 (www.exoticmatter.com)
-
-== The Naiad File Operators
-
-The User Operators are Naiad file operators (called Bgeo-Read and Bgeo-Write).  These file operators allows native BGEO reading and writing from within Naiad itself, eliminating the command-line BGEO-to-EMP conversion step that is otherwise required.
-
-= 1.0 Installing the Build Tools And Configuring Your Environment
-
-You only need to follow the instructions in this section 1.0 once (the first time you want to use the Naiad Buddy for Houdini).  **However, please follow the instructions in section 2.0 every time you need to update the Naiad Buddy for Houdini due to a new Naiad (or Houdini) release.**
-
-Since you will be compiling and building this Naiad Buddy yourself, you will need the following tools and utilities installed:
+== 2.1 Build Tools
+If you have already compiled this buddy before, you can skip ahead to section 2.2 ("Building the Buddy") below.  If you want to compile and build this Naiad Buddy yourself, you need the following tools and utilities installed:
 
 * a C++ compiler such as gcc/g++
 * cmake
 * git
 
-These are very common tools you can find on any flavor of Linux.
-
-Unfortunately, each Linux distribution handles the exact method of installation slightly differently.  We will show how to install these using Ubuntu:
+These are very common tools you can find on any flavor of Linux.  Unfortunately, each Linux distribution handles the exact method of installation slightly differently.  Using Ubuntu, you can install these build tools by writing:
 
 {{{
 sudo apt-get install git-core gcc g++ cmake -y
 }}}
 
-(for installing these common build tools on other Linux distros, please consult Google).
+(on other Linux distros, please consult Google).
 
-Next, you have to set up the environment for the plugin manually by editing the appropriate shell resource configuration file.
-
-The first step is to determine which shell you are using; there are two main types: bash and tcsh/csh. 
-
-To determine which shell you're using, please type
+Next, you have to set up the build environment manually by editing the appropriate shell resource configuration file.  The first step is to determine which shell you are using; there are two main types: bash and tcsh/csh. To determine which shell you're using, please type
 
 {{{
 $ echo $SHELL
 }}}
 
-if you see /bin/bash - then you are using a bash shell.  Otherwise it's tcsh/csh.
+if you see /bin/bash, then you are using a bash shell.  
 
-== 1.1 Bash Configuration
+=== bash shell configuration
 
 Please edit the .bashrc configuration file to add the necessary environment variables.  The .bashrc configuration file is a text file which is located in your home directory.  You can use any text editor (such as gedit) to edit the .bashrc file:
 
@@ -132,7 +100,7 @@ export EM_PLAT=LINUX
 export EM_ARCH=`uname -m`
 }}}
 
-== 1.2 tcsh/csh Configuration
+=== tcsh/csh shell configuration
 
 If you are NOT using a bash shell, you need to edit the .cshrc configuration file, which is located in your home directory.  You can use any text editor (such as gedit) to edit the .cshrc file:
 
@@ -160,9 +128,7 @@ $ echo $NAIAD_PATH
 
 This should print the path to your current Naiad installation.  If it does not, then you've made a mistake.
 
-
-
-= 2.0 Compiling Naiad Buddy for Houdini
+== 2.2 Compiling Naiad Buddy for Houdini
 
 You need to do this every time a new version of Naiad is released that contains API changes.  This is typically semi-major or major releases, such as 1.0 to 1.5 or 2.0, etc.  It may also be necessary between Houdini releases.
 
@@ -189,3 +155,22 @@ make
 cd .. 
 rm -rf build
 }}}
+
+=== Compiling (Linux):
+* Ensure the Naiad environment has been properly set up (e.g. $NAIAD_PATH/server/lib is included in the $LD_LIBRARY_PATH).  A good sanity check is if you can run Open Naiad Studio, then everything should work.
+* Ensure your Houdini environment has been properly set up (e.g. you have sourced {{{houdini_setup}}}.
+
+To compile, just go into the top-level directory of the Naiad Buddy for Houdini, and run make:
+
+{{{
+cd naiad-buddy-houdini.git
+make
+}}}
+
+If the compile was successful, a binary file (geo2emp) will be output in the {{{cmd/bin/}}} directory.
+
+=== Installation (Linux):
+2. Copy the "geo2emp" binary to a directory in your path variable, e.g., /usr/bin or /usr/local/bin.
+3. Copy the houdini/GEOio script to a directory in your HOUDINI_PATH or append the contents to an existing GEOio file.
+
+The "geo2emp" tool should now be ready to run. Make sure your Houdini and Naiad environment is properly set up, then type "geo2emp" in the console. If the installation was successful, this should print the usage instructions for the tool.
