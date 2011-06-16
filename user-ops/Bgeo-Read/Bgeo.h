@@ -32,7 +32,7 @@ public:
     uint32_t getNumberOfPoints(){ return nPoints;};
     uint32_t getNumberOfPointAtr(){ return nPointAtr;};
     attribute* getPointAtr(){return pointAtr;};
-    template<class T> T * getPointAtr(const int size, const int offset);
+    template<class T> T * getPointAtrArr(const int size, const int offset);
 
     void readPrims();
     void freePrimsBuffer() { delete[] primsBuf;};
@@ -42,9 +42,9 @@ public:
     attribute* getPrimAtr(){return primArt;};
     uint32_t getNumberOfVtxAtr(){ return nVtxAtr;};
     attribute* getVtxAtr(){return vtxArt;};
-    template<class T> T * getPrimAtr(const int size, const int offset);
+    template<class T> T * getPrimAtrArr(const int size, const int offset);
 
-    int getBytesPerPrimLine(){return 5 + idxBytes + vtxAtrBytes + primAtrBytes;};
+    int getBytesPerPrimLine(){return 5 + (idxBytes + vtxAtrBytes) * 3 + primAtrBytes;};
     int getIdxBytes(){return idxBytes;};
     int getVtxAtrBytes(){return vtxAtrBytes;};
     int getPrimAtrBytes(){return primAtrBytes;};
@@ -187,14 +187,14 @@ template<class T> void Bgeo::printArray(T* buf, const int n, const int size)
      }
 }
 
-template<class T> T * Bgeo::getPointAtr(const int size, const int offset)
+template<class T> T * Bgeo::getPointAtrArr(const int size, const int offset)
 {
 	return copyBuffer<T>(pointsBuf+offset,nPoints,size,sizeof(float) * 4 + pointAtrBytes);
 }
 
-template<class T> T * Bgeo::getPrimAtr(const int size, const int offset)
+template<class T> T * Bgeo::getPrimAtrArr(const int size, const int offset)
 {
-	return copyBuffer<T>(primsBuf+offset,nPrims,size,getBytesPerPrimLine);
+	return copyBuffer<T>(primsBuf+offset,nPrims,size,getBytesPerPrimLine());
 }
 
 
