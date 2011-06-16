@@ -4,8 +4,8 @@ The Naiad Buddy for Houdini facilitates data translation between the Naiad and H
 
 The Naiad Buddy for Houdini comprises two workflows, which can be used separately or together:
 
-* Houdini .bgeo files may be translated into Naiad EMP files (and vice versa) using the geo2emp/emp2geo Command-Line Tools.
-* Houdini .bgeo files may be natively read and written inside Naiad itself, using the Naiad File Operators Bgeo-Read and Bgeo-Write.
+* Houdini .bgeo files may be translated into Naiad EMP files (and vice versa) using the {{{geo2emp}}} command-line tools.
+* Houdini .bgeo files may be natively read and written inside Naiad itself, using the Naiad file operators {{{Bgeo-Read}}} and {{{Bgeo-Write}}}.
 
 == The Command-Line Tools
 
@@ -23,13 +23,19 @@ This library is *not* backwards compatible with Naiad. It *may* work with, or co
 
 === Command Line Usage:
 Convert BGEO to EMP:
-{{{geo2emp source.bgeo dest.emp}}}
+{{{
+geo2emp source.bgeo dest.emp
+}}}
 
 Convert EMP to BGEO:
-	geo2emp source.emp dest.bgeo
+{{{
+geo2emp source.emp dest.bgeo
+}}}
 
-For more help:
-	geo2emp -h 
+Command-Line Help:
+{{{
+geo2emp -h 
+}}}
 
 Recommended usage of the commandline tool: 
 ------------------------------------------
