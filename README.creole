@@ -117,22 +117,34 @@ This should print the path to your current Naiad installation.  If it does not, 
 
 == 2.2 Building the Buddy
 
-You need to do this every time a new version of Naiad is released that contains API changes.  This is typically semi-major or major releases, such as 1.0 to 1.5 or 2.0, etc.  It may also be necessary between Houdini releases.
+You need to do this every time a new version of Naiad is released that contains API changes.  This is typically semi-major or major releases, such as 1.0 to 1.5 or 2.0, etc.  It may also be necessary between Houdini releases. 
 
-We assume the following:
-
-* Naiad and Houdini have been installed.  
-* The environment variable {{{$NAIAD_PATH}}} points to the location of the Naiad installation.
-* You want to keep the buddy source in your home directory, e.g., in the path ~/naiad-buddy-houdini.git.  If you wish to use another location for the source code, then please make the appropriate substitutions in the commands shown below:
-
-First, get a fresh copy of the latest Naiad Buddy for Houdini source code:
+First, get a fresh copy of the latest Naiad Buddy for Houdini source code (in this example we are assuming you want to keep the buddy source code in a folder inside your home directory):
 
 {{{
 rm -rf ~/naiad-buddy-houdini.git
 git clone git://github.com/ExoticMatter/Naiad-Buddy-For-Houdini.git ~/naiad-buddy-houdini.git
 }}}
 
-Now, to compile this buddy, run the following commands:
+Next, ensure the Naiad environment has been properly set up (e.g. $NAIAD_PATH/server/lib is included in the $LD_LIBRARY_PATH).  A good sanity check is if you can run Open Naiad Studio, then everything should work.  Also ensure your Houdini environment has been properly set up (e.g. you have sourced {{{houdini_setup}}}.
+
+=== Compiling the command-line tools (geo2emp, emp2geo)
+
+To compile the command-line tools, just run make from inside the cmd/ subdirectory:
+
+{{{
+cd ~/naiad-buddy-houdini.git/cmd
+make
+}}}
+
+* If the compile was successful, a binary files (geo2emp/emp2geo) will be output in the {{{~/naiad-buddy-houdini.git/cmd/bin/}}} directory.
+* Copy the "geo2emp" binary to a directory in your path variable, e.g., /usr/bin or /usr/local/bin.
+* Copy the houdini/GEOio script to a directory in your HOUDINI_PATH or append the contents to an existing GEOio file.
+
+The command-line tools should now be ready to run. 
+
+=== Compiling the Naiad file operators (Bgeo-Read, Bgeo-Write)
+To compile the Naiad file operators, run the following commands:
 
 {{{
 cd ~/naiad-buddy-houdini.git
@@ -142,25 +154,6 @@ make
 cd .. 
 rm -rf build
 }}}
-
-=== Compiling (Linux):
-* Ensure the Naiad environment has been properly set up (e.g. $NAIAD_PATH/server/lib is included in the $LD_LIBRARY_PATH).  A good sanity check is if you can run Open Naiad Studio, then everything should work.
-* Ensure your Houdini environment has been properly set up (e.g. you have sourced {{{houdini_setup}}}.
-
-To compile, just go into the top-level directory of the Naiad Buddy for Houdini, and run make:
-
-{{{
-cd naiad-buddy-houdini.git
-make
-}}}
-
-If the compile was successful, a binary file (geo2emp) will be output in the {{{cmd/bin/}}} directory.
-
-=== Installation (Linux):
-2. Copy the "geo2emp" binary to a directory in your path variable, e.g., /usr/bin or /usr/local/bin.
-3. Copy the houdini/GEOio script to a directory in your HOUDINI_PATH or append the contents to an existing GEOio file.
-
-The "geo2emp" tool should now be ready to run. Make sure your Houdini and Naiad environment is properly set up, then type "geo2emp" in the console. If the installation was successful, this should print the usage instructions for the tool.
 
 = 3.0 Directory Structure
 The Naiad Buddy for Houdini source code has the following directory structure:
