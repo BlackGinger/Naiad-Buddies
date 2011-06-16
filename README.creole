@@ -2,19 +2,14 @@
 
 The Naiad Buddy for Houdini facilitates data translation between the Naiad and Houdini 3D graphics software packages.
 
-At the moment, the Naiad Buddy for Houdini is divided into two components:
-* Command-Line Tools (found under the cmd/ subdirectory)
-* Naiad File Operators (found under the user-ops/ subdirectory)
+The Naiad Buddy for Houdini comprises two workflows, which can be used separately or together:
+
+* Houdini .bgeo files may be translated into Naiad EMP files (and vice versa) using the geo2emp/emp2geo Command-Line Tools.
+* Houdini .bgeo files may be natively read and written inside Naiad itself, using the Naiad File Operators Bgeo-Read and Bgeo-Write.
 
 == The Command-Line Tools
 
 The Command-Line Tools convert Houdini's .bgeo files to Naiad's .emp files. 
-
-Version: v0.4.0
-The source has been tested with:
-Gentoo 64bit, GCC 4.4.4
-Houdini 11.0.458 (www.sidefx.com)
-Naiad 0.5.0 (www.exoticmatter.com)
 
 This library is *not* backwards compatible with Naiad. It *may* work with, or compile against, previous versions but proper functionality is not guaranteed.
 
@@ -62,16 +57,20 @@ cmd/hip/ - Sample .hip file for Houdini to illustrate export process
 cmd/houdini/ - Files that need to be placed in the Houdini path
 cmd/sample_hip/ - Sample Houdini files to show how to use geo2emp
 
-Compiling (Linux):
-------------------
+=== The source has been tested with:
+
+* Gentoo 64bit, GCC 4.4.4
+* Houdini 11.0.458 (www.sidefx.com)
+* Naiad 0.5.0 (www.exoticmatter.com)
+
+=== Compiling (Linux):
 1. source houdini_setup
 2. Make sure your NAIAD_PATH has been set up, and the $NAIAD_PATH/lib directory is in the linker path (either through ld.so.conf or LD_LIBRARY_PATH)
 3. type "make" 
 
 If the compile was successful, a binary file (geo2emp) will be output in the bin/ directory.
 
-Installing (Linux):
--------------------
+=== Installing (Linux):
 2. Copy the "geo2emp" binary to a directory in your path variable, e.g., /usr/bin or /usr/local/bin.
 3. Copy the houdini/GEOio script to a directory in your HOUDINI_PATH or append the contents to an existing GEOio file.
 
