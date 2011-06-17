@@ -16,6 +16,8 @@ The Command-Line Tools convert Houdini's .bgeo files to Naiad's .emp files, and 
 * Allow setting timestep value for EMP files (needed for EMP sequences)
 * Allow explicitly setting body name for writing data to EMP files
 
+The command-line tools were originally written by Van Aarde and have since been "adopted" by Exotic Matter.
+
 === Command Line Usage:
 Convert BGEO to EMP:
 {{{
