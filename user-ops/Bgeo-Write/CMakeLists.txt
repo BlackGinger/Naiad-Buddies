@@ -1,5 +1,5 @@
 #
-# CMAKE project for Exotic Matter User BodyOp Bgeo-Read
+# CMAKE project for Exotic Matter User BodyOp Bgeo-Write
 # 
 # Copyright (c) 2011 Exotic Matter AB.  All rights reserved.
 #
@@ -31,7 +31,7 @@
 #    ANY  WAY OUT OF THE USE OF  THIS SOFTWARE,  EVEN IF ADVISED OF  THE
 #    POSSIBILITY OF SUCH DAMAGE.
 #
-project               (NBUDDY_HOUDINI_USER_OPS_BGEO_READ)
+project               (NBUDDY_HOUDINI_USER_OPS_BGEO_WRITE)
 
 # include and library paths to the Naiad dynamics server..
 
@@ -45,20 +45,20 @@ link_directories      ($ENV{NAIAD_PATH}/server/lib)
 
 # user op is a dynamic shared library
 
-add_library           (Bgeo-Read SHARED 
-		       Bgeo-Read 
+add_library           (Bgeo-Write SHARED 
+		       Bgeo-Write 
 		       ../common/Bgeo)
 
 # on intel compiler, use static libraries...
 
 if ($ENV{EM_COMPILER} STREQUAL "intel")
-target_link_libraries (Bgeo-Read Ni -static-intel)
+target_link_libraries (Bgeo-Write Ni -static-intel)
 else ($ENV{EM_COMPILER} STREQUAL "intel")
-target_link_libraries (Bgeo-Read Ni)
+target_link_libraries (Bgeo-Write Ni)
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
 
 # destination location for user op
 
-set_target_properties (Bgeo-Read PROPERTIES PREFIX "")
-install               (TARGETS Bgeo-Read DESTINATION buddies/houdini/user-ops)
-install               (FILES Bgeo-Read.BodyOp DESTINATION buddies/houdini/user-ops)
+set_target_properties (Bgeo-Write PROPERTIES PREFIX "")
+install               (TARGETS Bgeo-Write DESTINATION buddies/houdini/user-ops)
+install               (FILES Bgeo-Write.BodyOp DESTINATION buddies/houdini/user-ops)

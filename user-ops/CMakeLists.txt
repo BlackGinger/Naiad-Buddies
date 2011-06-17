@@ -34,4 +34,4 @@
 
 project (NBUDDY_HOUDINI_USER_OPS)
 
-subdirs (Bgeo-Read)
+subdirs (Bgeo-Read Bgeo-Write)

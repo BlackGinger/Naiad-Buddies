@@ -48,7 +48,7 @@
 #include <Ni.h>
 
 // Bgeo class
-#include "Bgeo.h"
+#include "../common/Bgeo.h"
 #include <stdint.h>
 
 
@@ -573,8 +573,8 @@ private:
 				case 0:
 					if (atr[i].size == 1){
 						float def = *(float*)atr[i].defBuf;
-						triangle.guaranteeChannel3f(atr[i].name.c_str(), Nb::Vec3f(def,def,def));
-						Nb::Buffer3f& buf = triangle.mutableBuffer3f(atr[i].name.c_str());
+						triangle.guaranteeChannel3f(atr[i].name+string("$0").c_str(), Nb::Vec3f(def,def,def));
+						Nb::Buffer3f& buf = triangle.mutableBuffer3f(atr[i].name+string("$0").c_str());
 						buf.resize(nPrims);
 
 						float * p = b.getVtxAtrArr<float>(atr[i].size,offset);
@@ -615,8 +615,8 @@ private:
 				case 1:
 					if (atr[i].size == 1){
 						uint32_t def = *(uint32_t*)atr[i].defBuf;
-						triangle.guaranteeChannel3i(atr[i].name.c_str(), Nb::Vec3i(def,def,def));
-						Nb::Buffer3i& buf = triangle.mutableBuffer3i(atr[i].name.c_str());
+						triangle.guaranteeChannel3i(atr[i].name +string("$0").c_str(), Nb::Vec3i(def,def,def));
+						Nb::Buffer3i& buf = triangle.mutableBuffer3i(atr[i].name+string("$0").c_str());
 						buf.resize(nPrims);
 
 						uint32_t * p = b.getVtxAtrArr<uint32_t>(atr[i].size,offset);
