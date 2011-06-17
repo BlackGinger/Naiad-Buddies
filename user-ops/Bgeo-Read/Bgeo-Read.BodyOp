@@ -1,11 +1,22 @@
 BodyOp Bgeo-Read
+|*
+Please add docs! :)
+What it does
+Special cases
+*|
 {   
     Category "File"
 
     ParamSection "Import Settings"
     {
 	FileName "Filename" "test.#.bgeo"
+	|*  *|
+
+	Int "Frame Padding" "4"
+	|*  *|
+
 	BodyName "Body Name" "bgeo-body"
+	|*  *|
     }
 
     ParamSection "Tile Layout"

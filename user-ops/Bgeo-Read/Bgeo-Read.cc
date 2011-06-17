@@ -42,6 +42,7 @@
 // Naiad Graph API
 #include <NgBodyOp.h>
 #include <NgBodyOutput.h>
+#include <NgProjectPath.h>
 
 // Naiad Interface
 #include <Ni.h>
@@ -72,11 +73,21 @@ public:
 
 	// get some parameters
 
-	const Nb::String filename = param1s("Filename")->eval(tb);
+	const Nb::String sequenceName = param1s("Filename")->eval(tb);
+        const int        padding = param1i("Frame Padding")->eval(tb);
 	const Nb::String bodyname = param1s("Body Name")->eval(tb);
 
-	// read bego file
-	Bgeo b(filename.c_str());
+        // expand filename into exact filename
+
+        const Nb::String fileName = 
+            Nb::sequenceToFilename(Ng::projectPath(),
+                                   sequenceName,
+                                   tb.frame,                
+                                   tb.timestep,
+                                   padding);
+	
+        // read bego file
+	Bgeo b(fileName.c_str());
 	b.readPoints();
 	b.readPrims();
 
