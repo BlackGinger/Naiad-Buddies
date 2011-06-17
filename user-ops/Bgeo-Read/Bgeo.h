@@ -34,7 +34,7 @@ public:
     attribute* getPointAtr(){return pointAtr;};
     template<class T> T * getPointAtrArr(const int size, const int offset);
 
-    void readPrims();
+    void readPrims(const bool integrityCheck);
     void freePrimsBuffer() { delete[] primsBuf;};
     uint32_t * getIndices3v();
     uint32_t getNumberOfPrims(){ return nPrims;};

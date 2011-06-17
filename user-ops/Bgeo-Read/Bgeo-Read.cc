@@ -71,378 +71,91 @@ public:
         if(!enabled(tb))
             return;
 
-	// get some parameters
-
-	const Nb::String sequenceName = param1s("Filename")->eval(tb);
-        const int        padding = param1i("Frame Padding")->eval(tb);
-	const Nb::String bodyname = param1s("Body Name")->eval(tb);
-
-        // expand filename into exact filename
-
-        const Nb::String fileName = 
-            Nb::sequenceToFilename(Ng::projectPath(),
+	//Import settings parameters
+	const Nb::String sequenceName 	= param1s("Filename")->eval(tb);
+    const int        		padding = param1i("Frame Padding")->eval(tb);
+	const Nb::String bodyname 		= param1s("Body Name")->eval(tb);
+	// expand filename into exact filename
+    const Nb::String fileName = Nb::sequenceToFilename(Ng::projectPath(),
                                    sequenceName,
                                    tb.frame,                
                                    tb.timestep,
                                    padding);
-	
-        // read bego file
-	Bgeo b(fileName.c_str());
-	b.readPoints();
-	b.readPrims();
+    const bool integrityCheck =  Nb::String("On").listed_in(Nb::String(param1e("Integrity Check")->eval(tb)));
+    const Nb::String bodySignature = param1e("Body Signature")->eval(tb);
+	const Nb::String pointAtrStr = param1s("Point")->eval(tb);
+	const Nb::String primAtrStr = param1s("Primitive")->eval(tb);
+	const Nb::String vtxAtrStr = param1s("Vertex")->eval(tb);
 
-	// determine if bgeo data is mesh or particle...
+	//t odo fix offset in switch cases. repeat???
+	//to lower case med parameters?
+
+    // read bego file
+	Bgeo b(fileName.c_str());
+
+	// Read points
+	b.readPoints();
+	int nPoints = b.getNumberOfPoints();
+	float * points = b.getPoints3v();
 
 	// create a body
-	Nb::Body* body = 0;    	
+	Nb::Body* body = 0;
+	if (bodySignature=="Mesh") {
+		//If mesh, fill points with position data
+		body = queryBody("body-output", "Mesh", bodyname, tb, "Unsolved");
+		Nb::PointShape&    point = body->mutablePointShape();
+		Nb::Buffer3f& x = point.mutableBuffer3f("position");
+		x.resize( nPoints );
+		memcpy(x.data,points,sizeof(float) * 3 * nPoints);
 
-	// if mesh:
-	//   create a body using the "Mesh" signature
-	body = queryBody("body-output", "Mesh", bodyname, tb, "Unsolved");                       
+		//Read point attributes
+		cerr << "Reading point attributes with: " << pointAtrStr << endl;
+		readPointAtr(b,pointAtrStr,point,nPoints);
 
-	//   fill mesh with data from bgeo
-	Nb::PointShape&    point = body->mutablePointShape();
-	Nb::Buffer3f& x = point.mutableBuffer3f("position");
-	int nPoints = b.getNumberOfPoints();
-	x.resize( nPoints );
-	float * points = b.getPoints3v();
-	memcpy(x.data,points,sizeof(float) * 3 * nPoints);
+		//Read primitives in form of triangles
+		Nb::TriangleShape& triangle = body->mutableTriangleShape();
+		Nb::Buffer3i& index = triangle.mutableBuffer3i("index");
+		const int nPrims = b.getNumberOfPrims();
+		index.resize( nPrims ); // from bgeo
+		b.readPrims(integrityCheck);
+		uint32_t * indices = b.getIndices3v();
+		memcpy(index.data,indices,sizeof(uint32_t) *3* nPrims);
+		delete[] indices;
+
+		cout << "Going to read prim and vtx attri";
+		readPrimAtr(b,primAtrStr,triangle,nPrims);
+		readVtxAtr(b,vtxAtrStr,triangle,nPrims);
+	}
+	else{
+		//If particle, fill particles with position
+		body = queryBody("body-output", "Particle", bodyname, tb, "Unsolved");
+		Nb::ParticleShape& particle = body->mutableParticleShape();
+		createParticleChannels(b,pointAtrStr,body);
+		particle.beginBlockChannelData(body->mutableLayout());
+		particle.blockChannelData3f("position", (Nb::Vec3f*) points,nPoints);
+		readPointAtr(b,pointAtrStr,particle,nPoints);
+		particle.endBlockChannelData();
+
+	}
+
+	//no need for points anymore
 	delete[] points;
+	//   fill body with points from bgeo
 
-	Bgeo::attribute * atr = b.getPointAtr();
-	int offset = sizeof(float) * 4 ;
-	for (int i = 0; i < b.getNumberOfPointAtr(); ++i){
-		cerr << "Loading point parameter of type: " << b.getNumberOfPointAtr() << endl;
-		switch (atr[i].type){
-			case 0:
-				if (atr[i].size == 1){
-					point.guaranteeChannel1f(atr[i].name.c_str(), *(float*)atr[i].defBuf);
-					Nb::Buffer1f& buf = point.mutableBuffer1f(atr[i].name.c_str());
-					buf.resize(nPoints);
 
-					float * p = b.getPointAtrArr<float>(atr[i].size,offset);
-					memcpy(buf.data,p,sizeof(float) * nPoints);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else if (atr[i].size == 3){
-					float def[3] = {*(float*) (atr[i].defBuf),
-							*(float*) (atr[i].defBuf+sizeof(float)),
-							*(float*) (atr[i].defBuf + 2*sizeof(float)) };
-					string name = atr[i].name + string("$3f");
-					point.guaranteeChannel3f(name.c_str(), Nb::Vec3f(def[0],def[1], def[2]));
-					Nb::Buffer3f& buf = point.mutableBuffer3f(name.c_str());
-					buf.resize(nPoints);
 
-					float * p = b.getPointAtrArr<float>(atr[i].size,offset);
-					memcpy(buf.data,p,sizeof(float) * 3 * nPoints);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else {
-					NB_THROW("Point Attribute error; There is currently no support for float attributes of size: " << atr[i].size);
-				}
-				break;
-			case 1:
-				if (atr[i].size == 1){
-					point.guaranteeChannel1i(atr[i].name.c_str(), *(uint32_t*)atr[i].defBuf);
-					Nb::Buffer1i& buf = point.mutableBuffer1i(atr[i].name.c_str());
-					buf.resize(nPoints);
 
-					uint32_t * p = b.getPointAtrArr<uint32_t>(atr[i].size,offset);
-					memcpy(buf.data,p,sizeof(uint32_t) * nPoints);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else if (atr[i].size == 3){
-					uint32_t def[3] = {*(uint32_t*) (atr[i].defBuf),
-							*(uint32_t*) (atr[i].defBuf + sizeof(uint32_t)),
-							*(uint32_t*) (atr[i].defBuf + 2*sizeof(uint32_t)) };
-					point.guaranteeChannel3i(atr[i].name.c_str(), Nb::Vec3i(def[0],def[1], def[2]));
-					Nb::Buffer3i& buf = point.mutableBuffer3i(atr[i].name.c_str());
-					buf.resize(nPoints);
 
-					uint32_t * p = b.getPointAtrArr<uint32_t>(atr[i].size,offset);
-					memcpy(buf.data,p,sizeof(uint32_t) * 3 * nPoints);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else {
-					NB_THROW("Point Attribute error; There is currently no support for int attributes of size: " << atr[i].size);
-				}
-				break;
-			case 2:
-				NB_THROW("Point Attribute error; There is currently no support for attributes of 'string'");
-				break;
-			case 3:
-				NB_THROW("Point Attribute error; There is currently no support for attributes of 'char'");
-				break;
-			case 4:
-				NB_THROW("Point Attribute error; There is currently no support for attributes of 'index'");
-				break;
-			case 5: {
-				float def[3] = {*(float*) (atr[i].defBuf),
-						*(float*) (atr[i].defBuf+sizeof(float)),
-						*(float*) (atr[i].defBuf + 2*sizeof(float)) };
-				string name = atr[i].name + string("$v");
-				point.guaranteeChannel3f(name.c_str(), Nb::Vec3f(def[0],def[1], def[2]));
-				Nb::Buffer3f& buf = point.mutableBuffer3f(name.c_str());
-				buf.resize(nPoints);
+	// If mesh, read polygons in form of triangles
+	if (Nb::String("Mesh").listed_in(bodySignature)){
 
-				float * p = b.getPointAtrArr<float>(atr[i].size,offset);
-				memcpy(buf.data,p,sizeof(float) * 3 * nPoints);
-				delete[] p;
-				offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				break;
-			default:
-				NB_THROW("Point attribute error; Could not read attribute type.");
-		}
 	}
-
-
-	Nb::TriangleShape& triangle = body->mutableTriangleShape();
-	Nb::Buffer3i& index = triangle.mutableBuffer3i("index");
-	int nPrims = b.getNumberOfPrims();
-	index.resize( nPrims ); // from bgeo
-
-	//Prim attributes
-	atr = b.getPrimAtr();
-	offset = b.getBytesPerPrimLine() - b.getPrimAtrBytes() ;
-	for (int i = 0; i < b.getNumberOfPrimAtr(); ++i){
-		switch (atr[i].type){
-			case 0:
-				if (atr[i].size == 1){
-					triangle.guaranteeChannel1f(atr[i].name.c_str(), *(float*)atr[i].defBuf);
-					Nb::Buffer1f& buf = triangle.mutableBuffer1f(atr[i].name.c_str());
-					buf.resize(nPrims);
-
-					float * p = b.getPrimAtrArr<float>(atr[i].size,offset);
-					memcpy(buf.data,p,sizeof(float) * nPrims);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else if (atr[i].size == 3){
-					float def[3] = {*(float*) (atr[i].defBuf),
-							*(float*) (atr[i].defBuf+sizeof(float)),
-							*(float*) (atr[i].defBuf + 2*sizeof(float)) };
-					string name = atr[i].name + string("$3f");
-					triangle.guaranteeChannel3f(name.c_str(), Nb::Vec3f(def[0],def[1], def[2]));
-					Nb::Buffer3f& buf = triangle.mutableBuffer3f(name.c_str());
-					buf.resize(nPrims);
-
-					float * p = b.getPrimAtrArr<float>(atr[i].size,offset);
-					memcpy(buf.data,p,sizeof(float) * 3 * nPrims);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else {
-					NB_THROW("Primitive Attribute error; There is currently no support for float attributes of size: " << atr[i].size);
-				}
-				break;
-			case 1:
-				if (atr[i].size == 1){
-					triangle.guaranteeChannel1i(atr[i].name.c_str(), *(uint32_t*)atr[i].defBuf);
-					Nb::Buffer1i& buf = triangle.mutableBuffer1i(atr[i].name.c_str());
-					buf.resize(nPrims);
-
-					uint32_t * p = b.getPrimAtrArr<uint32_t>(atr[i].size,offset);
-					memcpy(buf.data,p,sizeof(uint32_t) * nPrims);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else if (atr[i].size == 3){
-					uint32_t def[3] = {*(uint32_t*) (atr[i].defBuf),
-							*(uint32_t*) (atr[i].defBuf + sizeof(uint32_t)),
-							*(uint32_t*) (atr[i].defBuf + 2*sizeof(uint32_t)) };
-					triangle.guaranteeChannel3i(atr[i].name.c_str(), Nb::Vec3i(def[0],def[1], def[2]));
-					Nb::Buffer3i& buf = triangle.mutableBuffer3i(atr[i].name.c_str());
-					buf.resize(nPrims);
-
-					uint32_t * p = b.getPrimAtrArr<uint32_t>(atr[i].size,offset);
-					memcpy(buf.data,p,sizeof(uint32_t) * 3 * nPrims);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else {
-					NB_THROW("Primitive Attribute error; There is currently no support for int attributes of size: " << atr[i].size);
-				}
-				break;
-			case 2:
-				NB_THROW("Primitive Attribute error; There is currently no support for attributes of 'string'");
-				break;
-			case 3:
-				NB_THROW("Primitive Attribute error; There is currently no support for attributes of 'char'");
-				break;
-			case 4:
-				NB_THROW("Primitive Attribute error; There is currently no support for attributes of 'index'");
-				break;
-			case 5: {
-				float def[3] = {*(float*) (atr[i].defBuf),
-						*(float*) (atr[i].defBuf+sizeof(float)),
-						*(float*) (atr[i].defBuf + 2*sizeof(float)) };
-				string name = atr[i].name + string("$v");
-				triangle.guaranteeChannel3f(name.c_str(), Nb::Vec3f(def[0],def[1], def[2]));
-				Nb::Buffer3f& buf = triangle.mutableBuffer3f(name.c_str());
-				buf.resize(nPrims);
-
-				float * p = b.getPrimAtrArr<float>(atr[i].size,offset);
-				memcpy(buf.data,p,sizeof(float) * 3 * nPrims);
-				delete[] p;
-				offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				break;
-			default:
-				NB_THROW("Primitive attribute error; Could not read attribute type.");
-		}
-	}
-
-	//Vertex attributes
-	atr = b.getVtxAtr();
-	offset = 5 + b.getIdxBytes() ;
-	for (int i = 0; i < b.getNumberOfVtxAtr(); ++i){
-		switch (atr[i].type){
-			case 0:
-				if (atr[i].size == 1){
-					float def = *(float*)atr[i].defBuf;
-					triangle.guaranteeChannel3f(atr[i].name.c_str(), Nb::Vec3f(def,def,def));
-					Nb::Buffer3f& buf = triangle.mutableBuffer3f(atr[i].name.c_str());
-					buf.resize(nPrims);
-
-					float * p = b.getVtxAtrArr<float>(atr[i].size,offset);
-					memcpy(buf.data,p,sizeof(float) *3* nPrims);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else if (atr[i].size == 3){
-					float def[3] = {*(float*) (atr[i].defBuf),
-							*(float*) (atr[i].defBuf+sizeof(float)),
-							*(float*) (atr[i].defBuf + 2*sizeof(float)) };
-					triangle.guaranteeChannel3f(atr[i].name + string("$0f").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
-					triangle.guaranteeChannel3f(atr[i].name + string("$1f").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
-					triangle.guaranteeChannel3f(atr[i].name + string("$2f").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
-					Nb::Buffer3f& buf0 = triangle.mutableBuffer3f(atr[i].name + string("$0f").c_str());
-					Nb::Buffer3f& buf1 = triangle.mutableBuffer3f(atr[i].name + string("$1f").c_str());
-					Nb::Buffer3f& buf2 = triangle.mutableBuffer3f(atr[i].name + string("$2f").c_str());
-					buf0.resize(nPrims);
-					buf1.resize(nPrims);
-					buf2.resize(nPrims);
-
-					const int spacing = b.getIdxBytes() + b.getVtxAtrBytes();
-					float * p = b.getPrimAtrArr<float>(atr[i].size,offset);
-					memcpy(buf0.data,p,sizeof(float) * 3 * nPrims);
-					delete[] p;
-					p = b.getPrimAtrArr<float>(atr[i].size,offset + spacing);
-					memcpy(buf1.data,p,sizeof(float) * 3 * nPrims);
-					delete[] p;
-					p = b.getPrimAtrArr<float>(atr[i].size,offset + 2 * spacing);
-					memcpy(buf2.data,p,sizeof(float) * 3 * nPrims);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else {
-					NB_THROW("Vertex Attribute error; There is currently no support for float attributes of size: " << atr[i].size);
-				}
-				break;
-			case 1:
-				if (atr[i].size == 1){
-					uint32_t def = *(uint32_t*)atr[i].defBuf;
-					triangle.guaranteeChannel3i(atr[i].name.c_str(), Nb::Vec3i(def,def,def));
-					Nb::Buffer3i& buf = triangle.mutableBuffer3i(atr[i].name.c_str());
-					buf.resize(nPrims);
-
-					uint32_t * p = b.getVtxAtrArr<uint32_t>(atr[i].size,offset);
-					memcpy(buf.data,p,sizeof(uint32_t) * 3 * nPrims);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else if (atr[i].size == 3){
-					uint32_t def[3] = {*(uint32_t*) (atr[i].defBuf),
-							*(uint32_t*) (atr[i].defBuf + sizeof(uint32_t)),
-							*(uint32_t*) (atr[i].defBuf + 2*sizeof(uint32_t)) };
-					triangle.guaranteeChannel3i(atr[i].name + string("$0").c_str(), Nb::Vec3i(def[0],def[1], def[2]));
-					triangle.guaranteeChannel3i(atr[i].name + string("$1").c_str(), Nb::Vec3i(def[0],def[1], def[2]));
-					triangle.guaranteeChannel3i(atr[i].name + string("$2").c_str(), Nb::Vec3i(def[0],def[1], def[2]));
-					Nb::Buffer3i& buf0 = triangle.mutableBuffer3i(atr[i].name + string("$0").c_str());
-					Nb::Buffer3i& buf1 = triangle.mutableBuffer3i(atr[i].name + string("$1").c_str());
-					Nb::Buffer3i& buf2 = triangle.mutableBuffer3i(atr[i].name + string("$2").c_str());
-					buf0.resize(nPrims);
-					buf1.resize(nPrims);
-					buf2.resize(nPrims);
-
-					const int spacing = b.getIdxBytes() + b.getVtxAtrBytes();
-					uint32_t * p = b.getPrimAtrArr<uint32_t>(atr[i].size,offset);
-					memcpy(buf0.data,p,sizeof(uint32_t) * 3 * nPrims);
-					delete[] p;
-					p = b.getPrimAtrArr<uint32_t>(atr[i].size,offset + spacing);
-					memcpy(buf1.data,p,sizeof(uint32_t) * 3 * nPrims);
-					delete[] p;
-					p = b.getPrimAtrArr<uint32_t>(atr[i].size,offset + 2 * spacing);
-					memcpy(buf2.data,p,sizeof(uint32_t) * 3 * nPrims);
-					delete[] p;
-					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				else {
-					NB_THROW("Vertex Attribute error; There is currently no support for int attributes of size: " << atr[i].size);
-				}
-				break;
-			case 2:
-				NB_THROW("Vertex Attribute error; There is currently no support for attributes of 'string'");
-				break;
-			case 3:
-				NB_THROW("Vertex Attribute error; There is currently no support for attributes of 'char'");
-				break;
-			case 4:
-				NB_THROW("Vertex Attribute error; There is currently no support for attributes of 'index'");
-				break;
-			case 5: {
-				float def[3] = {*(float*) (atr[i].defBuf),
-						*(float*) (atr[i].defBuf+sizeof(float)),
-						*(float*) (atr[i].defBuf + 2*sizeof(float)) };
-				triangle.guaranteeChannel3f(atr[i].name + string("$0v").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
-				triangle.guaranteeChannel3f(atr[i].name + string("$1v").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
-				triangle.guaranteeChannel3f(atr[i].name + string("$2v").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
-				Nb::Buffer3f& buf0 = triangle.mutableBuffer3f(atr[i].name + string("$0v").c_str());
-				Nb::Buffer3f& buf1 = triangle.mutableBuffer3f(atr[i].name + string("$1v").c_str());
-				Nb::Buffer3f& buf2 = triangle.mutableBuffer3f(atr[i].name + string("$2v").c_str());
-				buf0.resize(nPrims);
-				buf1.resize(nPrims);
-				buf2.resize(nPrims);
-
-				const int spacing = b.getIdxBytes() + b.getVtxAtrBytes();
-				float * p = b.getPrimAtrArr<float>(atr[i].size,offset);
-				memcpy(buf0.data,p,sizeof(float) * 3 * nPrims);
-				delete[] p;
-				p = b.getPrimAtrArr<float>(atr[i].size,offset + spacing);
-				memcpy(buf1.data,p,sizeof(float) * 3 * nPrims);
-				delete[] p;
-				p = b.getPrimAtrArr<float>(atr[i].size,offset + 2 * spacing);
-				memcpy(buf2.data,p,sizeof(float) * 3 * nPrims);
-				delete[] p;
-				offset+= b.type2Bytes(atr[i].type) * atr[i].size;
-				}
-				break;
-			default:
-				NB_THROW("Vertex attribute error; Could not read attribute type.");
-		}
-	}
-
-
-	uint32_t * indices = b.getIndices3v();
-	memcpy(index.data,indices,sizeof(uint32_t) *3* nPrims);
-	std::cerr << "idx bgeo";
-	//b.printArray(indices,nPrims,3);
-
-	delete[] indices;
-
-
-
 	//for(int i=0; i<index.size(); ++i)
 	  //std::cerr << "idx " << index(i) << std::endl;
 
 	// if particle data, create a body using the "Particle" signature...
 	//body = queryBody("body-output", "Particle", bodyname, tb, "Unsolved");
-    	
+
 	EM_ASSERT(body);
 
 
@@ -539,9 +252,448 @@ public:
 
     virtual void
     stepBodies(const Nb::TimeBundle& tb)
-    { 
+    {
         // re-create unevolving bodies at each step
         createEvolvingBodies(tb);
+    }
+
+private:
+    void createParticleChannels(Bgeo & b, const Nb::String pointAtrStr,Nb::Body* body)
+    {
+    	Bgeo::attribute * atr = b.getPointAtr();
+		for (int i = 0; i < b.getNumberOfPointAtr(); ++i){
+			if (Nb::String(atr[i].name).listed_in(pointAtrStr)){
+				switch (atr[i].type){
+					case 0:
+						if (atr[i].size == 1){
+							string name = string("Particle.") + atr[i].name;
+							body->guaranteeChannel1f(name.c_str(),*(float*)atr[i].defBuf);
+						}
+						else if (atr[i].size == 3){
+							float def[3] = {*(float*) (atr[i].defBuf),
+									*(float*) (atr[i].defBuf+sizeof(float)),
+									*(float*) (atr[i].defBuf + 2*sizeof(float)) };
+							string name = string("Particle.") + atr[i].name + string("$3f");
+							body->guaranteeChannel3f(name.c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+						}
+						else
+							NB_THROW("Point Attribute error; There is currently no support for float attributes of size: " << atr[i].size);
+						break;
+					case 1:
+						if (atr[i].size == 1){
+							string name = string("Particle.") + atr[i].name;
+							body->guaranteeChannel1i(name.c_str(),*(uint32_t*)atr[i].defBuf);
+						}
+						else if (atr[i].size == 3){
+							uint32_t def[3] = {*(uint32_t*) (atr[i].defBuf),
+									*(uint32_t*) (atr[i].defBuf + sizeof(uint32_t)),
+									*(uint32_t*) (atr[i].defBuf + 2*sizeof(uint32_t)) };
+							string name = string("Particle.") + atr[i].name;
+							body->guaranteeChannel3i(name.c_str(), Nb::Vec3i(def[0],def[1], def[2]));
+						}
+						else
+							NB_THROW("Point Attribute error; There is currently no support for int attributes of size: " << atr[i].size);
+						break;
+					case 2:
+						NB_THROW("Point Attribute error; There is currently no support for attributes of 'string'");
+						break;
+					case 3:
+						NB_THROW("Point Attribute error; There is currently no support for attributes of 'char'");
+						break;
+					case 4:
+						NB_THROW("Point Attribute error; There is currently no support for attributes of 'index'");
+						break;
+					case 5: {
+						float def[3] = {*(float*) (atr[i].defBuf),
+								*(float*) (atr[i].defBuf+sizeof(float)),
+								*(float*) (atr[i].defBuf + 2*sizeof(float)) };
+						string name = string("Particle.") + atr[i].name + string("$3v");
+						body->guaranteeChannel3f(name.c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+						}
+						break;
+					default:
+						NB_THROW("Point attribute error; Could not read attribute type.");
+				}
+			}
+		}
+    }
+    void readPointAtr(Bgeo & b, const Nb::String pointAtrStr ,Nb::PointShape& point,const int nPoints )
+    {
+		// read point attributes
+		Bgeo::attribute * atr = b.getPointAtr();
+		int offset = sizeof(float) * 4 ;
+		for (int i = 0; i < b.getNumberOfPointAtr(); ++i){
+			if (Nb::String(atr[i].name).listed_in(pointAtrStr)){
+				switch (atr[i].type){
+					case 0:
+						if (atr[i].size == 1){
+							point.guaranteeChannel1f(atr[i].name.c_str(), *(float*)atr[i].defBuf);
+							Nb::Buffer1f& buf = point.mutableBuffer1f(atr[i].name.c_str());
+							buf.resize(nPoints);
+
+							float * p = b.getPointAtrArr<float>(atr[i].size,offset);
+							memcpy(buf.data,p,sizeof(float) * nPoints);
+							delete[] p;
+							offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+						}
+						else if (atr[i].size == 3){
+							float def[3] = {*(float*) (atr[i].defBuf),
+									*(float*) (atr[i].defBuf+sizeof(float)),
+									*(float*) (atr[i].defBuf + 2*sizeof(float)) };
+							string name = atr[i].name + string("$3f");
+							point.guaranteeChannel3f(name.c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+							Nb::Buffer3f& buf = point.mutableBuffer3f(name.c_str());
+							buf.resize(nPoints);
+
+							float * p = b.getPointAtrArr<float>(atr[i].size,offset);
+							memcpy(buf.data,p,sizeof(float) * 3 * nPoints);
+							delete[] p;
+							offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+						}
+						else {
+							NB_THROW("Point Attribute error; There is currently no support for float attributes of size: " << atr[i].size);
+						}
+						break;
+					case 1:
+						if (atr[i].size == 1){
+							point.guaranteeChannel1i(atr[i].name.c_str(), *(uint32_t*)atr[i].defBuf);
+							Nb::Buffer1i& buf = point.mutableBuffer1i(atr[i].name.c_str());
+							buf.resize(nPoints);
+
+
+							uint32_t * p = b.getPointAtrArr<uint32_t>(atr[i].size,offset);
+							memcpy(buf.data,p,sizeof(uint32_t) * nPoints);
+							delete[] p;
+							offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+						}
+						else if (atr[i].size == 3){
+							uint32_t def[3] = {*(uint32_t*) (atr[i].defBuf),
+									*(uint32_t*) (atr[i].defBuf + sizeof(uint32_t)),
+									*(uint32_t*) (atr[i].defBuf + 2*sizeof(uint32_t)) };
+							point.guaranteeChannel3i(atr[i].name.c_str(), Nb::Vec3i(def[0],def[1], def[2]));
+							Nb::Buffer3i& buf = point.mutableBuffer3i(atr[i].name.c_str());
+							buf.resize(nPoints);
+
+							uint32_t * p = b.getPointAtrArr<uint32_t>(atr[i].size,offset);
+							memcpy(buf.data,p,sizeof(uint32_t) * 3 * nPoints);
+							delete[] p;
+							offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+						}
+						else {
+							NB_THROW("Point Attribute error; There is currently no support for int attributes of size: " << atr[i].size);
+						}
+						break;
+					case 2:
+						NB_THROW("Point Attribute error; There is currently no support for attributes of 'string'");
+						break;
+					case 3:
+						NB_THROW("Point Attribute error; There is currently no support for attributes of 'char'");
+						break;
+					case 4:
+						NB_THROW("Point Attribute error; There is currently no support for attributes of 'index'");
+						break;
+					case 5: {
+						float def[3] = {*(float*) (atr[i].defBuf),
+								*(float*) (atr[i].defBuf+sizeof(float)),
+								*(float*) (atr[i].defBuf + 2*sizeof(float)) };
+						string name = atr[i].name + string("$3v");
+						point.guaranteeChannel3f(name.c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+						Nb::Buffer3f& buf = point.mutableBuffer3f(name.c_str());
+						buf.resize(nPoints);
+
+						float * p = b.getPointAtrArr<float>(atr[i].size,offset);
+						memcpy(buf.data,p,sizeof(float) * 3 * nPoints);
+						delete[] p;
+						offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+						}
+						break;
+					default:
+						NB_THROW("Point attribute error; Could not read attribute type.");
+				}
+			}
+		}
+    }
+
+    void readPointAtr(Bgeo & b, const Nb::String pointAtrStr ,Nb::ParticleShape& particle,const int nPoints )
+    {
+		// read point attributes
+		Bgeo::attribute * atr = b.getPointAtr();
+		int offset = sizeof(float) * 4 ;
+		for (int i = 0; i < b.getNumberOfPointAtr(); ++i){
+			if (Nb::String(atr[i].name).listed_in(pointAtrStr)){
+				switch (atr[i].type){
+					case 0:
+						if (atr[i].size == 1){
+							float * p = b.getPointAtrArr<float>(atr[i].size,offset);
+							string name = string("Particle.") + atr[i].name;
+							particle.blockChannelData1f(name.c_str(),p,nPoints);
+							delete[] p;
+							offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+						}
+						else if (atr[i].size == 3){
+							string name = string("Particle.") + atr[i].name + string("$3f");
+							float * p = b.getPointAtrArr<float>(atr[i].size,offset);
+							particle.blockChannelData3f(name.c_str(),(Nb::Vec3f*)p,nPoints);
+							delete[] p;
+							offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+						}
+						break;
+					case 1:
+						if (atr[i].size == 1){
+							uint32_t * p = b.getPointAtrArr<uint32_t>(atr[i].size,offset);
+							string name = string("Particle.") + atr[i].name;
+							particle.blockChannelData1i(name.c_str(),(const int *)p,nPoints);
+							delete[] p;
+							offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+						}
+						else if (atr[i].size == 3){
+							uint32_t * p = b.getPointAtrArr<uint32_t>(atr[i].size,offset);
+							string name = string("Particle.") + atr[i].name;
+							particle.blockChannelData3i(name.c_str(),(Nb::Vec3i*)p,nPoints);
+							delete[] p;
+							offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+						}
+						break;
+					case 5: {
+						string name = string("Particle.") + atr[i].name + string("$3v");
+						float * p = b.getPointAtrArr<float>(atr[i].size,offset);
+						particle.blockChannelData3f(name.c_str(),(Nb::Vec3f*)p,nPoints);
+						delete[] p;
+						offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+						}
+						break;
+					default:
+						NB_THROW("Point attribute error; Could not read attribute type.");
+				}
+			}
+		}
+    }
+
+    void readPrimAtr(Bgeo & b, const Nb::String primAtrStr ,Nb::TriangleShape& triangle, const int nPrims)
+    {
+		//Prim attributes
+		Bgeo::attribute * atr = b.getPrimAtr();
+		int offset = b.getBytesPerPrimLine() - b.getPrimAtrBytes() ;
+		for (int i = 0; i < b.getNumberOfPrimAtr(); ++i){
+			switch (atr[i].type){
+				case 0:
+					if (atr[i].size == 1){
+						triangle.guaranteeChannel1f(atr[i].name.c_str(), *(float*)atr[i].defBuf);
+						Nb::Buffer1f& buf = triangle.mutableBuffer1f(atr[i].name.c_str());
+						buf.resize(nPrims);
+
+						float * p = b.getPrimAtrArr<float>(atr[i].size,offset);
+						memcpy(buf.data,p,sizeof(float) * nPrims);
+						delete[] p;
+						offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+					}
+					else if (atr[i].size == 3){
+						float def[3] = {*(float*) (atr[i].defBuf),
+								*(float*) (atr[i].defBuf+sizeof(float)),
+								*(float*) (atr[i].defBuf + 2*sizeof(float)) };
+						string name = atr[i].name + string("$3f");
+						triangle.guaranteeChannel3f(name.c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+						Nb::Buffer3f& buf = triangle.mutableBuffer3f(name.c_str());
+						buf.resize(nPrims);
+
+						float * p = b.getPrimAtrArr<float>(atr[i].size,offset);
+						memcpy(buf.data,p,sizeof(float) * 3 * nPrims);
+						delete[] p;
+						offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+					}
+					else {
+						NB_THROW("Primitive Attribute error; There is currently no support for float attributes of size: " << atr[i].size);
+					}
+					break;
+				case 1:
+					if (atr[i].size == 1){
+						triangle.guaranteeChannel1i(atr[i].name.c_str(), *(uint32_t*)atr[i].defBuf);
+						Nb::Buffer1i& buf = triangle.mutableBuffer1i(atr[i].name.c_str());
+						buf.resize(nPrims);
+
+						uint32_t * p = b.getPrimAtrArr<uint32_t>(atr[i].size,offset);
+						memcpy(buf.data,p,sizeof(uint32_t) * nPrims);
+						delete[] p;
+						offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+					}
+					else if (atr[i].size == 3){
+						uint32_t def[3] = {*(uint32_t*) (atr[i].defBuf),
+								*(uint32_t*) (atr[i].defBuf + sizeof(uint32_t)),
+								*(uint32_t*) (atr[i].defBuf + 2*sizeof(uint32_t)) };
+						triangle.guaranteeChannel3i(atr[i].name.c_str(), Nb::Vec3i(def[0],def[1], def[2]));
+						Nb::Buffer3i& buf = triangle.mutableBuffer3i(atr[i].name.c_str());
+						buf.resize(nPrims);
+
+						uint32_t * p = b.getPrimAtrArr<uint32_t>(atr[i].size,offset);
+						memcpy(buf.data,p,sizeof(uint32_t) * 3 * nPrims);
+						delete[] p;
+						offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+					}
+					else {
+						NB_THROW("Primitive Attribute error; There is currently no support for int attributes of size: " << atr[i].size);
+					}
+					break;
+				case 2:
+					NB_THROW("Primitive Attribute error; There is currently no support for attributes of 'string'");
+					break;
+				case 3:
+					NB_THROW("Primitive Attribute error; There is currently no support for attributes of 'char'");
+					break;
+				case 4:
+					NB_THROW("Primitive Attribute error; There is currently no support for attributes of 'index'");
+					break;
+				case 5: {
+					float def[3] = {*(float*) (atr[i].defBuf),
+							*(float*) (atr[i].defBuf+sizeof(float)),
+							*(float*) (atr[i].defBuf + 2*sizeof(float)) };
+					string name = atr[i].name + string("$v");
+					triangle.guaranteeChannel3f(name.c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+					Nb::Buffer3f& buf = triangle.mutableBuffer3f(name.c_str());
+					buf.resize(nPrims);
+
+					float * p = b.getPrimAtrArr<float>(atr[i].size,offset);
+					memcpy(buf.data,p,sizeof(float) * 3 * nPrims);
+					delete[] p;
+					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+					}
+					break;
+				default:
+					NB_THROW("Primitive attribute error; Could not read attribute type.");
+			}
+		}
+    }
+
+    void readVtxAtr(Bgeo & b, const Nb::String vtxAtrStr ,Nb::TriangleShape& triangle, const int nPrims)
+    {
+    	//Vertex attributes
+		Bgeo::attribute *atr = b.getVtxAtr();
+		int offset = 5 + b.getIdxBytes();
+		for (int i = 0; i < b.getNumberOfVtxAtr(); ++i){
+			switch (atr[i].type){
+				case 0:
+					if (atr[i].size == 1){
+						float def = *(float*)atr[i].defBuf;
+						triangle.guaranteeChannel3f(atr[i].name.c_str(), Nb::Vec3f(def,def,def));
+						Nb::Buffer3f& buf = triangle.mutableBuffer3f(atr[i].name.c_str());
+						buf.resize(nPrims);
+
+						float * p = b.getVtxAtrArr<float>(atr[i].size,offset);
+						memcpy(buf.data,p,sizeof(float) *3* nPrims);
+						delete[] p;
+						offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+					}
+					else if (atr[i].size == 3){
+						float def[3] = {*(float*) (atr[i].defBuf),
+								*(float*) (atr[i].defBuf+sizeof(float)),
+								*(float*) (atr[i].defBuf + 2*sizeof(float)) };
+						triangle.guaranteeChannel3f(atr[i].name + string("$0f").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+						triangle.guaranteeChannel3f(atr[i].name + string("$1f").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+						triangle.guaranteeChannel3f(atr[i].name + string("$2f").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+						Nb::Buffer3f& buf0 = triangle.mutableBuffer3f(atr[i].name + string("$0f").c_str());
+						Nb::Buffer3f& buf1 = triangle.mutableBuffer3f(atr[i].name + string("$1f").c_str());
+						Nb::Buffer3f& buf2 = triangle.mutableBuffer3f(atr[i].name + string("$2f").c_str());
+						buf0.resize(nPrims);
+						buf1.resize(nPrims);
+						buf2.resize(nPrims);
+
+						const int spacing = b.getIdxBytes() + b.getVtxAtrBytes();
+						float * p = b.getPrimAtrArr<float>(atr[i].size,offset);
+						memcpy(buf0.data,p,sizeof(float) * 3 * nPrims);
+						delete[] p;
+						p = b.getPrimAtrArr<float>(atr[i].size,offset + spacing);
+						memcpy(buf1.data,p,sizeof(float) * 3 * nPrims);
+						delete[] p;
+						p = b.getPrimAtrArr<float>(atr[i].size,offset + 2 * spacing);
+						memcpy(buf2.data,p,sizeof(float) * 3 * nPrims);
+						delete[] p;
+						offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+					}
+					else {
+						NB_THROW("Vertex Attribute error; There is currently no support for float attributes of size: " << atr[i].size);
+					}
+					break;
+				case 1:
+					if (atr[i].size == 1){
+						uint32_t def = *(uint32_t*)atr[i].defBuf;
+						triangle.guaranteeChannel3i(atr[i].name.c_str(), Nb::Vec3i(def,def,def));
+						Nb::Buffer3i& buf = triangle.mutableBuffer3i(atr[i].name.c_str());
+						buf.resize(nPrims);
+
+						uint32_t * p = b.getVtxAtrArr<uint32_t>(atr[i].size,offset);
+						memcpy(buf.data,p,sizeof(uint32_t) * 3 * nPrims);
+						delete[] p;
+						offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+					}
+					else if (atr[i].size == 3){
+						uint32_t def[3] = {*(uint32_t*) (atr[i].defBuf),
+								*(uint32_t*) (atr[i].defBuf + sizeof(uint32_t)),
+								*(uint32_t*) (atr[i].defBuf + 2*sizeof(uint32_t)) };
+						triangle.guaranteeChannel3i(atr[i].name + string("$0").c_str(), Nb::Vec3i(def[0],def[1], def[2]));
+						triangle.guaranteeChannel3i(atr[i].name + string("$1").c_str(), Nb::Vec3i(def[0],def[1], def[2]));
+						triangle.guaranteeChannel3i(atr[i].name + string("$2").c_str(), Nb::Vec3i(def[0],def[1], def[2]));
+						Nb::Buffer3i& buf0 = triangle.mutableBuffer3i(atr[i].name + string("$0").c_str());
+						Nb::Buffer3i& buf1 = triangle.mutableBuffer3i(atr[i].name + string("$1").c_str());
+						Nb::Buffer3i& buf2 = triangle.mutableBuffer3i(atr[i].name + string("$2").c_str());
+						buf0.resize(nPrims);
+						buf1.resize(nPrims);
+						buf2.resize(nPrims);
+
+						const int spacing = b.getIdxBytes() + b.getVtxAtrBytes();
+						uint32_t * p = b.getPrimAtrArr<uint32_t>(atr[i].size,offset);
+						memcpy(buf0.data,p,sizeof(uint32_t) * 3 * nPrims);
+						delete[] p;
+						p = b.getPrimAtrArr<uint32_t>(atr[i].size,offset + spacing);
+						memcpy(buf1.data,p,sizeof(uint32_t) * 3 * nPrims);
+						delete[] p;
+						p = b.getPrimAtrArr<uint32_t>(atr[i].size,offset + 2 * spacing);
+						memcpy(buf2.data,p,sizeof(uint32_t) * 3 * nPrims);
+						delete[] p;
+						offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+					}
+					else {
+						NB_THROW("Vertex Attribute error; There is currently no support for int attributes of size: " << atr[i].size);
+					}
+					break;
+				case 2:
+					NB_THROW("Vertex Attribute error; There is currently no support for attributes of 'string'");
+					break;
+				case 3:
+					NB_THROW("Vertex Attribute error; There is currently no support for attributes of 'char'");
+					break;
+				case 4:
+					NB_THROW("Vertex Attribute error; There is currently no support for attributes of 'index'");
+					break;
+				case 5: {
+					float def[3] = {*(float*) (atr[i].defBuf),
+							*(float*) (atr[i].defBuf+sizeof(float)),
+							*(float*) (atr[i].defBuf + 2*sizeof(float)) };
+					triangle.guaranteeChannel3f(atr[i].name + string("$0v").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+					triangle.guaranteeChannel3f(atr[i].name + string("$1v").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+					triangle.guaranteeChannel3f(atr[i].name + string("$2v").c_str(), Nb::Vec3f(def[0],def[1], def[2]));
+					Nb::Buffer3f& buf0 = triangle.mutableBuffer3f(atr[i].name + string("$0v").c_str());
+					Nb::Buffer3f& buf1 = triangle.mutableBuffer3f(atr[i].name + string("$1v").c_str());
+					Nb::Buffer3f& buf2 = triangle.mutableBuffer3f(atr[i].name + string("$2v").c_str());
+					buf0.resize(nPrims);
+					buf1.resize(nPrims);
+					buf2.resize(nPrims);
+
+					const int spacing = b.getIdxBytes() + b.getVtxAtrBytes();
+					float * p = b.getPrimAtrArr<float>(atr[i].size,offset);
+					memcpy(buf0.data,p,sizeof(float) * 3 * nPrims);
+					delete[] p;
+					p = b.getPrimAtrArr<float>(atr[i].size,offset + spacing);
+					memcpy(buf1.data,p,sizeof(float) * 3 * nPrims);
+					delete[] p;
+					p = b.getPrimAtrArr<float>(atr[i].size,offset + 2 * spacing);
+					memcpy(buf2.data,p,sizeof(float) * 3 * nPrims);
+					delete[] p;
+					offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+					}
+					break;
+				default:
+					NB_THROW("Vertex attribute error; Could not read attribute type.");
+			}
+		}
     }
 };
 

@@ -123,6 +123,7 @@ Bgeo::attribute Bgeo::readAttributeInfo()
     readNumber(buffer,strLen);
     delete[] buffer_start;
 
+
     char * name_arr = new char[strLen];
     file.read(name_arr,strLen);
     atr.name = string(name_arr,name_arr + strLen);
@@ -137,13 +138,11 @@ Bgeo::attribute Bgeo::readAttributeInfo()
     readNumber(buffer,Type);
     atr.type = Type & 0xffff;
 
-    //dont know what index do (todo)
+    //dont know what index do (t odo)
     uint16_t typeinfo = Type >> 16;
     delete[] buffer_start;
 
-
-    //Todo, error if type = 3 4 5
-
+    //aa, error if type = 3 4 5
     cout << endl << "Parameter--> Name: " << atr.name << " Size: " << atr.size<< " Type: " << typeStr[atr.type] ;
 
     //Defaults - store them in a buffer (size and type decides how to output them)
@@ -153,7 +152,7 @@ Bgeo::attribute Bgeo::readAttributeInfo()
     return atr;
 }
 
-void Bgeo::readPrims()
+void Bgeo::readPrims(const bool integrityCheck)
 {
     //Read vertex attributes
 	vtxArt = new attribute[nVtxAtr];
@@ -179,6 +178,7 @@ void Bgeo::readPrims()
     char * primsBuf_start = primsBuf;
 
 
+
     //shorten this
     int bufferSize = sizeof(uint32_t)*2 + sizeof(uint16_t) ;
     char * buffer = new char[bufferSize], *buffer_start = buffer;
@@ -186,7 +186,9 @@ void Bgeo::readPrims()
     uint32_t run;
 	readNumber(buffer,run);
 
+	cout << "Bgeo-Read: Loading polygons("<< nPrims <<"): ";
     while (run == 4294967295){
+    	cout << ".";
     	// 4294967295 = 0xFFFFFFFF
         //Control that the bgeo is a polygon model
 
@@ -195,7 +197,6 @@ void Bgeo::readPrims()
 
     	uint16_t nPrimPolygons;
 		readNumber(buffer,nPrimPolygons);
-    	cout << "Reading one chunk of Polygons ( " << nPrimPolygons<< ")" << endl;
 		//if (nPrimPolygons != nPrims) {
 			//NB_THROW("BGEO File Corrupt; primitive count mismatch (nPrimPolygons=" <<  nPrimPolygons << ", nPrims=" << nPrims << ")");
 		//}
@@ -209,6 +210,19 @@ void Bgeo::readPrims()
 		//Restricted to triangles only
 		bufferSize = nPrimPolygons * bytesPerPrim;
 		file.read(primsBuf,bufferSize);
+
+		//validate vertices per polygon
+		if (integrityCheck){
+			char * bufferTmp = primsBuf;
+			uint32_t nVtxPerPoly;
+			for (int i = 0; i < nPrimPolygons ; ++i){
+				readNumber(primsBuf,nVtxPerPoly);
+				primsBuf+= bytesPerPrim - 4;//sizeof uint32-t
+				if (nVtxPerPoly != 3)
+					NB_THROW("Bgeo-Read error! There is at the moment only support for objects with triangles. A polygon with "	<< nVtxPerPoly << " vertices was detected.");
+			}
+			primsBuf = bufferTmp;
+		}
 		primsBuf += bufferSize;
 
 
@@ -217,7 +231,6 @@ void Bgeo::readPrims()
 	    buffer = new char[bufferSize], buffer_start = buffer;
 	    file.read(buffer,bufferSize);
 		readNumber(buffer,run);
-
     }
     delete[] buffer_start;
     primsBuf = primsBuf_start;
