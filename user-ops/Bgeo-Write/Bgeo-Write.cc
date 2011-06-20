@@ -84,9 +84,7 @@ public:
             padding
             );
 
-        std::ofstream os(expandedFilename.str().c_str());
-        if(!os.good())
-            NB_THROW("Cannot create output file: '" << expandedFilename << "'");
+
 
     	if(body->matches("Mesh")) {
     		//WRITE MESH BGEO
@@ -96,7 +94,7 @@ public:
 
     		cout << "Point channel names: " ;
     		for(int i=0; i<nPointAtr; ++i) {
-				cout << point.channel(i)->name() << " ";
+				cout << point.channel(i)->name() << " "<< point.channel(i)->typeName() << endl << point.channel(i)->defaultValue()[0]<<  point.channel(i)->defaultValue()[1]<< point.channel(i)->defaultValue()[2]<< endl<< endl;
     		}
     		cout << endl;
     		const Nb::TriangleShape& triangle = body->constTriangleShape();
@@ -105,39 +103,270 @@ public:
     		cout << "Triangle channel names: " ;
     		int totalTriangleAtr = triangle.channelCount() - 1; //index doesn't count
     		for(int i=0; i<triangle.channelCount(); ++i) {
-				cout << triangle.channel(i)->name() << " " << triangle.channel(i)->typeName() << endl << triangle.channel(i)->defaultValue()[0]<<  triangle.channel(i)->defaultValue()[1]<< triangle.channel(i)->defaultValue()[2]<< endl ;
-				if (triangle.channel(i)->name().find("$0") != string::npos)
-					++nVtxAtr;
-				if ((triangle.channel(i)->name().find("$1") != string::npos) || (triangle.channel(i)->name().find("$2") != string::npos))
-					--totalTriangleAtr;
+    			const Nb::String triAtrStr = triangle.channel(i)->name();
+				cout << triAtrStr << " " << triangle.channel(i)->typeName() << endl << triangle.channel(i)->defaultValue()[0]<<  triangle.channel(i)->defaultValue()[1]<< triangle.channel(i)->defaultValue()[2]<<endl<< endl ;
+				if (triAtrStr.find("$v") != string::npos) {
+					if ((triAtrStr.find("$v1") != string::npos) || (triAtrStr.find("$v2") != string::npos))
+						--totalTriangleAtr;
+					else
+						++nVtxAtr;
+				}
     		}
     		cout << endl;
     		uint32_t vNr = 5;
     		uint32_t nPrimAtr = totalTriangleAtr - nVtxAtr;
-    		uint32_t nAtr = 0; // no idea what detailAtr is used for
+    		uint32_t nAtr ;
+    		if (nPointAtr + nVtxAtr + nPrimAtr > 0)
+    			nAtr= 1;
+    		else
+    			nAtr= 0;
+    			// no idea what detailAtr is used for
     		uint32_t nPointGrps = 0; // no idea what nPointGrps is used for
     		uint32_t nPrimGrps = 0; // no idea what nPrimGrps is used for
-    		uint32_t paraArr[9]={vNr,nPoints,nPrims,nPointGrps,nPrimGrps,nPointAtr,nVtxAtr,nPrimAtr,nAtr};
+    		uint32_t paraArr[]={vNr,nPoints,nPrims,nPointGrps,nPrimGrps,nPointAtr,nVtxAtr,nPrimAtr,nAtr};
     		cout << "nPoints:" << nPoints << endl;
     		cout << "nPrims: " << nPrims << endl;
     		cout << "nPointAtr: " << nPointAtr << endl;
     		cout << "nVtxAtr: " << nVtxAtr << endl;
     		cout << "nPrimAtr: " << nPrimAtr << endl;
 
-    		char headrStr[] = "BgeoV";
-    		os.write(headrStr,5);
-    		os.write( (char*) paraArr, sizeof(uint32_t)*9);
+    		cout << "Creating BGEO: " << expandedFilename << endl;
+
+    		Bgeo b(expandedFilename.c_str(),paraArr);
+    		char * pointData[nPointAtr+1];
+    		//position data
+    		pointData[0] = (char*) point.constBuffer3f(0).data;
+
+    		for(int i=1; i<=nPointAtr; ++i) {
+    			switch(point.channel(i)->type()) {
+					case Nb::ValueBase::FloatType: {
+						b.addPointAttribute(i - 1, point.channel(i)->name().c_str(), 1, 0,
+									(char *) &(point.channel(i)->defaultValue()[0]) );
+						pointData[i] = (char *) point.constBuffer1f(i).data;
+						break;
+					}
+					case Nb::ValueBase::Vec3fType: {
+						if (point.channel(i)->name().find("$3f") != string::npos)
+							b.addPointAttribute(i - 1, point.channel(i)->name().c_str(), 3, 0,(char *) &(point.channel(i)->defaultValue()[0]) );
+						else
+							b.addPointAttribute(i - 1, point.channel(i)->name().c_str(), 3, 5,(char *) &(point.channel(i)->defaultValue()[0]) );
+						pointData[i] = (char *) point.constBuffer3f(i).data;
+						break;
+					}
+					case Nb::ValueBase::IntType: {
+						b.addPointAttribute(i - 1, point.channel(i)->name().c_str(), 1, 1,
+								(char *) &(point.channel(i)->defaultValue()[0]) );
+						pointData[i] = (char *) point.constBuffer1i(i).data;
+						break;
+					}
+					case Nb::ValueBase::Vec3iType: {
+						b.addPointAttribute(i - 1, point.channel(i)->name().c_str(), 3, 1,
+								(char *) &(point.channel(i)->defaultValue()[0]) );
+						pointData[i] = (char *) point.constBuffer3i(i).data;
+						break;
+					}
+					default:
+						NB_THROW("Bgeo-Write error!; Error when reading channel type.");
+				}
+    		}
+    		cout << "Done linking data from buffers and done loading Point parameters!" << endl;
+
+    		b.writePointAtr();
+    		cout << "Done writing point parameters to file!" << endl;
+
+    		b.writePoints(pointData);
+    		cout << "Done writing points to file" << endl;
+
+    		//vtx and prim attributes
+    		int vtxDataChannels = 0;
+    		for(int i=1; i<triangle.channelCount(); ++i)
+    			if (triangle.channel(i)->name().find("$v") != string::npos)
+    				++vtxDataChannels;
 
 
-			//triangle.channel(0)->defaultValue()
-    		//Buffer3i& b = triangle.constBuffer3i(0);
+    		char * vtxData[vtxDataChannels+1];
+    		Bgeo::attribute * vtxAtrPtr[vtxDataChannels];
+    		Bgeo::attribute * latestVtxAtr;
+    		//indices data
+    		vtxData[0] = (char*) triangle.constBuffer3i(0).data;
 
-    		//b.size()
-    	//	b(i)
+    		char * primData[nPrimAtr];
 
+    		int vtxAtrCounter = 1, vtxAtrUniqueCounter = 0, primAtrCounter = 0;
+    		//Dont try to do this whole step in different threads.
+    		for (int i = 1; i < triangle.channelCount(); ++i){
+    			Nb::String name = triangle.channel(i)->name();
+    			char * def = (char *) &(triangle.channel(i)->defaultValue()[0]);
+    			size_t posV = name.find("$v");
+    			if (posV != string::npos){
+    				switch(triangle.channel(i)->type()){
+						case Nb::ValueBase::Vec3fType: {
+							if (name[posV+2] == '0')
+								if (name.find("$3f") != string::npos)
+									latestVtxAtr = b.addVtxAttribute(vtxAtrUniqueCounter++, name.c_str(), 3, 0, def);
+								else
+									latestVtxAtr = b.addVtxAttribute(vtxAtrUniqueCounter++, name.c_str(), 3, 5, def);
+							else if (name[posV+2] != '1' && name[posV+2] != '2')
+								latestVtxAtr = b.addVtxAttribute(vtxAtrUniqueCounter++, name.c_str(), 1, 0, def);
+							vtxData[vtxAtrCounter] = (char *) triangle.constBuffer3f(i).data;
+							break;
+						}
+						case Nb::ValueBase::Vec3iType: {
+							if (name[posV+2] == '0')
+								latestVtxAtr = b.addVtxAttribute(vtxAtrUniqueCounter++, name.c_str(), 3, 1, def);
+							else if (name[posV+2] != '1' && name[posV+2] != '2')
+								latestVtxAtr = b.addVtxAttribute(vtxAtrUniqueCounter++, name.c_str(), 1, 1, def);
+							vtxData[vtxAtrCounter] = (char *) triangle.constBuffer3i(i).data;
+							break;
+						}
+						default:
+							NB_THROW("Bgeo-Write error!; Error when reading channel type.");
+    				}
+    				vtxAtrPtr[vtxAtrCounter-1] = latestVtxAtr;
+    				vtxAtrCounter++;
+    			}
+    			else {
+    				switch(triangle.channel(i)->type()){
+						case Nb::ValueBase::FloatType: {
+							b.addPrimAttribute(primAtrCounter,  name.c_str(), 1, 0, def);
+							primData[primAtrCounter] = (char *) triangle.constBuffer1f(i).data;
+							break;
+						}
+						case Nb::ValueBase::Vec3fType: {
+							if (point.channel(i)->name().find("$3f") != string::npos)
+								b.addPrimAttribute(primAtrCounter, name.c_str(), 3, 0, def);
+							else
+								b.addPrimAttribute(primAtrCounter, name.c_str(), 3, 5, def);
+							primData[primAtrCounter] = (char *) triangle.constBuffer3f(i).data;
+							break;
+						}
+						case Nb::ValueBase::IntType: {
+							b.addPrimAttribute(primAtrCounter,  name.c_str(), 1, 1, def);
+							primData[primAtrCounter] = (char *) triangle.constBuffer1i(i).data;
+							break;
+						}
+						case Nb::ValueBase::Vec3iType: {
+							b.addPrimAttribute(primAtrCounter,  name.c_str(), 3, 1, def);
+							primData[primAtrCounter] = (char *) triangle.constBuffer3i(i).data;
+							break;
+						}
+						default:
+							NB_THROW("Bgeo-Write error!; Error when reading channel type.");
+    				}
+    				++primAtrCounter;
+    			}
+    		}
+
+    		b.writeVtxAtr();
+    		cout << "Done writing Vertex parameters to file!" << endl;
+
+    		b.writePrimAtr();
+    		cout << "Done writing Prim parameters to file!" << endl;
+
+    		b.writePrims(&vtxData[0],&vtxAtrPtr[0],vtxAtrCounter-1,&primData[0]);
+    		cout << "Done writing Prim (&vertex data) to file!" << endl;
+
+    		if (nAtr)
+    			b.writeDetailAtr();
+
+    		b.writeOtherInfo();
 
     	} else if(body->matches("Particle")) {
+    		 // figure out what (if any) scaling needs to be applied...
+    		        const Nb::String uc=param1e("Unit Conversion")->eval(tb);
+    		        float scale=1;
+    		        if(uc=="Meter to Decimeter")
+    		            scale=10.f;
+    		        else if(uc=="Meter to Centimeter")
+    		            scale=100.f;
+    		        else if(uc=="Meter to Millimeter")
+    		            scale=1000.f;
 
+    		        // now write the particle channels ...
+    		        ofstream os;
+    		        const Nb::ParticleShape& particle = body->constParticleShape();
+
+    		        // export each particle channel in turn:
+
+    		        for(int i=0; i<particle.channelCount(); ++i) {
+
+    		            // write channel name
+    		            os << particle.channel(i)->name() << ":" << std::endl;
+
+    		            // write channel data
+    		            switch(particle.channel(i)->type()) {
+
+    		                // scalar floating particle channels:
+    		                case Nb::ValueBase::FloatType:
+    		                {
+    		                    const Nb::BlockArray1f& blocks=particle.constBlocks1f(i);
+    		                    const int bcount=blocks.block_count();
+    		                    for(int b=0; b<bcount; ++b) {
+    		                        const Nb::Block1f& cb = blocks(b);
+    		                        for(int64_t p(0); p<cb.size(); ++p)
+    		                            os << cb(p) << std::endl;
+    		                    }
+    		                }
+    		                break;
+
+    		                // scalar integer particle channels:
+    		                case Nb::ValueBase::IntType:
+    		                {
+    		                    const Nb::BlockArray1i& blocks=particle.constBlocks1i(i);
+    		                    const int bcount=blocks.block_count();
+    		                    for(int b=0; b<bcount; ++b) {
+    		                        const Nb::Block1i& cb = blocks(b);
+    		                        for(int64_t p(0); p<cb.size(); ++p)
+    		                            os << cb(p) << std::endl;
+    		                    }
+    		                }
+    		                break;
+
+    		                // scalar int64 particle channels:
+    		                case Nb::ValueBase::Int64Type:
+    		                {
+    		                    const Nb::BlockArray1i64& blocks=
+    		                        particle.constBlocks1i64(i);
+    		                    const int bcount=blocks.block_count();
+    		                    for(int b=0; b<bcount; ++b) {
+    		                        const Nb::Block1i64& cb = blocks(b);
+    		                        for(int64_t p(0); p<cb.size(); ++p)
+    		                            os << cb(p) << std::endl;
+    		                    }
+    		                }
+    		                break;
+
+    		                // vec3f particle channels:
+    		                case Nb::ValueBase::Vec3fType:
+    		                {
+    		                    const Nb::BlockArray3f& blocks=particle.constBlocks3f(i);
+    		                    const int bcount=blocks.block_count();
+    		                    // apply scale on Particle.position and Particle.velocity
+    		                    // channels - in a real op, the user should probably
+    		                    // be allowed so specify to which channels the scale
+    		                    // should be applied...
+    		                    if(particle.channel(i)->name()=="position" ||
+    		                       particle.channel(i)->name()=="velocity") {
+    		                        for(int b=0; b<bcount; ++b) {
+    		                            const Nb::Block3f& cb = blocks(b);
+    		                            for(int64_t p(0); p<cb.size(); ++p)
+    		                                os << cb(p)*scale << std::endl;
+    		                        }
+    		                    } else {
+    		                        for(int b=0; b<bcount; ++b) {
+    		                            const Nb::Block3f& cb = blocks(b);
+    		                            for(int64_t p(0); p<cb.size(); ++p)
+    		                                os << cb(p) << std::endl;
+    		                        }
+    		                    }
+    		                }
+    		                break;
+
+    		                default:
+    		                    NB_THROW("Channel type " <<
+    		                             particle.channel(i)->typeName() << " not supported");
+    		            }
+    		        }
 
     	// WRITE PARTICLE BGEO
     	} else
@@ -145,101 +374,7 @@ public:
 
 
 
-        // figure out what (if any) scaling needs to be applied...
-        const Nb::String uc=param1e("Unit Conversion")->eval(tb);
-        float scale=1;
-        if(uc=="Meter to Decimeter")
-            scale=10.f;
-        else if(uc=="Meter to Centimeter")
-            scale=100.f;
-        else if(uc=="Meter to Millimeter")
-            scale=1000.f;
 
-        // now write the particle channels ...
-
-        const Nb::ParticleShape& particle = body->constParticleShape();
-
-        // export each particle channel in turn:
-
-        for(int i=0; i<particle.channelCount(); ++i) {
-
-            // write channel name
-            os << particle.channel(i)->name() << ":" << std::endl;
-
-            // write channel data
-            switch(particle.channel(i)->type()) {
-
-                // scalar floating particle channels:
-                case Nb::ValueBase::FloatType:
-                {
-                    const Nb::BlockArray1f& blocks=particle.constBlocks1f(i);
-                    const int bcount=blocks.block_count();
-                    for(int b=0; b<bcount; ++b) {
-                        const Nb::Block1f& cb = blocks(b);
-                        for(int64_t p(0); p<cb.size(); ++p)
-                            os << cb(p) << std::endl;
-                    }
-                }
-                break;
-
-                // scalar integer particle channels:
-                case Nb::ValueBase::IntType:
-                {
-                    const Nb::BlockArray1i& blocks=particle.constBlocks1i(i);
-                    const int bcount=blocks.block_count();
-                    for(int b=0; b<bcount; ++b) {
-                        const Nb::Block1i& cb = blocks(b);
-                        for(int64_t p(0); p<cb.size(); ++p)
-                            os << cb(p) << std::endl;
-                    }
-                }
-                break;
-
-                // scalar int64 particle channels:
-                case Nb::ValueBase::Int64Type:
-                {
-                    const Nb::BlockArray1i64& blocks=
-                        particle.constBlocks1i64(i);
-                    const int bcount=blocks.block_count();
-                    for(int b=0; b<bcount; ++b) {
-                        const Nb::Block1i64& cb = blocks(b);
-                        for(int64_t p(0); p<cb.size(); ++p)
-                            os << cb(p) << std::endl;
-                    }
-                }
-                break;
-
-                // vec3f particle channels:
-                case Nb::ValueBase::Vec3fType:
-                {
-                    const Nb::BlockArray3f& blocks=particle.constBlocks3f(i);
-                    const int bcount=blocks.block_count();
-                    // apply scale on Particle.position and Particle.velocity
-                    // channels - in a real op, the user should probably
-                    // be allowed so specify to which channels the scale
-                    // should be applied...
-                    if(particle.channel(i)->name()=="position" ||
-                       particle.channel(i)->name()=="velocity") {
-                        for(int b=0; b<bcount; ++b) {
-                            const Nb::Block3f& cb = blocks(b);
-                            for(int64_t p(0); p<cb.size(); ++p)
-                                os << cb(p)*scale << std::endl;
-                        }
-                    } else {
-                        for(int b=0; b<bcount; ++b) {
-                            const Nb::Block3f& cb = blocks(b);
-                            for(int64_t p(0); p<cb.size(); ++p)
-                                os << cb(p) << std::endl;
-                        }
-                    }
-                }
-                break;
-
-                default:
-                    NB_THROW("Channel type " <<
-                             particle.channel(i)->typeName() << " not supported");
-            }
-        }
     }
 };
 

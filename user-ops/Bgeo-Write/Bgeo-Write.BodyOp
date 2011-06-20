@@ -24,7 +24,7 @@ BodyOp Bgeo-Write
 
     ParamSection "File Output"
     {
-         FileName "Output Filename" "Unnamed.#.txt"
+         FileName "Output Filename" "Unnamed.#.bgeo"
          || The name of the text file to write the particle channels to.
 
          Int "Frame Padding" "4"
