@@ -122,7 +122,6 @@ public:
 		memcpy(index.data,indices,sizeof(uint32_t) *3* nPrims);
 		delete[] indices;
 
-		cout << "Going to read prim and vtx attri";
 		readPrimAtr(b,primAtrStr,triangle,nPrims);
 		readVtxAtr(b,vtxAtrStr,triangle,nPrims);
 	}
@@ -174,8 +173,8 @@ private:
 						}
 						//special case to work with houdini particles
 						else if (atr[i].size == 2 && atr[i].name == string("life")){
-							body->guaranteeChannel1f(string("Particle.life0")c_str(),0);
-							body->guaranteeChannel1f(string("Particle.life1")c_str(),-1);
+							body->guaranteeChannel1f(string("Particle.life0"),0.f);
+							body->guaranteeChannel1f(string("Particle.life1"),-1.f);
 						}
 						else
 							NB_THROW("Point Attribute error; There is currently no support for float attributes of size: " << atr[i].size);
@@ -345,15 +344,14 @@ private:
 							offset+= b.type2Bytes(atr[i].type) * atr[i].size;
 						}
 						else if (atr[i].size == 2 && atr[i].name == string("life")){
-							float * p = b.getPointAtrArr<float>(atr[i].size,offset);
-							float *def = new float[3];
-							b.copyBufLocal(atr[i].defBuf,def,3);
-
-
-							body->guaranteeChannel1f(string("Particle.life0")c_str(),0);
-							body->guaranteeChannel1f(string("Particle.life1")c_str(),-1);
-							delete[] p;
-							offset+= b.type2Bytes(atr[i].type) * atr[i].size;
+							float * p0 = b.getPointAtrArr<float>(1,offset);
+							offset+= b.type2Bytes(atr[i].type) * 1;
+							float * p1 = b.getPointAtrArr<float>(1,offset);
+							offset+= b.type2Bytes(atr[i].type) * 1;
+							particle.blockChannelData1f("Particle.life0",p0,nPoints);
+							particle.blockChannelData1f("Particle.life1",p1,nPoints);
+							delete[] p0;
+							delete[] p1;
 						}
 						break;
 					case 1:
@@ -374,12 +372,12 @@ private:
 						break;
 					case 5: {
 						float * p = b.getPointAtrArr<float>(atr[i].size,offset);
-						if ( atr[i].name != string("v") && atr[i].name != string("v") ){
+						if ( atr[i].name != string("v") && atr[i].name != string("velocity") ){
 							string name = string("Particle.") + atr[i].name;
 							particle.blockChannelData3f(name.c_str(),(Nb::Vec3f*)p,nPoints);
 						}
 						else
-							particle.blockChannelData3f("position", (Nb::Vec3f*) p,nPoints);
+							particle.blockChannelData3f("velocity", (Nb::Vec3f*) p,nPoints);
 
 						delete[] p;
 						offset+= b.type2Bytes(atr[i].type) * atr[i].size;

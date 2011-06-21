@@ -68,7 +68,8 @@ public:
     template<class T> T * getPointAtrArr(const int size, const int offset);
 
     void readPrims(const bool integrityCheck);
-    void writePrims(char * * vtxData, attribute * * vtxAtr, const int vtxDataChannels, char * * primData);
+    void writePrimsMesh(char * * vtxData, attribute * * vtxAtr, const int vtxDataChannels, char * * primData);
+    void writePrimsParticle();
     void freePrimsBuffer() { delete[] primsBuf;};
     uint32_t * getIndices3v();
     uint32_t getNumberOfPrims(){ return nPrims;};
@@ -79,8 +80,9 @@ public:
     template<class T> T * getPrimAtrArr(const int size, const int offset);
     template<class T> T * getVtxAtrArr(const int size, const int offset);
 
-    void writeOtherInfo(){char begEnd[6] = {0,0,0,0,0,255}; file.write(begEnd,6);};
-    void writeDetailAtr();
+    void writeOtherInfo(){char begEnd[2] = {0,255}; file.write(begEnd,2);};
+    void writeDetailAtrMesh();
+    void writeDetailAtrParticle(bool fromHoudini);
 
     int getBytesPerPrimLine(){return 5 + (idxBytes + vtxAtrBytes) * 3 + primAtrBytes;};
     int getIdxBytes(){return idxBytes;};

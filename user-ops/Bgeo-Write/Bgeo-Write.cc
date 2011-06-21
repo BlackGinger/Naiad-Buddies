@@ -66,7 +66,7 @@ public:
                      Ng::NelContext&       nelContext,
                      const Nb::TimeBundle& tb)
     {
-    	cout << "Welcome" << endl;
+    	cout << "Starting BGEO write" << endl;
     	const Nb::String bodyNameList = param1s("Body Names")->eval(tb);
 
         // skip bodies not listed in "Body Names" ...
@@ -92,10 +92,10 @@ public:
     		const uint32_t nPoints= point.channel(0)->size();
     		const uint32_t nPointAtr = point.channelCount() - 1; // position doesn't count
 
-    		cout << "Point channel names: " ;
+    		/*cout << "Point channel names: " ;
     		for(int i=0; i<nPointAtr; ++i) {
 				cout << point.channel(i)->name() << " "<< point.channel(i)->typeName() << endl << point.channel(i)->defaultValue()[0]<<  point.channel(i)->defaultValue()[1]<< point.channel(i)->defaultValue()[2]<< endl<< endl;
-    		}
+    		}*/
     		cout << endl;
     		const Nb::TriangleShape& triangle = body->constTriangleShape();
     		const uint32_t nPrims= triangle.channel(0)->size();
@@ -104,7 +104,7 @@ public:
     		int totalTriangleAtr = triangle.channelCount() - 1; //index doesn't count
     		for(int i=0; i<triangle.channelCount(); ++i) {
     			const Nb::String triAtrStr = triangle.channel(i)->name();
-				cout << triAtrStr << " " << triangle.channel(i)->typeName() << endl << triangle.channel(i)->defaultValue()[0]<<  triangle.channel(i)->defaultValue()[1]<< triangle.channel(i)->defaultValue()[2]<<endl<< endl ;
+				//cout << triAtrStr << " " << triangle.channel(i)->typeName() << endl << triangle.channel(i)->defaultValue()[0]<<  triangle.channel(i)->defaultValue()[1]<< triangle.channel(i)->defaultValue()[2]<<endl<< endl ;
 				if (triAtrStr.find("$v") != string::npos) {
 					if ((triAtrStr.find("$v1") != string::npos) || (triAtrStr.find("$v2") != string::npos))
 						--totalTriangleAtr;
@@ -263,117 +263,188 @@ public:
     		b.writePrimAtr();
     		cout << "Done writing Prim parameters to file!" << endl;
 
-    		b.writePrims(&vtxData[0],&vtxAtrPtr[0],vtxAtrCounter-1,&primData[0]);
+    		b.writePrimsMesh(&vtxData[0],&vtxAtrPtr[0],vtxAtrCounter-1,&primData[0]);
     		cout << "Done writing Prim (&vertex data) to file!" << endl;
 
     		if (nAtr)
-    			b.writeDetailAtr();
+    			b.writeDetailAtrMesh();
 
     		b.writeOtherInfo();
 
     	} else if(body->matches("Particle")) {
-    		 // figure out what (if any) scaling needs to be applied...
-    		        const Nb::String uc=param1e("Unit Conversion")->eval(tb);
-    		        float scale=1;
-    		        if(uc=="Meter to Decimeter")
-    		            scale=10.f;
-    		        else if(uc=="Meter to Centimeter")
-    		            scale=100.f;
-    		        else if(uc=="Meter to Millimeter")
-    		            scale=1000.f;
 
-    		        // now write the particle channels ...
-    		        ofstream os;
-    		        const Nb::ParticleShape& particle = body->constParticleShape();
+    		cout << "Starting Particle write" << endl;
+    		const Nb::ParticleShape& particle = body->constParticleShape();
+    		const uint32_t nPoints= particle.channel(0)->size();
+    		uint32_t nPointAtrTmp = particle.channelCount() - 1;
 
-    		        // export each particle channel in turn:
+    		bool expFromHoudini = false;
+    		Nb::String houdiniChannels("accel life0 life1 pstate id parent");
+    		if (particle.hasChannels(houdiniChannels)){
+    			expFromHoudini = true;
+    			--nPointAtrTmp;
+    		}
+    		const uint32_t nPointAtr = nPointAtrTmp;
 
-    		        for(int i=0; i<particle.channelCount(); ++i) {
+    		for (int i = 0; i < particle.channelCount(); ++i)
+    	    			cout << particle.channel(i)->name() << endl;
+    		uint32_t nPrims = 1;
+    		uint32_t vNr = 5;
+    		uint32_t nVtxAtr = 0;
+    		uint32_t nPrimAtr = 1;
+    		uint32_t nAtr = 3;
+    		if (expFromHoudini && nPointAtr == 6){
+    			cout << "From houdini and no extra point atr!" << endl;
+    			nAtr= 2;
+    		}
+    			// no idea what detailAtr is used for
+    		uint32_t nPointGrps = 0; // no idea what nPointGrps is used for
+    		uint32_t nPrimGrps = 0; // no idea what nPrimGrps is used for
+    		uint32_t paraArr[]={vNr,nPoints,nPrims,nPointGrps,nPrimGrps,nPointAtr,nVtxAtr,nPrimAtr,nAtr};
 
-    		            // write channel name
-    		            os << particle.channel(i)->name() << ":" << std::endl;
+    		cout << "Creating BGEO: " << expandedFilename << endl;
+    		Bgeo b(expandedFilename.c_str(),paraArr);
+    		char * pointData[nPointAtr + 1], *pointData_start[nPointAtr + 1];
+    		const int sizeoffloat = sizeof(float);
+    		const int sizeofint = sizeof(uint32_t);
+            const int sizeof3f = sizeoffloat * 3;
+            const int sizeof3i = sizeofint * 3;
+    		pointData[0] = new char[sizeof3f * nPoints];
+    		pointData_start[0] = pointData[0];
 
-    		            // write channel data
-    		            switch(particle.channel(i)->type()) {
 
-    		                // scalar floating particle channels:
-    		                case Nb::ValueBase::FloatType:
-    		                {
-    		                    const Nb::BlockArray1f& blocks=particle.constBlocks1f(i);
-    		                    const int bcount=blocks.block_count();
-    		                    for(int b=0; b<bcount; ++b) {
-    		                        const Nb::Block1f& cb = blocks(b);
-    		                        for(int64_t p(0); p<cb.size(); ++p)
-    		                            os << cb(p) << std::endl;
-    		                    }
-    		                }
-    		                break;
+			const Nb::BlockArray3f& blocksPos=particle.constBlocks3f(0);
+			const int bcountPos=blocksPos.block_count();
+			for(int b=0; b<bcountPos; ++b) {
+				const Nb::Block3f& cb = blocksPos(b);
+				for(int64_t p(0); p<cb.size(); ++p){
+					memcpy(pointData[0], (char *) &(cb(p)), sizeof3f);
+					pointData[0] += sizeof3f;
+				}
+			}
 
-    		                // scalar integer particle channels:
-    		                case Nb::ValueBase::IntType:
-    		                {
-    		                    const Nb::BlockArray1i& blocks=particle.constBlocks1i(i);
-    		                    const int bcount=blocks.block_count();
-    		                    for(int b=0; b<bcount; ++b) {
-    		                        const Nb::Block1i& cb = blocks(b);
-    		                        for(int64_t p(0); p<cb.size(); ++p)
-    		                            os << cb(p) << std::endl;
-    		                    }
-    		                }
-    		                break;
+			int i = 1;
+    		for (int index = 1; index < particle.channelCount(); ++index){
+    			Nb::String name = particle.channel(index)->name();
+    			char * def = (char *) &(particle.channel(index)->defaultValue()[0]);
+    			switch(particle.channel(index)->type()) {
+					case Nb::ValueBase::FloatType:{
+						if (name != Nb::String("life0")){
+							b.addPointAttribute(i - 1, name.c_str(), 1, 0, def);
+							pointData[i] = new char[sizeoffloat * nPoints];
+							pointData_start[i] = pointData[i];
+							const Nb::BlockArray1f& blocks=particle.constBlocks1f(index);
+							const int bcount=blocks.block_count();
+							for(int b=0; b<bcount; ++b) {
+								const Nb::Block1f& cb = blocks(b);
+								for(int64_t p(0); p<cb.size(); ++p) {
+									memcpy(pointData[i], (char *) &(cb(p)), sizeoffloat);
+									pointData[i] += sizeoffloat;
+								}
+							}
+						}
+						else if(name != Nb::String("life1")){
+							float defFloat[2] = {0.f, -1.f};
+							b.addPointAttribute(i - 1, "life", 2, 0, (char*)defFloat);
+							pointData[i] = new char[sizeoffloat * 2 * nPoints];
+							pointData_start[i] = pointData[i];
 
-    		                // scalar int64 particle channels:
-    		                case Nb::ValueBase::Int64Type:
-    		                {
-    		                    const Nb::BlockArray1i64& blocks=
-    		                        particle.constBlocks1i64(i);
-    		                    const int bcount=blocks.block_count();
-    		                    for(int b=0; b<bcount; ++b) {
-    		                        const Nb::Block1i64& cb = blocks(b);
-    		                        for(int64_t p(0); p<cb.size(); ++p)
-    		                            os << cb(p) << std::endl;
-    		                    }
-    		                }
-    		                break;
+							const Nb::BlockArray1f& blocks0=particle.constBlocks1f(index);
+							const int bcount0=blocks0.block_count();
+							for(int b=0; b<bcount0; ++b) {
+								const Nb::Block1f& cb = blocks0(b);
+								for(int64_t p(0); p<cb.size(); ++p) {
+									memcpy(pointData[i], (char *) &(cb(p)), sizeoffloat);
+									pointData[i] += 2 * sizeoffloat;
+								}
+							}
+							pointData[i] = pointData_start[i];
+							pointData[i] += sizeoffloat;
+							++index;
+							const Nb::BlockArray1f& blocks1=particle.constBlocks1f(index);
+							const int bcount1=blocks1.block_count();
+							for(int b=0; b<bcount1; ++b) {
+								const Nb::Block1f& cb = blocks1(b);
+								for(int64_t p(0); p<cb.size(); ++p) {
+									memcpy(pointData[i], (char *) &(cb(p)), sizeoffloat);
+									pointData[i] += 2 * sizeoffloat;
+								}
+							}
+						}
+						break;
+					}
+					case Nb::ValueBase::IntType:{
+						b.addPointAttribute(i - 1, name.c_str(), 1, 1, def);
+						pointData[i] = new char[sizeofint * nPoints];
+						pointData_start[i] = pointData[i];
+	                    const Nb::BlockArray1i& blocks=particle.constBlocks1i(index);
+	                    const int bcount=blocks.block_count();
+	                    for(int b=0; b<bcount; ++b) {
+	                        const Nb::Block1i& cb = blocks(b);
+	                        for(int64_t p(0); p<cb.size(); ++p) {
+	                        	memcpy(pointData[i], (char *) &(cb(p)), sizeofint);
+	                        	pointData[i] += sizeofint;
+	                        }
+	                    }
+						break;
+					}
+					case Nb::ValueBase::Vec3fType:{
+						if (name.find("$3f") != string::npos)
+							b.addPointAttribute(i - 1, name.c_str(), 3, 0, def);
+						else if (name == Nb::String("velocity"))
+							b.addPointAttribute(i - 1, "v", 3, 5, def);
+						else
+							b.addPointAttribute(i - 1, name.c_str(), 3, 5, def);
+						pointData[i] = new char[sizeof3f * nPoints];
+						pointData_start[i] = pointData[i];
+			            const Nb::BlockArray3f& blocks=particle.constBlocks3f(index);
+			            const int bcount=blocks.block_count();
+			            for(int b=0; b<bcount; ++b) {
+			                const Nb::Block3f& cb = blocks(b);
+			                for(int64_t p(0); p<cb.size(); ++p){
+			                	memcpy(pointData[i], (char *) &(cb(p)), sizeof3f);
+			                	pointData[i] += sizeof3f;
+			                }
+			            }
+						break;
+					}
+					case Nb::ValueBase::Vec3iType:{
+						b.addPointAttribute(i - 1, name.c_str(), 3, 1, def);
+						pointData[i] = new char[sizeof3i * nPoints];
+						pointData_start[i] = pointData[i];
+	                    const Nb::BlockArray3i& blocks= particle.constBlocks3i(index);
+	                    const int bcount=blocks.block_count();
+	                    for(int b=0; b<bcount; ++b) {
+	                        const Nb::Block3i& cb = blocks(b);
+			                for(int32_t p(0); p<cb.size(); ++p){
+			                	memcpy(pointData[i], (char *) &(cb(p)), sizeof3i);
+			                	pointData[i] += sizeof3i;
+			                }
+	                    }
+						break;
+					}
+	                default:
+	                    NB_THROW("Bgeo-Write: Channel type " <<
+	                             particle.channel(i)->typeName() << " not supported");
+    			}
+    			++i;
+    		}
+    		for (int j = 0; j < nPointAtr + 1; ++j)
+    			pointData[j] = pointData_start[j];
 
-    		                // vec3f particle channels:
-    		                case Nb::ValueBase::Vec3fType:
-    		                {
-    		                    const Nb::BlockArray3f& blocks=particle.constBlocks3f(i);
-    		                    const int bcount=blocks.block_count();
-    		                    // apply scale on Particle.position and Particle.velocity
-    		                    // channels - in a real op, the user should probably
-    		                    // be allowed so specify to which channels the scale
-    		                    // should be applied...
-    		                    if(particle.channel(i)->name()=="position" ||
-    		                       particle.channel(i)->name()=="velocity") {
-    		                        for(int b=0; b<bcount; ++b) {
-    		                            const Nb::Block3f& cb = blocks(b);
-    		                            for(int64_t p(0); p<cb.size(); ++p)
-    		                                os << cb(p)*scale << std::endl;
-    		                        }
-    		                    } else {
-    		                        for(int b=0; b<bcount; ++b) {
-    		                            const Nb::Block3f& cb = blocks(b);
-    		                            for(int64_t p(0); p<cb.size(); ++p)
-    		                                os << cb(p) << std::endl;
-    		                        }
-    		                    }
-    		                }
-    		                break;
+    		b.writePointAtr();
+    		cout << "Done writing point parameters to file!" << endl;
+    		b.writePoints(pointData);
+    		cout << "Done writing points to file" << endl;
 
-    		                default:
-    		                    NB_THROW("Channel type " <<
-    		                             particle.channel(i)->typeName() << " not supported");
-    		            }
-    		        }
+    		for (int j = 0; j < nPointAtr+1; ++j)
+    			delete[] pointData_start[j];
 
-    	// WRITE PARTICLE BGEO
+    		b.writePrimsParticle();
+    		b.writeDetailAtrParticle(expFromHoudini);
+    		b.writeOtherInfo();
     	} else
     		NB_WARNING("Skipping body " << body->name() << " because it does not match Mesh or Particle signature.")
-
-
-
 
     }
 };
