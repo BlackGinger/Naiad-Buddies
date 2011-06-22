@@ -66,7 +66,6 @@ public:
                      Ng::NelContext&       nelContext,
                      const Nb::TimeBundle& tb)
     {
-    	cout << "Starting BGEO write" << endl;
     	const Nb::String bodyNameList = param1s("Body Names")->eval(tb);
 
         // skip bodies not listed in "Body Names" ...
@@ -75,10 +74,10 @@ public:
 
         // expand output filename for each frame
         const int        padding = param1i("Frame Padding")->eval(tb);
-        const Nb::String sequenceName = param1s("Output Filename")->eval(tb);
+        const Nb::String sequenceFilePath = param1s("Output File Path")->eval(tb);
         Nb::String expandedFilename = Nb::sequenceToFilename(
-            Ng::projectPath(),
-            sequenceName,
+            "",
+            sequenceFilePath + Nb::String("/") +body->name() + Nb::String(".#.bgeo"),
             tb.frame,
             tb.timestep,
             padding
@@ -89,22 +88,16 @@ public:
     	if(body->matches("Mesh")) {
     		//WRITE MESH BGEO
     		const Nb::PointShape& point =  body->constPointShape();
-    		const uint32_t nPoints= point.channel(0)->size();
+    		const uint32_t nPoints = point.channel(0)->size();
     		const uint32_t nPointAtr = point.channelCount() - 1; // position doesn't count
 
-    		/*cout << "Point channel names: " ;
-    		for(int i=0; i<nPointAtr; ++i) {
-				cout << point.channel(i)->name() << " "<< point.channel(i)->typeName() << endl << point.channel(i)->defaultValue()[0]<<  point.channel(i)->defaultValue()[1]<< point.channel(i)->defaultValue()[2]<< endl<< endl;
-    		}*/
     		cout << endl;
     		const Nb::TriangleShape& triangle = body->constTriangleShape();
     		const uint32_t nPrims= triangle.channel(0)->size();
     		uint32_t nVtxAtr = 0;
-    		cout << "Triangle channel names: " ;
     		int totalTriangleAtr = triangle.channelCount() - 1; //index doesn't count
     		for(int i=0; i<triangle.channelCount(); ++i) {
     			const Nb::String triAtrStr = triangle.channel(i)->name();
-				//cout << triAtrStr << " " << triangle.channel(i)->typeName() << endl << triangle.channel(i)->defaultValue()[0]<<  triangle.channel(i)->defaultValue()[1]<< triangle.channel(i)->defaultValue()[2]<<endl<< endl ;
 				if (triAtrStr.find("$v") != string::npos) {
 					if ((triAtrStr.find("$v1") != string::npos) || (triAtrStr.find("$v2") != string::npos))
 						--totalTriangleAtr;
@@ -124,13 +117,8 @@ public:
     		uint32_t nPointGrps = 0; // no idea what nPointGrps is used for
     		uint32_t nPrimGrps = 0; // no idea what nPrimGrps is used for
     		uint32_t paraArr[]={vNr,nPoints,nPrims,nPointGrps,nPrimGrps,nPointAtr,nVtxAtr,nPrimAtr,nAtr};
-    		cout << "nPoints:" << nPoints << endl;
-    		cout << "nPrims: " << nPrims << endl;
-    		cout << "nPointAtr: " << nPointAtr << endl;
-    		cout << "nVtxAtr: " << nVtxAtr << endl;
-    		cout << "nPrimAtr: " << nPrimAtr << endl;
 
-    		cout << "Creating BGEO: " << expandedFilename << endl;
+    		cout << "Bgeo-Write >> Creating BGEO: " << expandedFilename << endl;
 
     		Bgeo b(expandedFilename.c_str(),paraArr);
     		char * pointData[nPointAtr+1];
@@ -273,7 +261,6 @@ public:
 
     	} else if(body->matches("Particle")) {
 
-    		cout << "Starting Particle write" << endl;
     		const Nb::ParticleShape& particle = body->constParticleShape();
     		const uint32_t nPoints= particle.channel(0)->size();
     		uint32_t nPointAtrTmp = particle.channelCount() - 1;
@@ -286,8 +273,8 @@ public:
     		}
     		const uint32_t nPointAtr = nPointAtrTmp;
 
-    		for (int i = 0; i < particle.channelCount(); ++i)
-    	    			cout << particle.channel(i)->name() << endl;
+    		//for (int i = 0; i < particle.channelCount(); ++i)
+    	    			//cout << particle.channel(i)->name() << endl;
     		uint32_t nPrims = 1;
     		uint32_t vNr = 5;
     		uint32_t nVtxAtr = 0;

@@ -14,18 +14,10 @@ BodyOp Bgeo-Write
     |* All bodies encountered in <i>body-input</i> are passed down through this
        output, regardless if they were admitted or not. *|
 
-    EnumGroup UnitConversion
-    {
-        "Meter to Meter (No Conversion)"
-        "Meter to Decimeter"
-        "Meter to Centimeter"
-        "Meter to Millimeter"
-    }
-
     ParamSection "File Output"
     {
-         FileName "Output Filename" "Unnamed.#.bgeo"
-         || The name of the text file to write the particle channels to.
+         PathName "Output File Path" ""
+         || The path to where the BGEO bodies will be exported.
 
          Int "Frame Padding" "4"
          |* The number of zeroes to pad the frame number by, when expanding
@@ -35,9 +27,4 @@ BodyOp Bgeo-Write
          || The list of body names to include in the write.
     }
 
-    ParamSection "Conversion"
-    {
-        UnitConversion "Unit Conversion" "Meter to Meter (No Conversion)"
-        || Rescales the bodies from meter scale units to something else.
-    }
 }

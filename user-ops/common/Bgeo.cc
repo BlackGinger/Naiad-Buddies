@@ -1,167 +1,187 @@
 #include "Bgeo.h"
 
 Bgeo::Bgeo(const char* filename) :
-				  pointAtrBytes(0)
-				, vtxAtrBytes(0)
-				, primAtrBytes(0)
-				, pointsRead(false)
-				, primsRead(false)
-				, file(filename, ios::in|ios::binary)
+				  mPointAtrBytes(0)
+				, mVtxAtrBytes(0)
+				, mPrimAtrBytes(0)
+				, mPointsRead(false)
+				, mPrimsRead(false)
+				, mFile(filename, ios::in|ios::binary)
 {
-    if(!file.good())
-        NB_THROW("Cannot read input file: '" << filename << "'");
+    if(!mFile.good())
+        NB_THROW("Cannot read input mFile: '" << filename << "'");
 
     //Read One char "V" and 10 32-bit uints
     const int bufferSize = sizeof(char) + 10*sizeof(uint32_t);
     char * buffer = new char[bufferSize];
     char * p = buffer;
-    file.read(buffer,bufferSize);
+    mFile.read(buffer,bufferSize);
 
     //skips the unnecessary magic number & char "V"
     buffer +=  sizeof(uint32_t) + sizeof(char);
 
-    readNumber(buffer,vNr);
-    readNumber(buffer,nPoints);
-    readNumber(buffer,nPrims);
-    readNumber(buffer,nPointGrps);
-    readNumber(buffer,nPrimGrps);
-    readNumber(buffer,nPointAtr);
-    readNumber(buffer,nVtxAtr);
-    readNumber(buffer,nPrimAtr);
-    readNumber(buffer,nAtr);
+    readNumber(buffer,mVerNr);
+    readNumber(buffer,mNumPoints);
+    readNumber(buffer,mNumPrims);
+    readNumber(buffer,mNumPointGrps);
+    readNumber(buffer,mNumPrimGrps);
+    readNumber(buffer,mNumPointAtr);
+    readNumber(buffer,mNumVtxAtr);
+    readNumber(buffer,mNumPrimAtr);
+    readNumber(buffer,mNumAtr);
 
-    delete[] p;
-    cout    << "Version number: "   << vNr << endl
-            << "NPoints: "          << nPoints << endl
-            << "NPrims: "           << nPrims << endl
-            << "NPointGroups: "     << nPointGrps << endl
-            << "NPrimGroups: "      << nPrimGrps << endl
-            << "NPointAttrib: "     << nPointAtr << endl
-            << "NVertexAttrib: "    << nVtxAtr << endl
-            << "NPrimAttrib: "      << nPrimAtr << endl
-            << "NAttrib: "          << nAtr<< endl;
-
+    //Enough info to set some constants
     setConstants();
+    //delete buffer
+    delete[] p;
+    /*
+    cout    << "Version number: "   << mVerNr << endl
+            << "NPoints: "          << mNumPoints << endl
+            << "NPrims: "           << mNumPrims << endl
+            << "NPointGroups: "     << mNumPointGrps << endl
+            << "NPrimGroups: "      << mNumPrimGrps << endl
+            << "NPointAttrib: "     << mNumPointAtr << endl
+            << "NVertexAttrib: "    << mNumVtxAtr << endl
+            << "NPrimAttrib: "      << mNumPrimAtr << endl
+            << "NAttrib: "          << mNumAtr<< endl;*/
+
+
 }
 
 Bgeo::Bgeo(const char* filename,uint32_t * headerParameters) :
-				  pointAtrBytes(0)
-				, vtxAtrBytes(0)
-				, primAtrBytes(0)
-				, pointsRead(false)
-				, primsRead(false)
-				, vNr(headerParameters[0])
-				, nPoints(headerParameters[1])
-				, nPrims(headerParameters[2])
-				, nPointGrps(headerParameters[3])
-				, nPrimGrps(headerParameters[4])
-				, nPointAtr(headerParameters[5])
-				, nVtxAtr(headerParameters[6])
-				, nPrimAtr(headerParameters[7])
-				, nAtr(headerParameters[8])
-				, file(filename, ios::out|ios::binary)
+				  mPointAtrBytes(0)
+				, mVtxAtrBytes(0)
+				, mPrimAtrBytes(0)
+				, mPointsRead(false)
+				, mPrimsRead(false)
+				, mVerNr(headerParameters[0])
+				, mNumPoints(headerParameters[1])
+				, mNumPrims(headerParameters[2])
+				, mNumPointGrps(headerParameters[3])
+				, mNumPrimGrps(headerParameters[4])
+				, mNumPointAtr(headerParameters[5])
+				, mNumVtxAtr(headerParameters[6])
+				, mNumPrimAtr(headerParameters[7])
+				, mNumAtr(headerParameters[8])
+				, mFile(filename, ios::out|ios::binary)
 {
-    if(!file.good())
-        NB_THROW("Cannot create output file: '" << filename << "'");
+    if(!mFile.good())
+        NB_THROW("Cannot create output mFile: '" << filename << "'");
 
+    //Set constants right away
 	setConstants();
 
+	//Magic number and V
 	char headrStr[] = "BgeoV";
-	file.write(headrStr,5);
+	mFile.write(headrStr,5);
 
+	//Write header parameters to file
 	for (int i = 0; i < 9; ++i)
 		swap_endianity(headerParameters[i]);
-	file.write( (char*) headerParameters, sizeof(uint32_t)*9);
-	pointAtr = new attribute[nPointAtr];
-	vtxArt = new attribute[nVtxAtr];
-	primArt = new attribute[nPrimAtr];
+	mFile.write( (char*) headerParameters, sizeof(uint32_t)*9);
+
+	//These are allocated here since we won't run any readPoints/readPrims now.
+	mPointAtr = new attribute[mNumPointAtr];
+	mVtxAtr = new attribute[mNumVtxAtr];
+	mPrimAtr = new attribute[mNumPrimAtr];
+
 }
 
 Bgeo::~Bgeo()
 {
-	cout<< "Closing file" << endl;
-    file.close();
+	//Close the file (can be both in & out)
+    mFile.close();
 
-    if (pointsRead){
-    	delete[] pointsBuf;
+    //If Points data have been loaded, delete
+    if (mPointsRead){
+    	delete[] mPointsBuf;
         //Delete parameter info (stored in buffers)
-        for (int i = 0; i < nPointAtr; ++i )
-            delete[] pointAtr[i].defBuf;
-        delete[] pointAtr;
+        for (int i = 0; i < mNumPointAtr; ++i )
+            delete[] mPointAtr[i].defBuf;
+        delete[] mPointAtr;
     }
 
-    if (primsRead){
-        delete[] primsBuf;
+    //If Primitive data have been loaded, delete
+    if (mPrimsRead){
+        delete[] mPrimsBuf;
 
-        for (int i = 0; i < nVtxAtr; ++i )
-            delete[] vtxArt[i].defBuf;
-        delete[] vtxArt;
+        for (int i = 0; i < mNumVtxAtr; ++i )
+            delete[] mVtxAtr[i].defBuf;
+        delete[] mVtxAtr;
 
-        for (int i = 0; i < nPrimAtr; ++i )
-            delete[] primArt[i].defBuf;
-        delete[] primArt;
+        for (int i = 0; i < mNumPrimAtr; ++i )
+            delete[] mPrimAtr[i].defBuf;
+        delete[] mPrimAtr;
     }
 
 
+}
+
+void Bgeo::addPointAttribute(const int index,const char* name,const  uint16_t size,const  uint16_t type, const char * def)
+{
+	addAttribute(&mPointAtr[index], name, size, type, def);
+	//Keep track of how many bytes the point attributes take in total (needed for offset later).
+	mPointAtrBytes += mTypeBytes[mPointAtr[index].type] * mPointAtr[index].size;
+}
+
+void Bgeo::addPrimAttribute(const int index,const char* name, const uint16_t size, const uint16_t type, const char * def)
+{
+	addAttribute(&mPrimAtr[index], name, size, type, def);
+	//Keep track of how many bytes the Primitive attributes take in total (needed for offset later).
+	mPrimAtrBytes += mTypeBytes[mPrimAtr[index].type] * mPrimAtr[index].size;
+}
+
+Bgeo::attribute * Bgeo::addVtxAttribute(const int index,const char* name,const  uint16_t size,const  uint16_t type, const char * def)
+{
+	addAttribute(&mVtxAtr[index], name, size, type, def);
+	//Keep track of how many bytes the Vertex attributes take in total (needed for offset later).
+	mVtxAtrBytes += mTypeBytes[mVtxAtr[index].type] * mVtxAtr[index].size;
+	return &mVtxAtr[index];
 }
 
 void Bgeo::setConstants()
 {
     //If the number of points is > 65535, uint32 is used
-    idxBytes = 2;
-    if (nPoints > 65535)
-        idxBytes = 4;
+    mIdxBytes = sizeof(uint16_t);
+    if (mNumPoints > numeric_limits<uint16_t>::max())
+        mIdxBytes = sizeof(uint32_t);
 
+    //From Bgeo definitions. A vector (type = 5) is of 4 bytes since the attribute size will still be 3 (3 * 4 = 12 in total)
     int tmpInt[6] = {4,4,32,1,4,4};
     string tmpStr[6] = {"float","int","string","mixed","index","vector"};
-
-    typeBytes = vector<int>(tmpInt,tmpInt+6);
-    typeStr = vector<string>(tmpStr,tmpStr+6);
+    mTypeBytes = vector<int>(tmpInt,tmpInt+6);
+    mTypeStr = vector<string>(tmpStr,tmpStr+6);
 }
 
 void Bgeo::readPoints()
 {
-    pointAtr = new attribute[nPointAtr];
-    cout << endl << "PointAttrib" ;
-    for (int i = 0; i < nPointAtr; ++i )
+	//Allocate memory for attribute parameters and read them
+    mPointAtr = new attribute[mNumPointAtr];
+    for (int i = 0; i < mNumPointAtr; ++i )
     {
-        pointAtr[i] = readAttributeInfo();
-        pointAtrBytes += typeBytes[pointAtr[i].type] * pointAtr[i].size;
+        mPointAtr[i] = readAttributeInfo();
+        mPointAtrBytes += mTypeBytes[mPointAtr[i].type] * mPointAtr[i].size;
     }
 
-    //Each point has 4 float values (x,y,z,w) and parameterinfo
-    int bufferSize = (sizeof(float) * 4 + pointAtrBytes) * nPoints;
-    pointsBuf = new char[bufferSize];
-    file.read(pointsBuf,bufferSize);
+    //Each point has 4 float values (x,y,z,w) and parameter info
+    int bufferSize = (sizeof(float) * 4 + mPointAtrBytes) * mNumPoints;
+    mPointsBuf = new char[bufferSize];
 
-    /*   for debugging purposes.
-    cout << endl << "All Points read!" << endl;
-    float *pointPos = copyBuffer<float>(pointsBuf,nPoints,3,sizeof(float) * 4 + pointAtrBytes);
-    printBuffer(pointPos,nPoints,3);
-
-    float *uvtest = copyBuffer<float>(pointsBuf,nPoints,2,sizeof(float) * 4 + pointAtrBytes,16);
-    printBuffer(uvtest,nPoints,2);
-
-    float *attribute = copyBuffer<float>(pointsBuf,nPoints,3,sizeof(float) * 4 + pointAtrBytes,24);
-    printBuffer(attribute,nPoints,3);
-
-    delete[] pointPos;
-    delete[] uvtest;
-    delete[] attribute;*/
-    pointsRead = true;
-
+    //Store the data in the Point buffer
+    mFile.read(mPointsBuf,bufferSize);
+    mPointsRead = true;
 }
 
 void Bgeo::writeDetailAtrParticle(bool fromHoudini)
 {
-	//copied from binary file
+	//copied from binary mFile
 	uint8_t detailAtrInfo[] = { 0, 6, 110, 101, 120, 116, 105, 100, 0, 1, 0, 0, 0,
 			1, 0, 0, 0, 1, 0 , 5, 101, 118, 101, 110, 116, 0, 1, 0, 0, 0, 4, 0, 0, 0, 0};
 
 	//no need to swap, 8bit.
-	file.write((char*) detailAtrInfo, 35);
+	mFile.write((char*) detailAtrInfo, 35);
 
-	if (nAtr > 2){
+	if (mNumAtr > 2){
 		char * buffer = new char[14], *buffer_start = buffer;
 
 		uint16_t varmapSize = 6;
@@ -177,7 +197,7 @@ void Bgeo::writeDetailAtrParticle(bool fromHoudini)
 		swap_endianity(sizeAndType[0]);
 		swap_endianity(sizeAndType[2]);
 		memcpy(buffer,sizeAndType,6);
-		file.write(buffer_start,14);
+		mFile.write(buffer_start,14);
 		delete[] buffer_start;
 
 		std::vector<string> strVec;
@@ -185,8 +205,8 @@ void Bgeo::writeDetailAtrParticle(bool fromHoudini)
 		int startAtr=0;
 		if (fromHoudini)
 			startAtr = 6;
-		for (int i = startAtr; i < nPointAtr; ++i){
-			tmpStr = removePrefix(pointAtr[i].name);
+		for (int i = startAtr; i < mNumPointAtr; ++i){
+			tmpStr = removePrefix(mPointAtr[i].name);
 			tmpStrUpper = tmpStr;
 			transform(tmpStrUpper.begin(), tmpStrUpper.end(),tmpStrUpper.begin(), ::toupper);
 			strVec.push_back(tmpStr + string(" -> ")  + tmpStrUpper);
@@ -211,19 +231,19 @@ void Bgeo::writeDetailAtrParticle(bool fromHoudini)
 			memcpy(buffer,(char*) (strVec.at(i).c_str()),tmpSize);
 			buffer += tmpSize;
 		}
-		file.write(buffer_start,size+4);
+		mFile.write(buffer_start,size+4);
 		delete[] buffer_start;
 
-		uint32_t end[] = {nPoints+1, 4294967295, 0};
+		uint32_t end[] = {mNumPoints+1, 4294967295, 0};
 		swap_endianity(end[0]);
 		swap_endianity(end[1]);
-		file.write((char*)end,12);
+		mFile.write((char*)end,12);
 	}
 	else
 	{
-		uint32_t end[] = {nPoints+1, 0};
+		uint32_t end[] = {mNumPoints+1, 0};
 		swap_endianity(end[0]);
-		file.write((char*)end,8);
+		mFile.write((char*)end,8);
 	}
 }
 
@@ -245,25 +265,25 @@ void Bgeo::writeDetailAtrMesh()
 	swap_endianity(sizeAndType[0]);
 	swap_endianity(sizeAndType[2]);
 	memcpy(buffer,sizeAndType,6);
-	file.write(buffer_start,14);
+	mFile.write(buffer_start,14);
 	delete[] buffer_start;
 
 	std::vector<string> strVec;
 	string tmpStr,tmpStrUpper;
-	for (int i = 0; i < nPointAtr; ++i){
-		tmpStr = removePrefix(pointAtr[i].name);
+	for (int i = 0; i < mNumPointAtr; ++i){
+		tmpStr = removePrefix(mPointAtr[i].name);
 		tmpStrUpper = tmpStr;
 		transform(tmpStrUpper.begin(), tmpStrUpper.end(),tmpStrUpper.begin(), ::toupper);
 		strVec.push_back(tmpStr + string(" -> ")  + tmpStrUpper);
 	}
-	for (int i = 0; i < nPrimAtr; ++i){
-		tmpStr = removePrefix(primArt[i].name);
+	for (int i = 0; i < mNumPrimAtr; ++i){
+		tmpStr = removePrefix(mPrimAtr[i].name);
 		tmpStrUpper = tmpStr;
 		transform(tmpStrUpper.begin(), tmpStrUpper.end(),tmpStrUpper.begin(), ::toupper);
 		strVec.push_back(tmpStr + string(" -> ")  + tmpStrUpper);
 	}
-	for (int i = 0; i < nVtxAtr; ++i){
-		tmpStr = removePrefix(vtxArt[i].name);
+	for (int i = 0; i < mNumVtxAtr; ++i){
+		tmpStr = removePrefix(mVtxAtr[i].name);
 		tmpStrUpper = tmpStr;
 		transform(tmpStrUpper.begin(), tmpStrUpper.end(),tmpStrUpper.begin(), ::toupper);
 		strVec.push_back(tmpStr + string(" -> ")  + tmpStrUpper);
@@ -290,7 +310,7 @@ void Bgeo::writeDetailAtrMesh()
 	}
 	uint32_t end(0);
 	memcpy(buffer,(char*)& end,4);
-	file.write(buffer_start,size+8);
+	mFile.write(buffer_start,size+8);
 	delete[] buffer_start;
 }
 void Bgeo::writePrimsParticle()
@@ -317,35 +337,33 @@ void Bgeo::writePrimsParticle()
 	buffer += 7;
 
 	uint32_t primKey = 32768; // 0x00008000
-	uint32_t nParticles = nPoints;
+	uint32_t nParticles = mNumPoints;
 	swap_endianity(primKey);
 	swap_endianity(nParticles);
 	memcpy(buffer,(char*)&primKey,4);
 	buffer += 4;
 	memcpy(buffer,(char*)&nParticles,4);
 
-	file.write(buffer_start,38);
+	mFile.write(buffer_start,38);
 	delete[] buffer_start;
 
-	if (idxBytes == 4){
-		int bufferSize = nPoints*4;
-		uint32_t  * indices = new uint32_t[nPoints+1];
-		//uint32_t indices[nPoints+1];
-		for (uint32_t i = 0; i < nPoints; ++i){
-			//cout << i << " ";
+	if (mIdxBytes == 4){
+		int bufferSize = mNumPoints*4;
+		uint32_t  * indices = new uint32_t[mNumPoints+1];
+		for (uint32_t i = 0; i < mNumPoints; ++i){
 			indices[i] = i;
 			swap_endianity(indices[i]);
 		}
-		indices[nPoints] = 0;
-		file.write((char*)indices,bufferSize+4);;
+		indices[mNumPoints] = 0;
+		mFile.write((char*)indices,bufferSize+4);;
 		delete[] indices;
 	}
 	else {
-		int bufferSize = nPoints*2 ;
+		int bufferSize = mNumPoints*2 ;
 		buffer = new char[bufferSize+4];
 		buffer_start = buffer;
-		uint16_t indices[nPoints];
-		for (uint16_t i = 0; i < nPoints; ++i){
+		uint16_t indices[mNumPoints];
+		for (uint16_t i = 0; i < mNumPoints; ++i){
 			indices[i] = i;
 			swap_endianity(indices[i]);
 		}
@@ -354,7 +372,7 @@ void Bgeo::writePrimsParticle()
 		uint32_t end = 0;
 		swap_endianity(end);
 		memcpy(buffer,(char*)&end,4);
-		file.write(buffer_start,bufferSize+4);
+		mFile.write(buffer_start,bufferSize+4);
 		delete[] buffer_start;
 	}
 }
@@ -363,48 +381,56 @@ void Bgeo::writePrimsMesh(char * * vtxData, attribute * *vtxAtr, const int vtxDa
 {
 	//Probably possible to make new functions that are OPTIMIZED for these operations (without the middle step) but I'm going to use
 	//old code Bgeo code for now at least //per
-	char * swpdPrimData[nPrimAtr], *swpPrimData_start[nPrimAtr];
 
-	for (int i = 0; i < nPrimAtr;++i){
-		swpAtrData(primArt[i],swpdPrimData[i], primData[i], nPrims);
-		swpPrimData_start[i] = swpdPrimData[i];
+	//Copy all data from Naiad store on the primitives
+	char * swpdPrimData[mNumPrimAtr], *swpPrimDataStart[mNumPrimAtr];
+	for (int i = 0; i < mNumPrimAtr;++i){
+		swpAtrData(mPrimAtr[i],swpdPrimData[i], primData[i], mNumPrims);
+		swpPrimDataStart[i] = swpdPrimData[i];
 	}
 
-	//Copy indices
-	char * swpdVtxData[vtxDataChannels + 1], *swpVtxData_start[vtxDataChannels + 1];
-	if (idxBytes == 4 ){
-		//swpdVtxData[0] = new char[nPrims * sizeof(uint32_t) * 3];
-		swpdVtxData[0] = (char*) copyBuffer<uint32_t>(vtxData[0],1, nPrims*3, 0);
+	//Copy indices. Depending on how many points, they will be packed in 2 or 4 bytes spaces.
+	char * swpdVtxData[vtxDataChannels + 1], *swpVtxDataStart[vtxDataChannels + 1];
+	if (mIdxBytes == 4 ){
+		swpdVtxData[0] = (char*) copyBuffer<uint32_t>(vtxData[0],1, mNumPrims*3, 0);
 	}
 	else {
-		//swpdVtxData[0] = new char[nPrims * sizeof(uint16_t) * 3];
-		swpdVtxData[0] = (char*) copyBuffer32<uint16_t>(vtxData[0],1, nPrims*3, 0);
+		swpdVtxData[0] = (char*) copyBuffer32<uint16_t>(vtxData[0],1, mNumPrims*3, 0);
 	}
-	swpVtxData_start[0] = swpdVtxData[0];
+	swpVtxDataStart[0] = swpdVtxData[0];
 
+
+	//Copy the rest of the vertex data from Naiad.
+	//vtxAtr[] goes form 0 to vtxDataChannels-1, while  vtxData[] goes from 1 to vtxData vtxDataChannels.
+	//This is because indices don't have attribute info
 	for (int i = 0; i < vtxDataChannels;++i){
-		swpAtrData(*vtxAtr[i],swpdVtxData[i+1], vtxData[i+1], nPrims*3);
-		swpVtxData_start[i+1] = swpdVtxData[i+1];
+		swpAtrData(*vtxAtr[i],swpdVtxData[i+1], vtxData[i+1], mNumPrims*3);
+		swpVtxDataStart[i+1] = swpdVtxData[i+1];
 	}
 
+	//Each line will always look the same in the start: "3 <"
 	const uint32_t verticesPerPolygon = 3;
 	uint32_t verticesPerPolygonSwpd = verticesPerPolygon;
 	swap_endianity(verticesPerPolygonSwpd);
 	char primLineStart[5];
 	memcpy(primLineStart, (char*)&verticesPerPolygonSwpd ,4);
 	primLineStart[4] = '<';
-    const int bytesPerPrim = 5 + verticesPerPolygon * (idxBytes + vtxAtrBytes)  + primAtrBytes;
 
 
+    const int bytesPerPrim = 5 + verticesPerPolygon * (mIdxBytes + mVtxAtrBytes)  + mPrimAtrBytes;
     const int sizeofuint32 = sizeof(uint32_t);
     const int sizeofuint16 = sizeof(uint16_t);
+
+    //Used for Houdini to idenity different elements
     const uint32_t run = 4294967295; // 0xFFFFFFFF
-    uint32_t primkey = 1; //1 for polygon.		if (vtxAtr[i]->name.find("$v0") != string::npos)
+    uint32_t primkey = 1; //1 for polygon. (code is 0x00000001 binary)
     swap_endianity(primkey);
 
     int primsWritten = 0;
-    const int iterations = ceil(((double) nPrims / 65535));
+    const int iterations = ceil(((double) mNumPrims / 65535));
 
+    //This is so we don't have to do a lot of if statements later on when copying vertex data per vertex
+    //The vtxData have more elements than mNumVtxAtr since they are in some cases split into different channels (see Bgeo-Read help)
 	bool vtxUpdate[3][vtxDataChannels];
 	for (int i = 0; i < vtxDataChannels;++i){
 		size_t v0 = vtxAtr[i]->name.find("$v0")
@@ -422,7 +448,7 @@ void Bgeo::writePrimsMesh(char * * vtxData, attribute * *vtxAtr, const int vtxDa
 			vtxUpdate[0][i+2] = false;
 			vtxUpdate[1][i+2] = false;
 			vtxUpdate[2][i+2] = true;
-			i +=2;
+			i += 2;
 		}
 		else {
 			vtxUpdate[0][i] = true;
@@ -431,75 +457,90 @@ void Bgeo::writePrimsMesh(char * * vtxData, attribute * *vtxAtr, const int vtxDa
 		}
 	}
 
-    primsBuf = new char[iterations * 10 + nPrims * bytesPerPrim ];
-
-
-    char * primsBuf_start = primsBuf;
+    mPrimsBuf = new char[iterations * 10 + mNumPrims * bytesPerPrim ];
+    char * primsBufStart = mPrimsBuf;
 	for (int i = 0; i < iterations ; ++i) {
-		cout << "Write prims loop: " << i << endl;
+		cout << "Bgeo-Write >> Triangle chunk : " << i << endl;
 
-		memcpy(primsBuf,(char*)&run,sizeofuint32);
-		primsBuf+= sizeofuint32;
-
+		//Identify chunk as polygons
+		memcpy(mPrimsBuf,(char*)&run,sizeofuint32);
+		mPrimsBuf+= sizeofuint32;
+		//Write number of triangles in chunk. 65535 is the maximum value for a uint16_t
 		uint16_t nTempPrims;
-		if (nPrims - primsWritten < 65535)
-			nTempPrims = nPrims - primsWritten;
+		if (mNumPrims - primsWritten < 65535)
+			nTempPrims = mNumPrims - primsWritten;
 		else
 			nTempPrims = 65535;
 		uint16_t nTempPrimsSwpd = nTempPrims;
 		swap_endianity(nTempPrimsSwpd);
-		memcpy(primsBuf,(char*)&nTempPrimsSwpd,sizeofuint16);
-		primsBuf+= sizeofuint16;
+		memcpy(mPrimsBuf,(char*)&nTempPrimsSwpd,sizeofuint16);
+		mPrimsBuf+= sizeofuint16;
+		//Another key that tells Houdini that this is polygon data
+		memcpy(mPrimsBuf,(char*)&primkey,sizeofuint32);
+		mPrimsBuf+= sizeofuint32;
 
-		memcpy(primsBuf,(char*)&primkey,sizeofuint32);
-		primsBuf+= sizeofuint32;
-
+		//For every primitive in chunk
 		for (int j = 0; j < nTempPrims; ++j ) {
-			memcpy(primsBuf,primLineStart,5);
-			primsBuf+= 5;
+			//Write default at the start of each "line"
+			memcpy(mPrimsBuf,primLineStart,5);
+			mPrimsBuf+= 5;
 
+			//For each vertex
 			for (int k = 0; k < 3; ++k){
-				memcpy(primsBuf,swpdVtxData[0],idxBytes);
-				primsBuf+= idxBytes;
-				swpdVtxData[0]+= idxBytes;
+				//Write point index
+				memcpy(mPrimsBuf,swpdVtxData[0],mIdxBytes);
+				mPrimsBuf+= mIdxBytes;
+				swpdVtxData[0]+= mIdxBytes;
 
+				//For every vertex attribute
 				for (int l = 0; l < vtxDataChannels;++l){
-					//this can maybe be done in a smarter way //per
+					//this can maybe be done in a smarter way? //per
 					if (vtxUpdate[k][l]){
-						const int sizeAtr = typeBytes[vtxAtr[l]->type] * vtxAtr[l]->size;
-						memcpy(primsBuf,swpdVtxData[l+1],sizeAtr);
-						primsBuf += sizeAtr;
+						const int sizeAtr = mTypeBytes[vtxAtr[l]->type] * vtxAtr[l]->size;
+						memcpy(mPrimsBuf,swpdVtxData[l+1],sizeAtr);
+						mPrimsBuf += sizeAtr;
 						swpdVtxData[l+1] += sizeAtr;
 					}
 				}
 			}
 
-			for (int k = 0; k < nPrimAtr; ++k){
-				const int sizeAtr = typeBytes[primArt[k].type] * primArt[k].size;
-				memcpy(primsBuf,swpdPrimData[k],sizeAtr);
-				primsBuf += sizeAtr;
+			//At the end, print all primitive attributes.
+			for (int k = 0; k < mNumPrimAtr; ++k){
+				const int sizeAtr = mTypeBytes[mPrimAtr[k].type] * mPrimAtr[k].size;
+				memcpy(mPrimsBuf,swpdPrimData[k],sizeAtr);
+				mPrimsBuf += sizeAtr;
 				swpdPrimData[k] += sizeAtr;
 			}
 		}
+		//Keep track of total number of primitives written
 		primsWritten += nTempPrims;
 	}
-	primsBuf = primsBuf_start;
-	primsRead = true;
-	file.write(primsBuf,iterations * 10 + nPrims * bytesPerPrim);
+
+	//Remove the temporary data we created (with endian swaps)
+	for (int i = 0; i < mNumPrimAtr; ++i)
+		delete[] swpPrimDataStart[i];
+	for (int i = 0; i < vtxDataChannels+1; ++i)
+		delete[] swpVtxDataStart[i];
+
+	//Finally write to file from buffer.
+	mPrimsBuf = primsBufStart;
+	mPrimsRead = true;
+	mFile.write(mPrimsBuf,iterations * 10 + mNumPrims * bytesPerPrim);
 }
 
 void Bgeo::writePoints(char * * oldPointsData )
 {
-	//BIG fix needs to be done. bad copy to tmpPoints!!
+	//Probably possible to make new functions that are OPTIMIZED for these operations (without the middle step) but I'm going to use
+	//old code Bgeo code for now at least. One future speed up could be writing new copyBuffer funtctions that add the W=1 in the swap //per
 
 	// go from a buffer with [x y z]' to one with [x y z w]'
 	const int sizeofFloat = sizeof(float);
 	const int sizePerXYZ = sizeofFloat * 3;
-	int bufferSize = nPoints * sizeofFloat * 4;
-	char * tmpPoints = new char[nPoints * sizeofFloat * 4];
-	char * buf_start = tmpPoints;
+	int bufferSize = mNumPoints * sizeofFloat * 4;
+	char * tmpPoints = new char[mNumPoints * sizeofFloat * 4];
+	char * bufStart = tmpPoints;
 	const float W = 1.f;
-	for (int i = 0; i < nPoints; ++i){
+	for (int i = 0; i < mNumPoints; ++i){
 		memcpy(tmpPoints,oldPointsData[0],sizePerXYZ);
 		tmpPoints +=  sizePerXYZ;
 		oldPointsData[0] +=  sizePerXYZ;
@@ -507,52 +548,55 @@ void Bgeo::writePoints(char * * oldPointsData )
 		tmpPoints += sizeofFloat;
 	}
 
-	char * swpdPointData[nPointAtr+1], *swpPointData_start[nPointAtr+1];
+	//Get swapped buffers
+	char * swpdPointData[mNumPointAtr+1], *swpPointDataStart[mNumPointAtr+1];
 	swpdPointData[0] = new char[bufferSize];
-	swpPointData_start[0] = swpdPointData[0];
-	swpdPointData[0] = (char*) copyBuffer<float>(buf_start,1, nPoints*4, 0);
-	delete[] buf_start; // delete tmpPoints
+	swpPointDataStart[0] = swpdPointData[0];
+	swpdPointData[0] = (char*) copyBuffer<float>(bufStart,1, mNumPoints*4, 0);
+	delete[] bufStart; // delete tmpPoints
+	for (int i = 0; i < mNumPointAtr;++i){
 
-	//Probably possible to make new functions that are OPTIMIZED for these operations (without the middle step) but I'm going to use
-	//old code Bgeo code for now at least //per
-
-	for (int i = 0; i < nPointAtr;++i){
-
-		swpAtrData(pointAtr[i],swpdPointData[i + 1], oldPointsData[i + 1], nPoints);
-		swpPointData_start[i + 1] = swpdPointData[i + 1];
+		swpAtrData(mPointAtr[i],swpdPointData[i + 1], oldPointsData[i + 1], mNumPoints);
+		swpPointDataStart[i + 1] = swpdPointData[i + 1];
 	}
 
-	// copy everything to one big buffer
+	// copy everything to one big buffer, the Point buffer
 	const int sizePerXYZW = sizeofFloat * 4;
-    bufferSize = (sizeofFloat * 4 + pointAtrBytes) * nPoints;
-    pointsBuf = new char[bufferSize];
-    buf_start = pointsBuf;
-	for (int i = 0; i < nPoints; ++i) {
-		memcpy(pointsBuf,swpdPointData[0],sizePerXYZW);
-		pointsBuf += sizePerXYZW;
+    bufferSize = (sizeofFloat * 4 + mPointAtrBytes) * mNumPoints;
+    mPointsBuf = new char[bufferSize];
+    bufStart = mPointsBuf;
+
+    //For all points
+	for (int i = 0; i < mNumPoints; ++i) {
+		//Write position (X Y Z W)
+		memcpy(mPointsBuf,swpdPointData[0],sizePerXYZW);
+		mPointsBuf += sizePerXYZW;
 		swpdPointData[0] += sizePerXYZW;
-		for (int j = 0; j < nPointAtr; ++j) {
-			const int sizeAtr = typeBytes[pointAtr[j].type] * pointAtr[j].size;
-			memcpy(pointsBuf,swpdPointData[j+1],sizeAtr);
-			pointsBuf += sizeAtr;
+		//For all point attributes
+		for (int j = 0; j < mNumPointAtr; ++j) {
+			//Write position attribute
+			const int sizeAtr = mTypeBytes[mPointAtr[j].type] * mPointAtr[j].size;
+			memcpy(mPointsBuf,swpdPointData[j+1],sizeAtr);
+			mPointsBuf += sizeAtr;
 			swpdPointData[j+1] += sizeAtr;
-			//cout << "Name: " << pointAtr[j].name  <<"Type: " << pointAtr[j].type << " Size: " << pointAtr[j].size << " Bytes: "<< sizeAtr << endl;
 		}
 	}
-	for (int i = 0; i < nPointAtr; ++i)
-		delete[] swpPointData_start[i];
+	//Delete swap buffers
+	for (int i = 0; i < mNumPointAtr; ++i)
+		delete[] swpPointDataStart[i];
 
-	pointsBuf = buf_start; //let class delete this and attributes
-	pointsRead = true;
-	//Finally write to file.
-	file.write(pointsBuf,bufferSize);
-	//delete[] buf_start; // delete pointsBuf
+	mPointsBuf = bufStart; //let class delete this and attributes
+	mPointsRead = true;
+	//Finally write to mFile.
+	mFile.write(mPointsBuf,bufferSize);
 }
 
 void Bgeo::swpAtrData(const attribute & atr,char * &dst, char *  src, const int n)
 {
-	dst = new char[(typeBytes[atr.type] * atr.size ) * n];
+	//Allocates a new buffer for endian swap data (has to be deleted later)
+	dst = new char[(mTypeBytes[atr.type] * atr.size ) * n];
 	switch(atr.type) {
+		//Since type=5 is vector and only stores float.
 		case 5:
 		case 0: {
 			dst = (char*) copyBuffer<float>(src,1, n * atr.size , 0);
@@ -570,10 +614,13 @@ void Bgeo::swpAtrData(const attribute & atr,char * &dst, char *  src, const int 
 
 std::string Bgeo::removePrefix(std::string s)
 {
+	//Removes all the prefixes ($ followed by info) from a string
 	size_t pos3f = s.find("$3f")
 			, posV = s.find("$v");
 	if (pos3f != string::npos)
 		s.erase(pos3f,3);
+	//Actualyl we don't have to check for $v1 and $v2 since all
+	//attributes will only store the $v0 in their names
 	if (posV != string::npos) {
 		if (s.find("$v0") != string::npos)
 			s.erase(posV,3);
@@ -581,8 +628,6 @@ std::string Bgeo::removePrefix(std::string s)
 			s.erase(posV,2);
 	}
 	return s;
-
-
 }
 
 void Bgeo::writeAttribute(const attribute &atr)
@@ -590,10 +635,11 @@ void Bgeo::writeAttribute(const attribute &atr)
 	//Remove the prefixes added in naiad (if added)
 	string name = removePrefix(atr.name);
 
+	//All this with the assumption of string lengths are LESS than numeric_limits<uint16_t)::max()
 	uint16_t strSize = name.length(), strSizeSwpd = strSize;
 	swap_endianity(strSizeSwpd);
 	const int sizeofUint16 = sizeof(uint16_t);
-	const int defBytes = typeBytes[atr.type] * atr.size;
+	const int defBytes = mTypeBytes[atr.type] * atr.size;
 	const int bufferSize = 4 * sizeofUint16 + strSize +  defBytes;
 	char * buffer= new char[bufferSize], * bufferStart = buffer;
 	//Copy String size indicator
@@ -608,21 +654,18 @@ void Bgeo::writeAttribute(const attribute &atr)
 	swap_endianity(sizeAndType[2]);
 	memcpy(buffer,(char*) sizeAndType, 3 * sizeofUint16);
 	buffer+= 3 * sizeofUint16;
-	//Copy default values
 
+	//Copy default values
 	char * tempDef;
 	if (atr.type == 0 || atr.type==5)
 		tempDef = (char * )copyBuffer<float>(atr.defBuf,1,atr.size,0);
 	else
 		tempDef = (char * )copyBuffer<uint32_t>(atr.defBuf,1,atr.size,0);
-
 	memcpy(buffer,tempDef,defBytes);
 	delete[] tempDef;
-	//Write to file
-	file.write(bufferStart,bufferSize);
 
-
-
+	//Write to mFile
+	mFile.write(bufferStart,bufferSize);
 	delete[] bufferStart;
 }
 
@@ -631,11 +674,12 @@ void Bgeo::addAttribute(attribute* atr, const char* name, const uint16_t size, c
 	atr[0].name = string(name);
 	atr[0].size = size;
 	atr[0].type = type;
-	const int bufferSize = typeBytes[type] * size;
+
+	//Have to copy data from the default buffers in Naiad
+	const int bufferSize = mTypeBytes[type] * size;
 	atr[0].defBuf = new char[bufferSize];
-	if (type == 0 || type == 5){
-		memcpy(atr[0].defBuf,def,bufferSize);
-	}
+	if (type == 0 || type == 5)
+		memcpy(atr[0].defBuf, def, bufferSize);
 	else
 	{
 		//This can be corrected in future versions of Naiad. Atm, Default is only stored as floats (even if vec3i)
@@ -644,167 +688,134 @@ void Bgeo::addAttribute(attribute* atr, const char* name, const uint16_t size, c
 			float temp = *(float *)(def + sizeof(uint32_t) * i);
 			tempIntArr[i] = (uint32_t ) temp;
 		}
-		memcpy(atr[0].defBuf,(char*)tempIntArr,bufferSize);
+		memcpy(atr[0].defBuf,(char*)tempIntArr, bufferSize);
 	}
-	cout << atr[0].name << " " << atr[0].size<< " "  << atr[0].type << endl;
+	//cout << atr[0].name << " " << atr[0].size<< " "  << atr[0].type << endl;
 }
-
-
-
 
 Bgeo::attribute Bgeo::readAttributeInfo()
 {
-    //Dont bother handle strings etc
-
     attribute atr;
-
-    //Name
-    //Read length of string(max of 32k chars, uint32 not needed)
+    //Read length of Name string(max of 32k chars, uint32 not needed)
     int bufferSize = sizeof(uint16_t);
-    char * buffer = new char[bufferSize], *buffer_start = buffer;
-    file.read(buffer,bufferSize);
+    char * buffer = new char[bufferSize], *bufferStart = buffer;
+    mFile.read(buffer,bufferSize);
     uint16_t strLen;
     readNumber(buffer,strLen);
-    delete[] buffer_start;
+    delete[] bufferStart;
 
-
+    //Read Name
     char * name_arr = new char[strLen];
-    file.read(name_arr,strLen);
+    mFile.read(name_arr,strLen);
     atr.name = string(name_arr,name_arr + strLen);
 
     //Size && Type
     bufferSize = sizeof(uint16_t) + sizeof(uint32_t);
-    buffer = new char[bufferSize], buffer_start = buffer;
-    file.read(buffer,bufferSize);
+    buffer = new char[bufferSize], bufferStart = buffer;
+    mFile.read(buffer,bufferSize);
     readNumber(buffer,atr.size);
 
+    //This byte is later on splitted in two uint16 components
     uint32_t Type;
     readNumber(buffer,Type);
     atr.type = Type & 0xffff;
 
-    //dont know what index do (t odo)
+    // If type is string, char or index -> output error
+    switch (atr.type){
+		case 3:
+		case 4:
+		case 5:
+			NB_THROW("Error when reading type from Bgeo. No support for type of " << mTypeStr[atr.type] << ".");
+    }
+
+    //dont know what typeinfo do (can be 0 or 1(index pair))
     uint16_t typeinfo = Type >> 16;
-    delete[] buffer_start;
+    delete[] bufferStart;
 
     //Defaults - store them in a buffer (size and type decides how to output them)
-    bufferSize = typeBytes[atr.type] * atr.size;
+    bufferSize = mTypeBytes[atr.type] * atr.size;
     atr.defBuf = new char[bufferSize];
-    file.read(atr.defBuf,bufferSize);
-    //aa, error if type = 3 4 5
-    //cout << "Parameter--> Name: " << atr.name << " Size: " << atr.size<< " Type: "
-    		//<< typeStr[atr.type]  << " Defaultsize in bytes: "<< endl;
+    mFile.read(atr.defBuf,bufferSize);
+
     return atr;
 }
 
 void Bgeo::readPrims(const bool integrityCheck)
 {
     //Read vertex attributes
-	vtxArt = new attribute[nVtxAtr];
+	mVtxAtr = new attribute[mNumVtxAtr];
     cout << endl <<"VertAttr" ;
-    for (int i = 0; i < nVtxAtr; ++i )
+    for (int i = 0; i < mNumVtxAtr; ++i )
     {
-        vtxArt[i] = readAttributeInfo();
-        vtxAtrBytes += typeBytes.at(vtxArt[i].type) * vtxArt[i].size;
+        mVtxAtr[i] = readAttributeInfo();
+        mVtxAtrBytes += mTypeBytes.at(mVtxAtr[i].type) * mVtxAtr[i].size;
     }
 
     //Read primitives attributes
-    primArt = new attribute[nPrimAtr];
+    mPrimAtr = new attribute[mNumPrimAtr];
     cout << endl << "PrimAttrib";
-    for (int i = 0; i < nPrimAtr; ++i )
+    for (int i = 0; i < mNumPrimAtr; ++i )
     {
-        primArt[i] = readAttributeInfo();
-        primAtrBytes += typeBytes.at(primArt[i].type) * primArt[i].size;
+        mPrimAtr[i] = readAttributeInfo();
+        mPrimAtrBytes += mTypeBytes.at(mPrimAtr[i].type) * mPrimAtr[i].size;
     }
 
+    //Allocate memory for the buffer
     const int verticesPerPolygon = 3;
-    const int bytesPerPrim = (sizeof(uint32_t) + sizeof(char) + verticesPerPolygon * (idxBytes + vtxAtrBytes)  + primAtrBytes);
-    primsBuf = new char[nPrims * bytesPerPrim];
-    char * primsBuf_start = primsBuf;
-
-
+    const int bytesPerPrim = (sizeof(uint32_t) + sizeof(char) + verticesPerPolygon * (mIdxBytes + mVtxAtrBytes)  + mPrimAtrBytes);
+    mPrimsBuf = new char[mNumPrims * bytesPerPrim];
+    char * primsBufStart = mPrimsBuf;
 
     //shorten this
-    int bufferSize = sizeof(uint32_t)*2 + sizeof(uint16_t) ;
-    char * buffer = new char[bufferSize], *buffer_start = buffer;
-    file.read(buffer,bufferSize);
+    const int bufferSizeKey = sizeof(uint32_t)*2 + sizeof(uint16_t) ;
+    char * bufferKey = new char[bufferSizeKey], *bufferKeyStart = bufferKey;
+    mFile.read(bufferKey,bufferSizeKey);
     uint32_t run;
-	readNumber(buffer,run);
+	readNumber(bufferKey,run);
 
-	cout << "Bgeo-Read: Loading polygons("<< nPrims <<"): ";
-    while (run == 4294967295){
-    	cout << ".";
-    	// 4294967295 = 0xFFFFFFFF
-        //Control that the bgeo is a polygon model
-
-        //if (run != 4294967295)
-        	//NB_THROW("BGEO File Corrupt; No primitives");
-
+	int bufferSize;
+	char * buffer, *bufferStart;
+	cerr << "Bgeo-Read: Loading polygons("<< mNumPrims <<"): ";
+    while (run == 4294967295){// 4294967295 = 0xFFFFFFFF
     	uint16_t nPrimPolygons;
-		readNumber(buffer,nPrimPolygons);
-		//if (nPrimPolygons != nPrims) {
-			//NB_THROW("BGEO File Corrupt; primitive count mismatch (nPrimPolygons=" <<  nPrimPolygons << ", nPrims=" << nPrims << ")");
-		//}
+		readNumber(bufferKey,nPrimPolygons);
 
 		uint32_t PrimKey;
-		readNumber(buffer,PrimKey);
-		//if (PrimKey != 1)
-			//NB_THROW("BGEO File Corrupt; No polygon primitives ");
-		delete[] buffer_start;
+		readNumber(bufferKey,PrimKey);
 
-		//Restricted to triangles only
+		//Read the primtive data and store in Primitive buffer
 		bufferSize = nPrimPolygons * bytesPerPrim;
-		file.read(primsBuf,bufferSize);
+		mFile.read(mPrimsBuf,bufferSize);
 
 		//validate vertices per polygon
 		if (integrityCheck){
-			char * bufferTmp = primsBuf;
+			char * bufferTmp = mPrimsBuf;
 			uint32_t nVtxPerPoly;
 			for (int i = 0; i < nPrimPolygons ; ++i){
-				readNumber(primsBuf,nVtxPerPoly);
-				primsBuf+= bytesPerPrim - 4;//sizeof uint32-t
+				readNumber(mPrimsBuf,nVtxPerPoly);
+				mPrimsBuf+= bytesPerPrim - 4;//sizeof uint32-t
 				if (nVtxPerPoly != 3)
 					NB_THROW("Bgeo-Read error! There is at the moment only support for objects with triangles. A polygon with "	<< nVtxPerPoly << " vertices was detected.");
 			}
-			primsBuf = bufferTmp;
+			mPrimsBuf = bufferTmp;
 		}
-		primsBuf += bufferSize;
+		mPrimsBuf += bufferSize;
 
-
-		//shorten this
-		bufferSize = sizeof(uint32_t)*2 + sizeof(uint16_t) ;
-	    buffer = new char[bufferSize], buffer_start = buffer;
-	    file.read(buffer,bufferSize);
-		readNumber(buffer,run);
+		//Read data for next chunk
+		bufferKey = bufferKeyStart;
+	    mFile.read(bufferKey,bufferSizeKey);
+		readNumber(bufferKey,run);
     }
-    delete[] buffer_start;
-    primsBuf = primsBuf_start;
-    /* For debugging purposes
-    if (idxBytes == 2)
-        indicesBuffer = copyBufferVertex16<uint32_t>(primsBuf+5,1);
-    else
-        indicesBuffer = copyBufferVertex<uint32_t>(primsBuf+5,1);
-
-    cout << endl << "Primitives read!" << endl;
-    printBuffer(indicesBuffer,nPrims,3);
-
-    float * uv = copyBufferVertex<float>(primsBuf+5+idxBytes,3);
-    printBuffer(uv,nPrims,9);
-
-    int bytesPerLine = 5 + verticesPerPolygon * (idxBytes + vtxAtrBytes) + primAtrBytes;
-    float * testPrimPara = copyBuffer<float>(primsBuf,nPrims,4, bytesPerLine,bytesPerLine - primAtrBytes);
-    printBuffer(testPrimPara,nPrims,4);
-
-    delete[] testPrimPara;
-    delete[] uv;
-    delete[] indicesBuffer;
-*/
-    primsRead = true;
-
+    delete[] bufferKeyStart;
+    mPrimsBuf = primsBufStart;
+    mPrimsRead = true;
 }
 
 
 void Bgeo::copyBufLocaluInt16(const char* src, uint32_t * dst,const int count)
 {
+	//Takes a chunk of memory from src and element by element do endian swap and put the output to the dst
+	//This will convert data from 16bit int to 32bit int. (Bgeo can have indices as 16bit int, naiad always use 32bit.
     const int   sizeoft = sizeof(uint16_t);
     const char* src_end = src+count*sizeoft;
     int         counter = 0;
@@ -819,6 +830,8 @@ void Bgeo::copyBufLocaluInt16(const char* src, uint32_t * dst,const int count)
 
 void Bgeo::copyBufLocaluint32(const char* src, uint16_t * dst,const int count)
 {
+	//Takes a chunk of memory from src and element by element do endian swap and put the output to the dst
+	//This will convert data from 32bit int to 16bit int. (Bgeo can have indices as 16bit int, naiad always use 32bit.
     const int   sizeoft = sizeof(uint32_t);
     const char* src_end = src+count*sizeoft;
     int         counter = 0;
@@ -833,14 +846,14 @@ void Bgeo::copyBufLocaluint32(const char* src, uint16_t * dst,const int count)
 
 float * Bgeo::getPoints3v()
 {
-	return copyBuffer<float>(pointsBuf,nPoints,3,sizeof(float) * 4 + pointAtrBytes);
+	return copyBuffer<float>(mPointsBuf,mNumPoints,3,sizeof(float) * 4 + mPointAtrBytes);
 }
 
 uint32_t * Bgeo::getIndices3v()
 {
-    if (idxBytes == 2)
-        return copyBufferVertex16<uint32_t>(primsBuf+5,1);
+    if (mIdxBytes == 2)
+        return copyBufferVertex16<uint32_t>(mPrimsBuf+5,1);
     else
-        return copyBufferVertex<uint32_t>(primsBuf+5,1);
+        return copyBufferVertex<uint32_t>(mPrimsBuf+5,1);
 }
 
