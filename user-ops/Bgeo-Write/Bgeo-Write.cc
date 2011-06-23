@@ -76,7 +76,7 @@ public:
         const int        padding = param1i("Frame Padding")->eval(tb);
         const Nb::String sequenceFilePath = param1s("Output File Path")->eval(tb);
         Nb::String expandedFilename = Nb::sequenceToFilename(
-            "",
+            Ng::projectPath(),
             sequenceFilePath + Nb::String("/") +body->name() + Nb::String(".#.bgeo"),
             tb.frame,
             tb.timestep,

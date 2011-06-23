@@ -34,8 +34,8 @@ Bgeo::Bgeo(const char* filename) :
     setConstants();
     //delete buffer
     delete[] p;
-    /*
-    cout    << "Version number: "   << mVerNr << endl
+
+    /*cout    << "Version number: "   << mVerNr << endl
             << "NPoints: "          << mNumPoints << endl
             << "NPrims: "           << mNumPrims << endl
             << "NPointGroups: "     << mNumPointGrps << endl
@@ -722,9 +722,9 @@ Bgeo::attribute Bgeo::readAttributeInfo()
 
     // If type is string, char or index -> output error
     switch (atr.type){
+		case 2:
 		case 3:
 		case 4:
-		case 5:
 			NB_THROW("Error when reading type from Bgeo. No support for type of " << mTypeStr[atr.type] << ".");
     }
 
