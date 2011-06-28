@@ -1,4 +1,3 @@
-
 = 1.0 Installing the Build Tools And Configuring Your Environment
 
 You only need to follow the instructions in this section 1.0 once (the first time you want to use the Naiad Buddy for Maya).  **However, please follow the instructions in section 2.0 every time you need to update the Naiad Buddy for Maya due to a new Naiad release.**
@@ -126,7 +125,7 @@ First, get a fresh copy of the latest Naiad Buddy for Maya source code:
 
 {{{
 rm -rf naiad_buddy_src
-git clone git://github.com/exoticmarcus/Naiad-Buddy-for-Maya.git naiad_buddy_src
+git clone git://github.com/ExoticMatter/Naiad-Buddy-for-Maya.git naiad_buddy_src
 cd naiad_buddy_src
 }}}
 
@@ -147,7 +146,7 @@ Let's say we want to put the buddy source code in our home directory under the f
 
 {{{
 rm -rf ~/naiad-buddy-maya-src
-git clone git://github.com/exoticmarcus/Naiad-Buddy-for-Maya.git ~/naiad-buddy-maya-src
+git clone git://github.com/ExoticMatter/Naiad-Buddy-for-Maya.git ~/naiad-buddy-maya-src
 cd ~/naiad-buddy-maya-src
 }}}
 
@@ -192,7 +191,7 @@ then, inside this text file, adding the lines above into a single script:
 
 # download latest Naiad Buddy for Maya code
 rm -rf ~/naiad-buddy-maya-src
-git clone git://github.com/exoticmarcus/Naiad-Buddy-for-Maya.git ~/naiad-buddy-maya-src
+git clone git://github.com/ExoticMatter/Naiad-Buddy-for-Maya.git ~/naiad-buddy-maya-src
 cd ~/naiad-buddy-maya-src
 
 # build the buddy for Maya 2010
