@@ -81,7 +81,7 @@ Let's say we want to put the buddy source code in our home directory under the f
 
 {{{
 rm -rf ~/naiad-buddy-krakatoa.git
-git clone git://github.com/exoticmarcus/Naiad-Buddy-For-Krakatoa.git ~/naiad-buddy-krakatoa.git
+git clone git://github.com/ExoticMatter/Naiad-Buddy-For-Krakatoa.git ~/naiad-buddy-krakatoa.git
 cd ~/naiad-buddy-krakatoa.git
 }}}
 
