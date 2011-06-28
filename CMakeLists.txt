@@ -41,15 +41,9 @@ include_directories   (.
                        $ENV{NAIAD_PATH}/server/include/em
                        $ENV{NAIAD_PATH}/server/include/Nb
 		       $ENV{NAIAD_PATH}/server/include/Ng)
-                       $ENV{NAIAD_PATH}/include
-                       $ENV{NAIAD_PATH}/include/system
-                       $ENV{NAIAD_PATH}/include/em
-                       $ENV{NAIAD_PATH}/include/Nb
-		       $ENV{NAIAD_PATH}/include/Ng)
 
 link_directories      ($ENV{ARNOLD_ROOT}/bin 
-		       $ENV{NAIAD_PATH}/server/lib
-		       $ENV{NAIAD_PATH}/lib)
+		       $ENV{NAIAD_PATH}/server/lib)
 
 add_library           (naiad_distance SHARED naiad_distance)
 target_link_libraries (naiad_distance Nb)
