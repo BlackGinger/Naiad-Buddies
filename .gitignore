@@ -10,3 +10,6 @@ cmd/bin
 user-ops/bin
 build*
 buddies
+.cproject
+.project
+.settings

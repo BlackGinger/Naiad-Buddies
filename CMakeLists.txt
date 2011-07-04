@@ -36,4 +36,4 @@ cmake_minimum_required(VERSION 2.6)
 
 project (NBUDDY_HOUDINI)
 
-subdirs (cmd user-ops)
+subdirs (user-ops)
