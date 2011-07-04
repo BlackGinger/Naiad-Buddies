@@ -125,7 +125,7 @@ First, get a fresh copy of the latest Naiad Buddy for Maya source code:
 
 {{{
 rm -rf naiad_buddy_src
-git clone git://github.com/ExoticMatter/Naiad-Buddy-for-Maya.git naiad_buddy_src
+git clone git://github.com/ExoticMatter/Naiad-Buddy-For-Maya.git naiad_buddy_src
 cd naiad_buddy_src
 }}}
 
@@ -146,7 +146,7 @@ Let's say we want to put the buddy source code in our home directory under the f
 
 {{{
 rm -rf ~/naiad-buddy-maya-src
-git clone git://github.com/ExoticMatter/Naiad-Buddy-for-Maya.git ~/naiad-buddy-maya-src
+git clone git://github.com/ExoticMatter/Naiad-Buddy-For-Maya.git ~/naiad-buddy-maya-src
 cd ~/naiad-buddy-maya-src
 }}}
 
@@ -191,7 +191,7 @@ then, inside this text file, adding the lines above into a single script:
 
 # download latest Naiad Buddy for Maya code
 rm -rf ~/naiad-buddy-maya-src
-git clone git://github.com/ExoticMatter/Naiad-Buddy-for-Maya.git ~/naiad-buddy-maya-src
+git clone git://github.com/ExoticMatter/Naiad-Buddy-For-Maya.git ~/naiad-buddy-maya-src
 cd ~/naiad-buddy-maya-src
 
 # build the buddy for Maya 2010
