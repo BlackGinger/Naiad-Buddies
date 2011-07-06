@@ -79,7 +79,7 @@ public:
     const Nb::String fileName = Nb::sequenceToFilename(Ng::projectPath(),
                                    sequenceName,
                                    tb.frame,                
-                                   tb.timestep,
+                                   0,
                                    padding);
     const bool integrityCheck =  Nb::String("On").listed_in(Nb::String(param1e("Integrity Check")->eval(tb)));
     const Nb::String bodySignature = param1e("Body Signature")->eval(tb);
