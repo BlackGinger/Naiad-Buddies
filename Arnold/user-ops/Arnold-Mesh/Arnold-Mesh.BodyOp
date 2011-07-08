@@ -1,0 +1,33 @@
+BodyOp Arnold-Mesh
+|*
+   <h3>Overview</h3>
+   todo
+*|
+{
+    Category "File"
+    Category "User"
+
+    Group(Mesh) Input "body-input"
+    || All admitted bodies enter through this input.
+
+	ParamSection "General"
+	{
+		String "Node Name" ""
+		
+		BodyNameList "Body Names" "*"
+         || The list of body names to include in the write.
+	}
+
+    ParamSection "Shading"
+    {
+         String "Shader" ""
+         || aa
+
+         Toggle "Opaque" "Off"
+         || aa
+    }
+    
+    Group(Mesh) Output "body-output"
+    || All admitted bodies enter through this input. 
+    
+}

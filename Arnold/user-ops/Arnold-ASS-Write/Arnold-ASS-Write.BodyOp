@@ -1,0 +1,54 @@
+BodyOp Arnold-ASS-Write
+|*
+   <h3>Overview</h3>
+   todo
+*|
+{
+    Category "File"
+    Category "User"
+ 
+    Single(Camera) Input "cam-input" (NO_BODY_OK MANUAL_ADMISSION)
+    || Cam input. If not attached, use .ASS camera
+
+    Group(Body) Input "body-input"
+    || All admitted bodies enter through this input.
+
+	EnumGroup OutputFormat{
+	"png"
+	"jpg"
+	"tiff"	
+	}
+
+	ParamSection "Arnold Input"
+	{
+		FileName "Arnold Scene" "scenefile.ass"
+		
+		FileName "Arnold Implicit Shader" "'$NAIAD_PATH'/buddies/arnold/plug-ins/naiad_distance.so"
+		
+		FileName "Arnold Procedural" "'$NAIAD_PATH'/buddies/arnold/plug-ins/naiad_procedural.so"
+	}
+
+    ParamSection "File Output"
+    {
+    	OutputFormat "Output Format" "png"
+    
+         FileName "Output Image" "render.#.png"
+         || The path to where the images will be exported.
+         
+         FileName "Output ASS file" "scene.#.ass"
+
+         Int "Frame Padding" "4"
+         |* The number of zeroes to pad the frame number by, when expanding
+            to the absolute filename. *|           
+    }
+    
+    ParamSection "Render Settings"
+    {
+     	 Int "Width" "800"
+     	 Int "Height" "600"
+     	 Int "AA Samples" "1"
+     	 Float "Motion Blur" "0"
+     	 
+     	 PathName "Kick Ass" "" 
+    }
+}

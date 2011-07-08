@@ -1,0 +1,43 @@
+BodyOp Arnold-Implicit
+|*
+   <h3>Overview</h3>
+   todo
+*|
+{
+    Category "File"
+    Category "User"
+
+    Group(Field) Input "body-input"
+    || All admitted bodies enter through this input.
+
+	ParamSection "General"
+	{
+		String "Node Name" ""
+		
+		BodyNameList "Body Names" "*"
+         || The list of body names to include in the write.
+		
+		ChannelName "Channel" ""
+	}
+
+    ParamSection "Shading"
+    {
+         String "Shader" ""
+         || aa
+
+         Toggle "Opaque" "Off"
+         || aa
+    }
+    
+    ParamSection "Implicit"
+    {
+    	String "Implicit Name" ""
+    	Float "Treshold" "0"
+    	Int "Samples" "5"
+    	Float "Ray Bias" "0.01"
+    }
+    
+    Group(Field) Output "body-output"
+    || All admitted bodies enter through this input. 
+    
+}

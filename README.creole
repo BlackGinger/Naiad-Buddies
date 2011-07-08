@@ -100,7 +100,7 @@ First, get a fresh copy of the latest Naiad Buddy for Arnold source code:
 
 {{{
 rm -rf ~/arnold-buddy.git
-git clone git://github.com/ExoticMatter/Naiad-Buddy-For-Arnold.git ~/arnold-buddy.git
+git clone git://github.com/exoticmarcus/Naiad-Buddy-For-Arnold.git ~/arnold-buddy.git
 }}}
 
 Now, to compile this buddy, run the following commands:
@@ -108,7 +108,7 @@ Now, to compile this buddy, run the following commands:
 {{{
 cd ~/arnold-buddy.git
 mkdir -p build && cd build
-cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=$NAIAD_PATH ~/arnold-buddy.git
+cmake -DCMAKE_BUILD_TYPE=RELEASE ~/arnold-buddy.git
 make
 cd .. 
 rm -rf build
