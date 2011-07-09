@@ -223,8 +223,8 @@ MStatus NBuddyParticlesToBodyNode::compute( const MPlug& plug, MDataBlock& data 
         naiadBodyData * newBodyData = (naiadBodyData*)dataFn.data( &status );
         NM_CheckMStatus( status, "Failed to get naiadBodyData handle from MFnPluginData");
 
-        // Sync data and then finally add the body to the data holder
-        particleNaiadBody->update(); // this is much better and safer than sync (it will also sort all your particles into corresponding blocks)
+        // update body and then finally add the body to the data holder
+        particleNaiadBody->update(Nb::ZeroTimeBundle);
         newBodyData->nBody = Nb::BodyCowPtr(particleNaiadBody);
 
         //Give the data to the output handle and set it clean
