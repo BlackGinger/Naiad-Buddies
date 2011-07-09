@@ -624,7 +624,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Nb::Body*& pParticleBody)
 		transferParticlePointAttribs( numAttribs, attribList, attrLut, particleShape, ptlist[i] );
 	}
 
-	pParticleBody->update();
+	pParticleBody->update(Nb::ZeroTimeBundle);
 
 	return EC_SUCCESS;
 
@@ -660,7 +660,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveParticleShape(Nb::Body*& pParticleBody)
 		vectorData.push_back( em::vec3f( pos[0], pos[1], pos[2] ) );
 	}
 
-	pParticleBody->update();
+	pParticleBody->update(Nb::ZeroTimeBundle);
 
 	LogInfo() << " ************** Done with Particle Shape ************** " << std::endl;	
 	

@@ -439,7 +439,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 			if (*bodyIt)
 			{
 				//Make sure all the emp particles are sorted into the correct blocks
-				(*bodyIt)->update();
+                                (*bodyIt)->update(Nb::ZeroTimeBundle);
 				empWriter.write( (*bodyIt), Nb::String("*/*"));
 
 				//Question: Can the bodies be deleted directly after a write, or does the writer need to be closed first?
@@ -459,7 +459,7 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 		if (pBody)
 		{
 			//Make sure all the emp particles are sorted into the correct blocks
-			pBody->update();
+                        pBody->update(Nb::ZeroTimeBundle);
 			empWriter.write(pBody, Nb::String("*/*"));
 
 			//Question: Can the bodies be deleted directly after a write, or does the writer need to be closed first?
