@@ -43,6 +43,7 @@
 #include <maya/MFloatPointArray.h>
 #include <maya/MFloatVectorArray.h>
 #include <maya/MStringArray.h>
+#include <maya/MItMeshPolygon.h>
 
 Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & meshObject, std::string bodyName, bool localSpace, const MMatrix & worldMatrix )
 {
@@ -104,28 +105,52 @@ Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & meshObject, std::string bodyName, 
         for ( unsigned int i(0); i < numVertex; ++i )
             normalVec(i)=Nb::Vec3f(normals[i][0],normals[i][1],normals[i][2]);
 
-        //Get triangles function will return an array specifiying how many triangles are in each face.
-        //And an array which is the vertex indices for each triangle.
-        MIntArray triangleCounts, triangleVertIndicies;
-        status = conversionMesh.getTriangles( triangleCounts , triangleVertIndicies );
-
         // Get the index channel and the dataarray for that channel
-        Nb::Buffer3i&       tib(triShape.mutableBuffer3i("index"));
+        Nb::Buffer3i& tib = triShape.mutableBuffer3i("index");
 
-        em::vec3i indiciVec(0,0,0); //Holder for the vectors
-        unsigned int indiciCount(0); // Counter for the indicilist
+        // Get the UV channels
+        triShape.guaranteeChannel3f("u",Nb::Vec3f(0));
+        triShape.guaranteeChannel3f("v",Nb::Vec3f(0));
+        Nb::Buffer3f& u = triShape.mutableBuffer3f("u");
+        Nb::Buffer3f& v = triShape.mutableBuffer3f("v");
 
-        //Loop the faces
-        for ( unsigned int i(0); i < triangleCounts.length(); ++i )
-        {
-            //Loop the triangles in the face
-            for ( unsigned int j(0); j < triangleCounts[i]; ++j )
-            {
-                indiciVec[0] = triangleVertIndicies[indiciCount++];
-                indiciVec[1] = triangleVertIndicies[indiciCount++];
-                indiciVec[2] = triangleVertIndicies[indiciCount++];
-                tib.push_back( indiciVec );
-            }
+        // store indices & UVs in triangle channels on Naiad mesh body
+        MItMeshPolygon polyIt(meshObject, &status);
+        if( MStatus::kSuccess != status ) {
+            cerr << "mayaMeshToNaiadBody():" << status.errorString() << "\n";
+            cerr.flush();
+            return Nb::BodyCowPtr();
+        }
+        
+        for(polyIt.reset(); !polyIt.isDone(); polyIt.next() ) {
+            int triCount;
+            polyIt.numTriangles(triCount);
+            const int polyIndex = polyIt.index();            
+            for(int ti=0; ti<triCount; ++ti) {
+                // store mesh indices
+                int tidx[3];
+                conversionMesh.getPolygonTriangleVertices(polyIndex, ti, tidx);
+                tib.push_back(Nb::Vec3i(tidx[0],tidx[1],tidx[2]));
+                // store mesh UVs
+                if(polyIt.hasUVs()) {
+                    float tu[3], tv[3];
+                    const MString* uvSet = 0;
+                    conversionMesh.getPolygonUV(
+                        polyIndex,tidx[0],tu[0],tv[0],uvSet
+                        );
+                    conversionMesh.getPolygonUV(
+                        polyIndex,tidx[1],tu[1],tv[1],uvSet
+                        );
+                    conversionMesh.getPolygonUV(
+                        polyIndex,tidx[2],tu[2],tv[2],uvSet
+                        );                    
+                    u.push_back(Nb::Vec3f(tu[0],tu[1],tu[2]));
+                    v.push_back(Nb::Vec3f(tv[0],tv[1],tv[2]));
+                } else {
+                    u.push_back(Nb::Vec3f(0));
+                    v.push_back(Nb::Vec3f(0));
+                }
+            }            
         }
 
         // Sort out vertex colors
