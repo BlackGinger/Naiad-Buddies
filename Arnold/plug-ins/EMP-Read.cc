@@ -20,8 +20,8 @@ int Init(AtNode *node, void **user_ptr)
 	    Nb::begin();
 	    Nb::verboseLevel = "VERBOSE";
 	    // Read the data parameter
-	    Nb::String filename = AiNodeGetStr(node, "data"),
-					bodies  = AiNodeGetStr(node, "bodies");
+	    Nb::String filename = AiNodeGetStr(node, "data")
+	    		,bodies  = AiNodeGetStr(node, "bodies");
 	    int frame = AiNodeGetInt(node, "frame");
 	    int padding = AiNodeGetInt(node, "padding");
 
@@ -77,10 +77,16 @@ int Init(AtNode *node, void **user_ptr)
 		}
 		AiUserParamIteratorDestroy(iter);
 
+		std::cerr << "Before body loop \n";
+
 	    //Evaluate bodies
 	    for(int i = 0; i < myEmpReader->bodyCount(); ++i) {
-	          const Nb::Body* body = myEmpReader->popBody();
+
+	          const Nb::Body* body = myEmpReader->ejectBody(myEmpReader->constBody(i)->name());
+	          std::cerr << "Ejecting body " <<  body->name() <<"\n";
 	          if(body->matches("Mesh")){
+	        	  std::cerr << "Mesh body found \n";/*
+
 	        	  if (motionblur != 0 && !body->constPointShape().hasChannels3f("velocity")){
 
 	        		  //Get the next frame and create motion blur from it
@@ -110,12 +116,19 @@ int Init(AtNode *node, void **user_ptr)
 	        			  nodes.push_back(NbAi::loadMesh(body, 0));//no motionblur available
 	        	  }
 	        	  else
-	        		  nodes.push_back(NbAi::loadMesh(body, motionblur));
-	        		//Store bodies
-	        		meshBodies.push_back(body);
-	          }
-	          else if (body->matches("Particle")){
 
+	        		  nodes.push_back(NbAi::loadMesh(body, motionblur));
+	        	  //AiNodeSetStr(nodes.back(), "name", "mesh");
+	        		//Store bodies
+	        		meshBodies.push_back(body);*/
+	        	  nodes.push_back(NbAi::loadMesh(body, 0));
+	        	  //meshBodies.push_back(body);
+	        	  //nodes.push_back(AiNode("polymesh"));
+
+	          }
+	          if (body->matches("Particle")){
+	        	  std::cerr << "Particle body found \n";
+/*
 	        	  //Default values
 	        	  std::string pMode("sphere");
 	        	  float radius = 0.005;
@@ -129,14 +142,19 @@ int Init(AtNode *node, void **user_ptr)
 	        	  std::cerr << "Loading particles with radius: " << radius << " and mode: " << pMode <<std::endl;
 
 	        	  //Create node
-	        	  nodes.push_back(NbAi::loadParticles(body, pMode.c_str(), radius, motionblur));
+	        	  //nodes.push_back(NbAi::loadParticles(body, pMode.c_str(), radius, motionblur));
+	        	  //AiNodeSetStr(nodes.back(), "name", "particle");
+
 
 	        	  //Delete ejected body.
-	        	  delete body;
+	        	  delete body;*/
+	        	  nodes.push_back(NbAi::loadParticles(body, "sphere",0.005, 0));
+	        	  AiNodeSetStr(nodes.back(), "mode", "sphere");
 	          }
 	    }
 		//Done with Naiad library
 		Nb::end();
+
 	}
 	catch(std::exception& e)
 	{
@@ -150,15 +168,20 @@ int Init(AtNode *node, void **user_ptr)
 
 int Cleanup(void *user_ptr)
 {
-	for (int i = 0; i < meshBodiesNext.size(); ++i)
+	/*for (int i = 0; i < meshBodiesNext.size(); ++i)
 		delete meshBodiesNext.at(i);
 	meshBodiesNext.clear();
 	for (int i = 0; i < meshBodies.size(); ++i)
 		delete meshBodies.at(i);
 	meshBodies.clear();
+*/
+	std::cerr << "nodes vector<AtNode *> is of size: " << nodes.size() << "\n";
 
     nodes.clear();
-	return true;
+
+
+    std::cerr << "Managed to delete everything! \n";
+    return TRUE;
 }
 
 int NumNodes(void *user_ptr)

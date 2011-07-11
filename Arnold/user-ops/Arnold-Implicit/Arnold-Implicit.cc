@@ -66,33 +66,42 @@ public:
     {
     	const Nb::String bodyNameList = param1s("Body Names")->eval(tb);
     	if(body->name().listed_in(bodyNameList)){
+    		cerr << "Adding Arnold properties for " << body->name() << "\n";
     		//What type Arnold should render the body as
     		body->createProp1s("Arnold", "type", "Implicit");
+    		cerr << "type: " << body->prop1s("type")->eval(tb) << "\n";
 			//Node name
 			body->createProp1s("Arnold", "name", param1s("Node Name")->eval(tb).c_str());
+			cerr << "node name: " << body->prop1s("name")->eval(tb) << "\n";
 
 			body->createProp1s("Arnold", "channel", param1s("Channel")->eval(tb));
+			cerr << "channel: " << body->prop1s("channel")->eval(tb) << "\n";
 
 			//Shader that can be found in the template ASS file (see Arnold-Render or Arnold-ASS-Write)
 			body->createProp1s("Arnold", "shader", param1s("Shader")->eval(tb));
+			cerr << "shader: " << body->prop1s("shader")->eval(tb) << "\n";
 
 			//Solid shadows or not?
 			Nb::String opaque = "0";
 			if (Nb::String("On").listed_in(Nb::String(param1e("Opaque")->eval(tb))))
 				opaque = "1";
 			body->createProp1i("Arnold", "opaque", opaque);
-			//so that all bodies gets unique names
+			cerr << "opaque: " << body->prop1i("opaque")->eval(tb) << "\n";
 
 			//Implicit name
 			body->createProp1s("Arnold", "implicitname", param1s("Implicit Name")->eval(tb).c_str());
+			cerr << "implicit name: " << body->prop1s("implicitname")->eval(tb) << "\n";
 
 			stringstream ssRB, ssTH, ssSA;
 			ssRB << param1f("Ray Bias")->eval(tb);
-			ssTH << param1f("Treshold")->eval(tb);
+			ssTH << param1f("Threshold")->eval(tb);
 			ssSA << param1i("Samples")->eval(tb);
 			body->createProp1f("Arnold", "raybias", ssRB.str());
-			body->createProp1f("Arnold", "treshold", ssTH.str());
+			cerr << "Ray Bias: " << body->prop1f("raybias")->eval(tb) << "\n";
+			body->createProp1f("Arnold", "threshold", ssTH.str());
+			cerr << "Threshold: " << body->prop1f("treshold")->eval(tb) << "\n";
 			body->createProp1i("Arnold", "samples", ssSA.str());
+			cerr << "Samples: " << body->prop1i("samples")->eval(tb) << "\n";
     	}
     }
 

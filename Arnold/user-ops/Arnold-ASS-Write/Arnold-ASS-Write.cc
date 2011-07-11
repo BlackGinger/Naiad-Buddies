@@ -66,7 +66,7 @@ using namespace std;
 class Arnold_ASS_Write: public Ng::BodyOp {
 public:
 	Arnold_ASS_Write(const Nb::String& name) :
-		Ng::BodyOp(name), _camMtx(0.f) {
+		Ng::BodyOp(name) {
 	}
 
 	virtual Nb::String typeName() const {
@@ -76,16 +76,19 @@ public:
 	virtual void stepBodies(const Nb::TimeBundle& tb) {
 		// start an Arnold session
 		AiBegin();
+
+		//Load plugins
 		Nb::String implicitShaderPath =
 				param1s("Arnold Implicit Shader")->eval(tb);
 		Nb::String proceduralPath = param1s("Arnold Procedural")->eval(tb);
 		AiLoadPlugin(implicitShaderPath.c_str());
 		AiLoadPlugin(proceduralPath.c_str());
+
+		//Load scene
 		AiASSLoad(param1s("Arnold Scene")->eval(tb).c_str());
 
 		//Get Global Options
 		AtNode *options = AiUniverseGetOptions();
-		AiNodeSetInt(options, "AA_samples", param1i("AA Samples")->eval(tb));
 		AiNodeSetInt(options, "xres", param1i("Width")->eval(tb));
 		AiNodeSetInt(options, "yres", param1i("Height")->eval(tb));
 		//AiMsgSetLogFileName("scene1.log");
@@ -123,28 +126,30 @@ public:
 				groupPlugData("body-input", tb)->constMatchingBodies();
 		const Nb::Body* camera = singlePlugData("cam-input", tb)->constBody();
 
+		//Grab Naiad camera settings
 		if (camera != NULL) {
-			_camMtx = camera->globalMatrix;
+			em::mat44f camMtx = camera->globalMatrix;
 
 			//Check if Camera matrix is empty (no function for this in class)
 			bool emptyCamMtx = true;
 			for (int i = 0; i < 4; ++i)
 				for (int j = 0; j < 4; ++j)
-					if (_camMtx[i][j] != 0)
+					if (camMtx[i][j] != 0)
 						emptyCamMtx = false;
 
-			std::cerr << "\n Camera Matrix:\n " << _camMtx;
+			std::cerr << "\n Camera Matrix:\n " << camMtx;
 
 			//Invert Matrix to make it fit Arnold
 			em::mat44f invCamMtx;
-			em::invert(_camMtx, invCamMtx);
+			em::invert(camMtx, invCamMtx);
 			//Fix Camera
 			AtNode * cam;
 			if (!emptyCamMtx) {
-				std::cerr
-						<< "Will try to adjust arnold camera after Naiad camera \n";
+				std::cerr	<< "Will try to adjust arnold camera after Naiad camera \n";
 				cam = AiNode("persp_camera");
 				AiNodeSetStr(cam, "name", "NaiadCamera");
+				AiNodeSetFlt(cam, "near_clip", camera->prop1f("Near Clip")->eval(tb));
+				AiNodeSetFlt(cam, "far_clip", camera->prop1f("Far Clip")->eval(tb));
 				AiNodeSetFlt(cam, "fov", camera->prop1f("Angle Of View")->eval(tb));
 				AiNodeSetFlt(cam, "shutter_end", param1f("Motion Blur")->eval(
 						tb));
@@ -152,7 +157,6 @@ public:
 				AiNodeSetPtr(options, "camera", cam);
 			} else if (AiNodeLookUpByName("persp_camera") == NULL)
 				NB_THROW("No camera attached. Arnold has no camera");
-
 		}
 
 		//Get the FPS from the global parameter
@@ -176,6 +180,7 @@ public:
 			//todo fix this ugly hack
 			emp = emp.substr(1, emp.size() - 2);
 			//todo fix
+			//emp = string("boxuvtest");
 			int empPadding = 4;//body->prop1i("empPadding")->eval(tb);
 
 			if (body->prop1s("type")->eval(tb) == Nb::String("Mesh")) {
@@ -185,6 +190,8 @@ public:
 						param1s("Arnold Procedural")->eval(tb).c_str(),
 						emp.c_str(), body->name().c_str(), min, max, tb.frame,
 						empPadding, frametime);
+				AiNodeDeclare(node, "type", "constant STRING");
+				AiNodeSetStr(node, "type", "Polymesh");
 			} else if (body->prop1s("type")->eval(tb) == Nb::String("Particle")) {
 				//Each body must have a property called emp that tells the path to the emp file
 				NbAi::computeMinMax(body, min, max);
@@ -194,8 +201,28 @@ public:
 						empPadding, frametime, true,
 						body->prop1f("radius")->eval(tb), body->prop1s(
 								"particle-mode")->eval(tb).c_str());
+				AiNodeDeclare(node, "type", "constant STRING");
+				AiNodeSetStr(node, "type", "Points");
+
 			} else if (body->prop1s("type")->eval(tb) == Nb::String("Implicit")) {
 				body->bounds(min, max);
+
+				//Problems when loading.
+				/*node = NbAi::createProceduralImplicitASS(
+						param1s("Arnold Procedural")->eval(tb).c_str()
+						, emp.c_str()
+						, body->prop1s("implicitname")->eval(tb).c_str()
+						, body->prop1s("channel")->eval(tb).c_str()
+						, body->prop1i("samples")->eval(tb)
+						, min
+						, max
+						, tb.frame
+						, empPadding
+						, body->prop1f("raybias")->eval(tb)
+						, body->prop1f("treshold")->eval(tb)
+						, implicitShaderPath.c_str()
+						, body->name().c_str());*/
+
 				node = NbAi::createImplicitASS(
 						  body->prop1s("implicitname")->eval(tb).c_str()
 						, emp.c_str()
@@ -206,8 +233,11 @@ public:
 						, tb.frame
 						, empPadding
 						, body->prop1f("raybias")->eval(tb)
-						//body->prop1f("treshold")->eval(tb),
+						, body->prop1f("threshold")->eval(tb)
 						, body->name().c_str());
+
+				AiNodeDeclare(node, "type", "constant STRING");
+				AiNodeSetStr(node, "type", "Implicit");
 			}
 
 			Nb::String nodeName = body->prop1s("name")->eval(tb);
@@ -215,8 +245,8 @@ public:
 				AiNodeSetStr(node, "name", nodeName.c_str());
 			else
 				AiNodeSetStr(node, "name", "noname");//dummy so arnold wont crash
-
-			AiNodeSetPtr(node, "shader", AiNodeLookUpByName(body->prop1s(
+			if (body->prop1s("shader")->eval(tb).size() > 0)
+				AiNodeSetPtr(node, "shader", AiNodeLookUpByName(body->prop1s(
 					"shader")->eval(tb).c_str()));
 			if (body->prop1i("opaque")->eval(tb) == 0)
 				AiNodeSetBool(node, "opaque", false);
@@ -232,21 +262,24 @@ public:
 
 		if (param1s("Kick Ass")->eval(tb).size() > 0) {
 			NB_INFO("Kick Ass!");
+
 			std::stringstream ss;
 			ss << param1s("Kick Ass")->eval(tb) << " " << expandedAssFile;
-			if (implicitShaderPath.size() > 0)
-				ss << " -l " << implicitShaderPath;
-			if (proceduralPath.size() > 0)
-				ss << " -l " << proceduralPath;
+
+			std::size_t found;
+			if (implicitShaderPath.size() > 0){
+				found=string(implicitShaderPath).find_last_of("/\\");
+				ss << " -l " << implicitShaderPath.substr(0,found);
+			}
+			if (proceduralPath.size() > 0){
+				found=string(proceduralPath).find_last_of("/\\");
+				ss << " -l " << proceduralPath.substr(0,found);
+			}
 			::system(ss.str().c_str());
 		}
 		// at this point we can shut down Arnold
 		AiEnd();
 	}
-
-private:
-	em::mat44f _camMtx;
-	float _fov;
 };
 
 // ----------------------------------------------------------------------------

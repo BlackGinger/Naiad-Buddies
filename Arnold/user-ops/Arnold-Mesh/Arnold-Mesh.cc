@@ -72,7 +72,7 @@ public:
 			cerr << "type: " << body->prop1s("type")->eval(tb) << "\n";
 			//Node name
 			body->createProp1s("Arnold", "name", param1s("Node Name")->eval(tb).c_str());
-			cerr << "name: " << body->prop1s("name")->eval(tb) << "\n";
+			cerr << "node name: " << body->prop1s("name")->eval(tb) << "\n";
 
 			//Shader that can be found in the template ASS file (see Arnold-Render or Arnold-ASS-Write)
 			body->createProp1s("Arnold", "shader", param1s("Shader")->eval(tb));

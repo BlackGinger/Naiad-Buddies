@@ -36,4 +36,4 @@ cmake_minimum_required(VERSION 2.6)
 
 project (NBUDDY_ARNOLD_USER_OPS)
 
-subdirs (Arnold-Mesh Arnold-Implicit Arnold-Particle Arnold-Render Arnold-ASS-Write)
+subdirs (Arnold-Mesh Arnold-Implicit Arnold-Particle Arnold-Render Arnold-ASS-Write Arnold-testUV)

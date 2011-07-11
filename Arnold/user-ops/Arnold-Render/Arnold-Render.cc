@@ -67,7 +67,7 @@ class Arnold_Render : public Ng::BodyOp
 {
 public:
 	Arnold_Render(const Nb::String& name)
-        : Ng::BodyOp(name), _camMtx(0.f) {  }
+        : Ng::BodyOp(name) {  }
 
     virtual Nb::String
     typeName() const
@@ -84,7 +84,6 @@ public:
 
 		//Get Global Options
 		AtNode *options = AiUniverseGetOptions();
-		AiNodeSetInt(options, "AA_samples", param1i("AA Samples")->eval(tb));
 		AiNodeSetInt(options, "xres", param1i("Width")->eval(tb));
 		AiNodeSetInt(options, "yres", param1i("Height")->eval(tb));
 		//AiMsgSetLogFileName("scene1.log");
@@ -133,27 +132,29 @@ public:
     			singlePlugData("cam-input",tb)->constBody();
 
     	if (camera != NULL){
-    		_camMtx = camera->globalMatrix;
+    		em::mat44f camMtx = camera->globalMatrix;
 
 			//Check if Camera matrix is empty (no function for this in class)
 			bool emptyCamMtx = true;
 			for (int i = 0; i < 4; ++i)
 				for (int j = 0; j < 4; ++j)
-					if (_camMtx[i][j] != 0)
+					if (camMtx[i][j] != 0)
 						emptyCamMtx = false;
 
-			std::cerr << "\n Camera Matrix:\n " << _camMtx;
+			std::cerr << "\n Camera Matrix:\n " << camMtx;
 
 			//Invert Matrix to make it fit Arnold
 			em::mat44f invCamMtx;
-			em::invert(_camMtx, invCamMtx);
+			em::invert(camMtx, invCamMtx);
 			//Fix Camera
 			AtNode * cam;
 			if (!emptyCamMtx){
 				std::cerr << "Will try to adjust arnold camera after Naiad camera \n";
 				cam = AiNode("persp_camera");
 				AiNodeSetStr(cam,"name","NaiadCamera");
-				AiNodeSetFlt(cam,"fov", 45.f);
+				AiNodeSetFlt(cam, "near_clip", camera->prop1f("Near Clip")->eval(tb));
+				AiNodeSetFlt(cam, "far_clip", camera->prop1f("Far Clip")->eval(tb));
+				AiNodeSetFlt(cam, "fov", camera->prop1f("Angle Of View")->eval(tb));
 				AiNodeSetFlt(cam,"shutter_end", param1f("Motion Blur")->eval(tb));
 				AiNodeSetMatrix(cam,"matrix",invCamMtx.m);
 				AiNodeSetPtr(options, "camera", cam);
@@ -163,44 +164,63 @@ public:
 
     	}
 
+		//Get the FPS from the global parameter
+		int fps = Ng::Store::globalOp()->param1i("Fps")->eval(tb);
+
+		//If framtime = 0, Arnold wont bother with motion blur
+		float frametime;
+		if (param1f("Motion Blur")->eval(tb) != 0)
+			frametime = 1.f / fps;
+		else
+			frametime = 0;
+
     	for(int i = 0; i < bodies.size(); ++i) {
     		const Nb::Body* body = bodies(i);
     		//For each body with an Arnold Type, add nodes
     		if (!body->has_prop("type"))
     			continue;
     		AtNode* node;
-            if (body->prop1s("type")->eval(tb) == Nb::String("Mesh"))
-                 node = NbAi::loadMesh(body);
+            if (body->prop1s("type")->eval(tb) == Nb::String("Mesh")){
+                if (frametime == 0 || body->constPointShape().hasChannels3f("velocity"))
+                	node = NbAi::loadMesh(body, frametime);
+                else
+                	NB_THROW("Can't make motion blur, no velocity in the " << body->name() << " Mesh")
+            }
             else if (body->prop1s("type")->eval(tb) == Nb::String("Particle")){
-            	 node = NbAi::loadParticles(body,
-            	 body->prop1s("particle-mode")->eval(tb).c_str(),
-            	 body->prop1f("radius")->eval(tb));
+            	 node = NbAi::loadParticles(body
+            	 , body->prop1s("particle-mode")->eval(tb).c_str()
+            	 , body->prop1f("radius")->eval(tb)
+            	 , frametime);
             }
             else if (body->prop1s("type")->eval(tb) == Nb::String("Implicit")){
+
+            	Nb::Vec3f min, max;
+            	body->bounds(min,max);
             	node = NbAi::loadImplicit(body,
             			body->prop1s("channel")->eval(tb).c_str(),
             			body->prop1s("implicitname")->eval(tb).c_str(),
             			body->prop1f("raybias")->eval(tb),
-            			body->prop1f("treshold")->eval(tb),
-            			body->prop1i("samples")->eval(tb));
+            			body->prop1f("threshold")->eval(tb),
+            			body->prop1i("samples")->eval(tb),
+            			min,
+						max);
             }
 
             AiNodeSetStr(node, "name", body->prop1s("name")->eval(tb).c_str());
-            AiNodeSetPtr(node, "shader", AiNodeLookUpByName(body->prop1s("shader")->eval(tb).c_str()));
+            Nb::String shader = body->prop1s("shader")->eval(tb);
+            if (shader.size() > 0)
+            	AiNodeSetPtr(node, "shader", AiNodeLookUpByName(shader.c_str()));
             if (body->prop1i("opaque")->eval(tb) == 0 )
             	AiNodeSetBool(node, "opaque", false);
     	}
     	// render now
+    	AiASSWrite("renderASS.ass", AI_NODE_ALL, FALSE); //too compare with ass write
 		AiRender(AI_RENDER_MODE_CAMERA);
 
         // at this point we can shut down Arnold
         AiEnd();
 
     }
-
-private:
-    em::mat44f _camMtx;
-    float _fov;
 };
 
 

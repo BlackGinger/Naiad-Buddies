@@ -1,14 +1,24 @@
 BodyOp Arnold-ASS-Write
 |*
    <h3>Overview</h3>
-   todo
+   This operator will create Arnold Scene files which can be fed to Arnold rendering later.  Information about how to render all the bodies that had Arnold properties attached to them (see  <i>Arnold-Mesh</i>, 
+   <i>Arnold-Particle</i> and <i>Arnold-Implicit</i>) will be added in special "Naiad to Arnold" nodes. Please note that you must bring your own Arnold Scene File (see <i>Arnold Scene</i> parameter) to serve as a template for all frames.
+   
+   <h3>Geometry nodes</h3>
+   See Arnold documentation for more information about each Arnold node.
+   <ul>
+   <li>Meshes will be added as naiad_geo procedural nodes. These procedurals will be later loaded as a Arnold <i>polymesh</i> node.
+   <li>Particles will be added as naiad_geo procedural nodes. These procedurals will be later loaded as a Arnold <i>points</i> node.
+   <li>Distance-Fields will be added as Arnold <i>implicit</i> nodes where the <i>naiad_distance_field</i> plug-in tells Arnold where to fetch the field data.
+   </ul>
 *|
 {
+    Category "Arnold"
     Category "File"
-    Category "User"
+    Category "Render"
  
     Single(Camera) Input "cam-input" (NO_BODY_OK MANUAL_ADMISSION)
-    || Cam input. If not attached, use .ASS camera
+    || Camera input. If not attached, it will use the camera in the Arnold Scene file (.ASS).
 
     Group(Body) Input "body-input"
     || All admitted bodies enter through this input.
@@ -21,34 +31,49 @@ BodyOp Arnold-ASS-Write
 
 	ParamSection "Arnold Input"
 	{
-		FileName "Arnold Scene" "scenefile.ass"
+		FileName "Arnold Scene" "scenefile.ASS"
+		|* Enter the path to your Arnold Scene File. In this file you specify render options, shaders, lights and static geometry. *|
 		
-		FileName "Arnold Implicit Shader" "'$NAIAD_PATH'/buddies/arnold/plug-ins/naiad_distance.so"
+		PathName "Arnold Implicit Shader" "'$NAIAD_PATH'/buddies/arnold/plug-ins/naiad_distance.so"
+		|* The fields will be rendered as an <i>Implicit</i> Arnold node. This node will use the naiad_distance_field shader to render Naiad field data and 
+		in this option you enter the path to this shader (By default it can be found in Arnold/plug-ins in the buddies folder). *|
 		
-		FileName "Arnold Procedural" "'$NAIAD_PATH'/buddies/arnold/plug-ins/naiad_procedural.so"
+		FileName "Arnold Procedural" "'$NAIAD_PATH'/buddies/arnold/plug-ins/naiad_geo.so"
+		|* The filepath of the naiad_geo procedural plugin (By default it can be found in Arnold/plug-ins in the buddies folder). Mesh and Particle shapes 
+		will be added as procedural nodes in the Arnold Scene file and these nodes need dso paths.  *|
+		
 	}
 
     ParamSection "File Output"
     {
     	OutputFormat "Output Format" "png"
-    
-         FileName "Output Image" "render.#.png"
-         || The path to where the images will be exported.
-         
-         FileName "Output ASS file" "scene.#.ass"
+    	|| File format of the render image.
+    	
+        PathName "Output Image" "render.#.png"
+        || The path to where the images will be exported.
+        
+        FileName "Output ASS file" "scene.#.ass"
+        || The path where the Arnold ASS files will be exported to.
 
-         Int "Frame Padding" "4"
-         |* The number of zeroes to pad the frame number by, when expanding
+        Int "Frame Padding" "4"
+        |* The number of zeroes to pad the frame number by, when expanding
             to the absolute filename. *|           
     }
-    
+         
+
     ParamSection "Render Settings"
     {
      	 Int "Width" "800"
-     	 Int "Height" "600"
-     	 Int "AA Samples" "1"
-     	 Float "Motion Blur" "0"
+     	 |* Width (pixels) of the rendered image. *|
      	 
-     	 PathName "Kick Ass" "" 
+     	 Int "Height" "600"
+     	 |* Height (pixels) of the rendered image *|
+     	 
+     	 Float "Motion Blur" "0"
+     	 |* Enter a value between 0 and 1. 0 is no motion blur and 1 is full motion blur (how much the bodies will move in the time of a frame) *| 
+     	 
+     	  PathName "Kick Ass" ""
+     	  |* Here you can enter the path to Arnolds command line tool <i>kick</i>. Once the Arnold Scene file is generated, it will be executed with Kick. You can also add 
+     	  kick commands directly here. For example, '$ARNOLD_ROOT'/bin/kick -nokeypress. See kick -help for more information *| 
     }
 }

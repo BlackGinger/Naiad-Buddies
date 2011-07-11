@@ -46,15 +46,40 @@ AtNode* loadMesh(const Nb::Body * body, const float frametime = 0, const Nb::Bod
     const Nb::Buffer3i& triIdxBuf(triangle.constBuffer3i("index"));
 
     //This is not needed if all polygons are triangles (which is they case in Naiad!)
-    /*/Store how many vertices a face got
+    //Store how many vertices a face got
 	AtArrayPtr nsidesArray = AiArrayAllocate(triIdxBuf.size(), 1, AI_TYPE_UINT);
 	for (int i = 0; i < triIdxBuf.size(); ++ i)
 	    AiArraySetUInt(nsidesArray, i, 3); //Only triangles are allowed in Naiad
-	AiNodeSetArray(node, "nsides", nsidesArray);*/
+	AiNodeSetArray(node, "nsides", nsidesArray);
 
 	//Store vertex indices (the three vertices that a triangles uses)
 	AtArrayPtr vidxsArray = AiArrayConvert(triIdxBuf.size() * 3, 1, AI_TYPE_UINT, triIdxBuf.data, false);
 	AiNodeSetArray(node, "vidxs", vidxsArray);
+
+	//Check if UV coordinates are available
+	if (triangle.hasChannels3f("u") && triangle.hasChannels3f("v")){
+		std::cerr << "NbAi:: Found UV channels!\n";
+		const Nb::Buffer3f& uBuf(triangle.constBuffer3f("u"));
+		const Nb::Buffer3f& vBuf(triangle.constBuffer3f("v"));
+
+		//We don't want any vertices to have shared uv coords
+		AtArrayPtr uvidxsArray = AiArrayAllocate(uBuf.size() * 3, 1, AI_TYPE_UINT);
+		for (int i = 0; i < uBuf.size() * 3; ++ i)
+		    AiArraySetUInt(uvidxsArray, i, i);
+		AiNodeSetArray(node, "uvidxs", uvidxsArray);
+
+		AtArrayPtr uvlistArray = AiArrayAllocate(uBuf.size() * 3, 1, AI_TYPE_POINT2);
+		for (int i = 0; i < uBuf.size(); ++i){
+			Nb::Vec3f u = uBuf(i), v = vBuf(i);
+			for (int j = 0; j < 3 ; ++j){
+				AtPoint2 uv = {u[j], v[j]};
+				//std::cerr << "NbAi:: uv(tri = " << i << ", vert = " << j<<") = (" << uv.x << ", " << uv.y << ")\n";
+				AiArraySetPnt2(uvlistArray, i * 3 + j, uv);
+			}
+		}
+		//Only triangles are allowed in Naiad
+		AiNodeSetArray(node, "uvlist", uvlistArray);
+	}
 
 	//Copy Vertex positions
 	AtArrayPtr vlistArray = NULL;
@@ -100,11 +125,13 @@ AtNode* loadMesh(const Nb::Body * body, const float frametime = 0, const Nb::Bod
 	return node;
 }
 
-AtNode* loadParticles(const Nb::Body * body, const char * pMode, const float radius, const float motionBlur = 0)
+AtNode* loadParticles(const Nb::Body * body, const char * pMode, const float radius, const float frametime = 0)
 {
+
 	//Create the node
 	AtNode* node = AiNode("points");
-
+	AiNodeSetStr(node, "mode" ,pMode);
+	//AiNodeSetStr(node, "name", "hej");
 	//Load Particle shape from Naiad body
 	const Nb::ParticleShape & particle = body->constParticleShape();
 
@@ -115,13 +142,9 @@ AtNode* loadParticles(const Nb::Body * body, const char * pMode, const float rad
 	const int sizeOfFloat = sizeof(float);
 	const Nb::BlockArray3f& blocksPos = particle.constBlocks3f(0);
 	const int bcountPos = blocksPos.block_count();
-	//int64_t nParticles = bcountPos;
-	int pCount = 0.0;
-	std::cerr << "Total particles nParticles: " << nParticles << std::endl;
-	AtArrayPtr pointsArray = AiArrayAllocate(nParticles, 1, AI_TYPE_POINT);
-	char * data = (char * ) pointsArray->data;
+	std::cerr << "NbAi:: Total amount of particles: " << nParticles << std::endl;
 
-	//Create map for parallelism
+	//Create map for parallel loops later on.
 	int64_t totalOffset = 0;
 	int64_t * offset = new int64_t[bcountPos];
 	offset[0] = 0;
@@ -130,21 +153,62 @@ AtNode* loadParticles(const Nb::Body * body, const char * pMode, const float rad
 		offset[b + 1] = totalOffset;
 	}
 
-	std::cerr << "Starting copy loop\n";
-#pragma omp parallel for schedule(dynamic)
-	for(int b = 0; b < bcountPos; ++b) {
-		//std::cerr << "b: " << b << std::endl;
-		const Nb::Block3f& cb = blocksPos(b);
-		const int bufferSize = cb.size() * 3  * sizeOfFloat;
-		if(cb.size()==0) continue;
+	AtArrayPtr pointsArray;
+	//No motion blur
+	if (frametime == 0){
+		pointsArray = AiArrayAllocate(nParticles, 1, AI_TYPE_POINT);
+		char * data = (char * ) pointsArray->data;
 
-		memcpy(data + offset[b], (char*)cb.data(), bufferSize);
+		std::cerr << "NbAi:: Copying particle data (no motion blur)...\n";
+#pragma omp parallel for schedule(dynamic)
+		for(int b = 0; b < bcountPos; ++b) {
+			//std::cerr << "b: " << b << std::endl;
+			const Nb::Block3f& cb = blocksPos(b);
+			const int bufferSize = cb.size() * 3  * sizeOfFloat;
+			if(cb.size()==0) continue;
+
+			memcpy(data + offset[b], (char*)cb.data(), bufferSize);
+		}
+
+		AiNodeSetArray(node, "points", pointsArray);
+		std::cerr<< "NbAi:: Copy done.\n";
+	}
+	else {
+		pointsArray = AiArrayAllocate(nParticles, 2, AI_TYPE_POINT);
+		char * data = (char * ) pointsArray->data;
+
+		//Velocities
+		const Nb::BlockArray3f& blocksVel = particle.constBlocks3f("velocity");
+		const int halfBuffer = nParticles * sizeOfFloat * 3;
+
+		std::cerr << "NbAi:: Copying particle data (motion blur)...\n";
+#pragma omp parallel for schedule(dynamic)
+		for(int b = 0; b < bcountPos; ++b) {
+			//std::cerr << "b: " << b << std::endl;
+			const Nb::Block3f& cb = blocksPos(b);
+			const int bufferSize = cb.size() * 3  * sizeOfFloat;
+			if(cb.size()==0) continue;
+			memcpy(data + offset[b] , (char*)cb.data(), bufferSize);
+
+			//Velocity block
+			const Nb::Block3f& vb = blocksVel(b);
+
+			for (int p(0); p < cb.size(); ++p){
+				float vel[3] = {  cb(p)[0] +  frametime * vb(p)[0]
+								, cb(p)[1] +  frametime * vb(p)[1]
+								, cb(p)[2] +  frametime * vb(p)[2]};
+				memcpy(data + offset[b] + halfBuffer + p * 3 * sizeOfFloat, (char*)vel, 3 * sizeOfFloat);
+			}
+
+		}
+
+		AiNodeSetArray(node, "points", pointsArray);
+		std::cerr<< "NbAi:: Copy done.\n";
+
 	}
 	delete[] offset;
-	AiNodeSetArray(node, "points", pointsArray);
-	std::cerr<< "Done with copy loop\n";
 
-	//All particles have the same radius (maybe add randomness in the future?)
+	//All particles have the same radius (maybe add static randomness in the future?)
 	AtArrayPtr radiusArray = AiArrayAllocate(nParticles, 1, AI_TYPE_FLOAT);
     for (int i = 0; i < nParticles; ++ i)
         AiArraySetFlt(radiusArray, i, radius);
@@ -182,24 +246,26 @@ AtNode* loadImplicit( const Nb::Body * body
 					, const char * implicitname
 					, const float raybias
 					, const float treshold
-					, const int samples)
+					, const int samples
+					, const Nb::Vec3f min
+					, const Nb::Vec3f max)
 {
-	AtNode * nodeND = AiNode("naiad_distance");
+	AtNode * nodeND = AiNode("naiad_distance_field");
 	AiNodeSetStr(nodeND, "name", implicitname);
 	AiNodeSetStr(nodeND, "channel", channel);
 
-	std::stringstream ss;
-	ss << body;
-	AiNodeSetStr(nodeND, "pointerBody", ss.str().c_str());
+	if (body != NULL){
+		std::stringstream ss;
+		ss << body;
+		AiNodeSetStr(nodeND, "pointerBody", ss.str().c_str());
+	}
 
 	//Implicit Node
 	AtNode* node = AiNode("implicit");
 	//Gets the same name as the first body
-	AiNodeSetFlt(node, "treshold", treshold);
+	AiNodeSetFlt(node, "threshold", treshold);
 	AiNodeSetUInt(node, "samples", samples);
 
-	Nb::Vec3f min, max;
-	body->bounds(min,max);
 	AiNodeSetPnt(node, "min", min[0], min[1], min[2]);
 	AiNodeSetPnt(node, "max", max[0], max[1], max[2]);
 	AiNodeSetFlt(node, "ray_bias", raybias);
@@ -229,14 +295,14 @@ AtNode* createProceduralASS( const char * dso
 	AiNodeDeclare(node, "frame", "constant INT");
 	AiNodeSetInt(node, "frame", frame);
 
-	AiNodeDeclare(node, "bodies", "constant STRING");
-	AiNodeSetStr(node, "bodies", bodies);
+	AiNodeDeclare(node, "body", "constant STRING");
+	AiNodeSetStr(node, "body", bodies);
 
 	AiNodeDeclare(node, "padding", "constant INT");
 	AiNodeSetInt(node, "padding", padding);
 
-	AiNodeDeclare(node, "motionblur", "constant FLOAT");
-	AiNodeSetFlt(node, "motionblur", frametime);
+	AiNodeDeclare(node, "frametime", "constant FLOAT");
+	AiNodeSetFlt(node, "frametime", frametime);
 
 	//Extra data for particles
 	if (particle){
@@ -249,6 +315,67 @@ AtNode* createProceduralASS( const char * dso
 	return node;
 }
 
+
+AtNode * createProceduralImplicitASS(	  const char * dso
+										, const char * data
+										, const char * ndName
+										, const char * channel
+										, const int samples
+										, const Nb::Vec3f & min
+										, const Nb::Vec3f & max
+										, const int frame
+										, const int padding
+										, const float rayBias
+										, const float treshold
+										, const char * implicitShaderPlugin
+										, const char * bodies
+										, const char * shader = ""
+										)
+{
+	AtNode* node = AiNode("procedural");
+	AiNodeSetStr(node, "dso", dso);
+	AiNodeSetStr(node, "data", data);
+	AiNodeSetPnt(node, "min", min[0], min[1], min[2]);
+	AiNodeSetPnt(node, "max", max[0], max[1], max[2]);
+
+	AiNodeDeclare(node, "frame", "constant INT");
+	AiNodeSetInt(node, "frame", frame);
+
+	AiNodeDeclare(node, "body", "constant STRING");
+	AiNodeSetStr(node, "body", bodies);
+
+	AiNodeDeclare(node, "padding", "constant INT");
+	AiNodeSetInt(node, "padding", padding);
+
+	AiNodeDeclare(node, "samples", "constant INT");
+	AiNodeSetInt(node, "samples", samples);
+
+	AiNodeDeclare(node, "ray_bias", "constant FLOAT");
+	AiNodeSetFlt(node, "ray_bias", rayBias);
+
+	AiNodeDeclare(node, "frametime", "constant FLOAT");
+	AiNodeSetFlt(node, "frametime", 0);
+
+	AiNodeDeclare(node, "treshold", "constant FLOAT");
+	AiNodeSetFlt(node, "treshold", treshold);
+
+	AiNodeDeclare(node, "channel", "constant STRING");
+	AiNodeSetStr(node, "channel", channel);
+
+	AiNodeDeclare(node, "implicitname", "constant STRING");
+	AiNodeSetStr(node, "implicitname", ndName);
+
+	AiNodeDeclare(node, "naiad_distance_field", "constant STRING");
+	AiNodeSetStr(node, "naiad_distance_field", implicitShaderPlugin);
+
+	if (std::string(shader).size() > 0)
+		AiNodeSetPtr(node, "shader", AiNodeLookUpByName(shader));
+
+	return node;
+
+}
+
+
 AtNode * createImplicitASS(	  const char * ndName
 						, const char * empFile
 						, const char * channel
@@ -258,12 +385,13 @@ AtNode * createImplicitASS(	  const char * ndName
 						, const int frame
 						, const int padding
 						, const float rayBias
+						, const float treshold
 						, const char * bodies = "*"
 						, const char * shader = ""
 						)
 {
 	//Naiad Distance Node
-	AtNode * nodeND = AiNode("naiad_distance");
+	AtNode * nodeND = AiNode("naiad_distance_field");
 	if (std::string(ndName).size() > 0)
 		AiNodeSetStr(nodeND, "name", ndName);
 	else
@@ -281,13 +409,14 @@ AtNode * createImplicitASS(	  const char * ndName
 	//Implicit Node
 	AtNode* node = AiNode("implicit");
 	//Gets the same name as the first body
-	AiNodeSetFlt(node, "treshold", 0);
+	AiNodeSetFlt(node, "threshold", treshold);
 	AiNodeSetUInt(node, "samples", samples);
 	AiNodeSetPnt(node, "min", min[0], min[1], min[2]);
 	AiNodeSetPnt(node, "max", max[0], max[1], max[2]);
 	AiNodeSetFlt(node, "ray_bias", rayBias);
 	AiNodeSetStr(node, "solver", "levelset");
 	AiNodeSetPtr(node, "field", nodeND);
+
 
 	if (std::string(shader).size() > 0)
 		AiNodeSetPtr(node, "shader", AiNodeLookUpByName(shader));

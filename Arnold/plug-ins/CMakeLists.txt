@@ -8,22 +8,22 @@ include_directories   (.
                        $ENV{NAIAD_PATH}/server/include/Nb
 	               	   $ENV{NAIAD_PATH}/server/include/Ng
                        $ENV{NAIAD_PATH}/server/include/Ni
-					   "/usr/Arnold/include"
+					   $ENV{ARNOLD_ROOT}/include
 					   "../common"
 					)
 
 set(NAIAD_LIBRARY_DIR "${NAIAD_ROOT}/server/lib")
 link_directories($ENV{NAIAD_PATH}/server/lib
-		"/usr/Arnold/bin")
+				 $ENV{ARNOLD_ROOT}/bin)
 
-add_library(EMP-Read SHARED EMP-Read.cc)
-target_link_libraries(EMP-Read Nb ai)
+add_library(naiad_distance_field SHARED naiad_distance_field.cc)
+target_link_libraries(naiad_distance_field Nb ai)
 
-add_library(nd SHARED nd.cc)
-target_link_libraries(nd Nb ai)
+add_library(naiad_geo SHARED naiad_geo.cc)
+target_link_libraries(naiad_geo Nb ai)
 
-set_target_properties (EMP-Read PROPERTIES PREFIX "")
-install               (TARGETS EMP-Read DESTINATION buddies/Arnold/procedural-dso)
+set_target_properties (naiad_distance_field PROPERTIES PREFIX "")
+install               (TARGETS naiad_distance_field DESTINATION buddies/Arnold/plug-ins)
 
-set_target_properties (nd PROPERTIES PREFIX "")
-install               (TARGETS nd DESTINATION buddies/Arnold/procedural-dso)
+set_target_properties (naiad_geo PROPERTIES PREFIX "")
+install               (TARGETS naiad_geo DESTINATION buddies/Arnold/plug-ins)

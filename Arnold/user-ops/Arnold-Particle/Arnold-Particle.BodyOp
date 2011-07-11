@@ -1,11 +1,11 @@
 BodyOp Arnold-Particle
 |*
    <h3>Overview</h3>
-   todo
+   This operator "prepares" Naiad bodies with a Particle shape and is required for Arnold points rendering. It attaches 
+   Naiad properties to the body so that one of the <i>Arnold-Render</i> or <i>Arnold-ASS-Write</i> operators knows how the render the body.
 *|
 {
-    Category "File"
-    Category "User"
+    Category "Arnold"
 
     Group(Particle) Input "body-input"
     || All admitted bodies enter through this input.
@@ -13,30 +13,31 @@ BodyOp Arnold-Particle
 	ParamSection "General"
 	{
 		String "Node Name" ""
+		|* The the procedural's node name*|
 		
 		BodyNameList "Body Names" "*"
-         || The list of body names to include in the write.
+        || The list of body names to be rendered (each a separate node in Arnold).
 	}
 
     ParamSection "Shading"
     {
          String "Shader" ""
-         || aa
+         || The node name of the Arnold shader you want to use. This shader must exist in the Arnold scene file (.ASS) that you later specify in either <i>Arnold-Render</i> or <i>Arnold-ASS-Write</i>.
 
          Toggle "Opaque" "Off"
-         || aa
+         || Are the points rendered as opaque or not?
     }
     
     ParamSection "Particles"
     {
     	Float "Radius" "0.005"
-    	|| add
+    	|* Radius of the points *|
     	
     	String "Particle Mode" "sphere"
-    	|| add
+    	|| What should the particles be rendered as? See Arnold documentation for more information about different modes (mode attribute in a Points node).
     }
     
     Group(Particle) Output "body-output"
-    || All admitted bodies enter through this input. 
+    || All bodies exit through the output. 
     
 }

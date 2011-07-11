@@ -23,7 +23,7 @@ const Nb::Field1f* w(0);
 
 node_parameters
 {
-   AiParameterSTR("emp", "");
+   AiParameterSTR("empcache", "");
    AiParameterINT("frame", 1);
    AiParameterINT("padding", 4);
    AiParameterSTR("body" , "Particle-Liquid");
@@ -35,6 +35,7 @@ shader_evaluate
 {
    try
    {
+	   std::cerr << "inside shader\n";
        const Nb::Vec3f x(sg->P.x, sg->P.y, sg->P.z);
 
        const float ux =
@@ -80,7 +81,6 @@ node_initialize
 	                                  AiNodeGetInt(node,"padding")); // padding
 	       // get access all the bodies in the EMP corresponding to this frame
 	       Nb::EmpReader empReader(empFilename,"*");
-
 		   // eject the one we want to render
 		   body = empReader.ejectBody(AiNodeGetStr(node,"body"));
 	   }
@@ -88,7 +88,14 @@ node_initialize
 		   char * end; //dummy
 		   int64_t address = strtol (AiNodeGetStr(node,"pointerBody"), &end,0);
 		   body = reinterpret_cast<const Nb::Body*> (address);
+		   std::cerr << "naiad_distance_field: body from address is "<<body->name() << "\n";
 	   }
+
+	   if (body->constFieldShape().hasChannels1f(AiNodeGetStr(node,"channel")))
+		   std::cerr << "naiad_distance_field: " << AiNodeGetStr(node,"channel") << " was found!\n";
+	   else
+		   std::cerr << "naiad_distance_field: " << AiNodeGetStr(node,"channel") << " was not found!\n";
+
        // get access to the desired distance field
        fldDistance = &body->constFieldShape().constField1f(
            AiNodeGetStr(node,"channel")
@@ -123,7 +130,7 @@ node_loader
 
    node->methods = NaiadDistanceMethods;
    node->output_type = AI_TYPE_FLOAT;
-   node->name = "naiad_distance";
+   node->name = "naiad_distance_field";
    node->node_type = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
    return TRUE;
