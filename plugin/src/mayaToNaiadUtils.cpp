@@ -121,7 +121,10 @@ Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & meshObject, std::string bodyName, 
             cerr.flush();
             return Nb::BodyCowPtr();
         }
-        
+
+        MFloatArray uArray, vArray;        
+        conversionMesh.getUVs(uArray, vArray);        
+
         for(polyIt.reset(); !polyIt.isDone(); polyIt.next() ) {
             int triCount;
             polyIt.numTriangles(triCount);
@@ -132,24 +135,21 @@ Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & meshObject, std::string bodyName, 
                 conversionMesh.getPolygonTriangleVertices(polyIndex, ti, tidx);
                 tib.push_back(Nb::Vec3i(tidx[0],tidx[1],tidx[2]));
                 // store mesh UVs
+                Nb::Vec3f tu(0), tv(0);
                 if(polyIt.hasUVs()) {
-                    float tu[3], tv[3];
-                    const MString* uvSet = 0;
-                    conversionMesh.getPolygonUV(
-                        polyIndex,tidx[0],tu[0],tv[0],uvSet
-                        );
-                    conversionMesh.getPolygonUV(
-                        polyIndex,tidx[1],tu[1],tv[1],uvSet
-                        );
-                    conversionMesh.getPolygonUV(
-                        polyIndex,tidx[2],tu[2],tv[2],uvSet
-                        );                    
-                    u.push_back(Nb::Vec3f(tu[0],tu[1],tu[2]));
-                    v.push_back(Nb::Vec3f(tv[0],tv[1],tv[2]));
+                    tu[0]=uArray[tidx[0]];
+                    tu[1]=uArray[tidx[1]];
+                    tu[2]=uArray[tidx[2]];
+                    
+                    tv[0]=vArray[tidx[0]];
+                    tv[1]=vArray[tidx[1]];
+                    tv[2]=vArray[tidx[2]];                    
                 } else {
                     u.push_back(Nb::Vec3f(0));
                     v.push_back(Nb::Vec3f(0));
                 }
+                u.push_back(tu);
+                v.push_back(tv);
             }            
         }
 

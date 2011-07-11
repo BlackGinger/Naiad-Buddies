@@ -4,7 +4,7 @@ global proc createNaiadMenu( )
 	global string $gMainWindow; //Main maya menu
 	global string $gNaiadMenu; // Naiad main menu item
 
-	$gNaiadMenu = `menu -p $gMainWindow -label "NaiadBuddyForMaya"`;
+	$gNaiadMenu = `menu -p $gMainWindow -label "Naiad"`;
 	menuItem -l "CacheSelectedToEMP" -c "NBuddy_CacheWindow()";
 	menuItem -l "Load Mesh(es) From Emp" -c "NBuddy_LoadEmpMeshesUI()";
 	menuItem -l "Load Transform(s) From Emp" -c "NBuddy_LoadEmpTransformsUI()";
