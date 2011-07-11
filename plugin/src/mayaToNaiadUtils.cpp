@@ -124,11 +124,19 @@ Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & meshObject, std::string bodyName, 
 
         MFloatArray uArray, vArray;        
         conversionMesh.getUVs(uArray, vArray);        
+        
+        em::array1i globalToLocal(conversionMesh.numFaceVertices(),0);
 
         for(polyIt.reset(); !polyIt.isDone(); polyIt.next() ) {
+            const int polyIndex = polyIt.index();
+            // first make inverse map from global -> local face indices
+            MIntArray polyVerts;
+            conversionMesh.getPolygonVertices(polyIndex, polyVerts);
+            for(int i=0; i<polyVerts.length(); ++i)
+                globalToLocal(polyVerts[i])=i;
+            // now spit out triangles...
             int triCount;
-            polyIt.numTriangles(triCount);
-            const int polyIndex = polyIt.index();            
+            polyIt.numTriangles(triCount);            
             for(int ti=0; ti<triCount; ++ti) {
                 // store mesh indices
                 int tidx[3];
@@ -137,16 +145,16 @@ Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & meshObject, std::string bodyName, 
                 // store mesh UVs
                 Nb::Vec3f tu(0), tv(0);
                 if(polyIt.hasUVs()) {
-                    tu[0]=uArray[tidx[0]];
-                    tu[1]=uArray[tidx[1]];
-                    tu[2]=uArray[tidx[2]];
-                    
-                    tv[0]=vArray[tidx[0]];
-                    tv[1]=vArray[tidx[1]];
-                    tv[2]=vArray[tidx[2]];                    
-                } else {
-                    u.push_back(Nb::Vec3f(0));
-                    v.push_back(Nb::Vec3f(0));
+                    int uv0, uv1, uv2;
+                    polyIt.getUVIndex(globalToLocal(tidx[0]), uv0);
+                    polyIt.getUVIndex(globalToLocal(tidx[1]), uv1);
+                    polyIt.getUVIndex(globalToLocal(tidx[2]), uv2);
+                    tu[0]=uArray[uv0];
+                    tu[1]=uArray[uv1];
+                    tu[2]=uArray[uv2];                    
+                    tv[0]=vArray[uv0];
+                    tv[1]=vArray[uv1];
+                    tv[2]=vArray[uv2];
                 }
                 u.push_back(tu);
                 v.push_back(tv);
