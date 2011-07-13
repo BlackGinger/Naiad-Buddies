@@ -39,17 +39,17 @@ include_directories   (.
                        $ENV{NAIAD_PATH}/server/include/system
                        $ENV{NAIAD_PATH}/server/include/em
                        $ENV{NAIAD_PATH}/server/include/Nb
-	               	   $ENV{NAIAD_PATH}/server/include/Ng
+		       $ENV{NAIAD_PATH}/server/include/Ng
                        $ENV{NAIAD_PATH}/server/include/Ni
-					   $ENV{ARNOLD_ROOT}/include
-						"../../common")
+		       $ENV{ARNOLD_ROOT}/include
+		       "../../common")
 link_directories      ( $ENV{NAIAD_PATH}/server/lib
-						$ENV{ARNOLD_ROOT}/bin)
+			$ENV{ARNOLD_ROOT}/bin)
 
 # user op is a dynamic shared library
 
 add_library           (Arnold-Render SHARED 
-		       		   Arnold-Render)
+		       Arnold-Render)
 
 # on intel compiler, use static libraries...
 
@@ -62,5 +62,5 @@ endif ($ENV{EM_COMPILER} STREQUAL "intel")
 # destination location for user op
 
 set_target_properties (Arnold-Render PROPERTIES PREFIX "")
-install               (TARGETS Arnold-Render DESTINATION buddies/Arnold/user-ops)
-install               (FILES Arnold-Render.BodyOp DESTINATION buddies/Arnold/user-ops)
+install               (TARGETS Arnold-Render DESTINATION buddies/arnold/user-ops)
+install               (FILES Arnold-Render.BodyOp DESTINATION buddies/arnold/user-ops)

@@ -62,5 +62,5 @@ endif ($ENV{EM_COMPILER} STREQUAL "intel")
 # destination location for user op
 
 set_target_properties (Arnold-Mesh PROPERTIES PREFIX "")
-install               (TARGETS Arnold-Mesh DESTINATION buddies/Arnold/user-ops)
-install               (FILES Arnold-Mesh.BodyOp DESTINATION buddies/Arnold/user-ops)
+install               (TARGETS Arnold-Mesh DESTINATION buddies/arnold/user-ops)
+install               (FILES Arnold-Mesh.BodyOp DESTINATION buddies/arnold/user-ops)

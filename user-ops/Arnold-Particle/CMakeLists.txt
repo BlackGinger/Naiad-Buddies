@@ -62,5 +62,5 @@ endif ($ENV{EM_COMPILER} STREQUAL "intel")
 # destination location for user op
 
 set_target_properties (Arnold-Particle PROPERTIES PREFIX "")
-install               (TARGETS Arnold-Particle DESTINATION buddies/Arnold/user-ops)
-install               (FILES Arnold-Particle.BodyOp DESTINATION buddies/Arnold/user-ops)
+install               (TARGETS Arnold-Particle DESTINATION buddies/arnold/user-ops)
+install               (FILES Arnold-Particle.BodyOp DESTINATION buddies/arnold/user-ops)
