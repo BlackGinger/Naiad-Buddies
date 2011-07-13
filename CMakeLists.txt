@@ -1,7 +1,7 @@
 #
-# CMAKE project for the Naiad Buddy for Arnold Renderer
+# CMAKE project for the Naiad Buddy for Arnold
 # 
-# Copyright (c) 2010 Exotic Matter AB.  All rights reserved.
+# Copyright (c) 2010-2011 Exotic Matter AB.  All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -34,22 +34,6 @@
 
 cmake_minimum_required(VERSION 2.6)
 
-project               (NBUDDY_ARNOLD)
+project (NBUDDY_ARNOLD)
 
-include_directories   (.
-		       $ENV{ARNOLD_ROOT}/include
-                       $ENV{NAIAD_PATH}/server/include
-                       $ENV{NAIAD_PATH}/server/include/system
-                       $ENV{NAIAD_PATH}/server/include/em
-                       $ENV{NAIAD_PATH}/server/include/Nb
-		       $ENV{NAIAD_PATH}/server/include/Ng)
-
-link_directories      ($ENV{ARNOLD_ROOT}/bin 
-		       $ENV{NAIAD_PATH}/server/lib)
-
-add_library           (naiad_distance SHARED naiad_distance)
-target_link_libraries (naiad_distance Nb)
-set_target_properties (naiad_distance PROPERTIES PREFIX "")
-
-install               (TARGETS naiad_distance DESTINATION buddies/arnold/plug-ins)
-
+subdirs (plug-ins user-ops)

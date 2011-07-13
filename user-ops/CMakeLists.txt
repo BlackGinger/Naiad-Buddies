@@ -1,5 +1,5 @@
 #
-# CMAKE project for the Naiad Buddy for Houdini
+# CMAKE project for the Naiad Buddy for Arnold
 # 
 # Copyright (c) 2010-2011 Exotic Matter AB.  All rights reserved.
 #
@@ -34,6 +34,6 @@
 
 cmake_minimum_required(VERSION 2.6)
 
-project (NBUDDY_ARNOLD)
+project (NBUDDY_ARNOLD_USER_OPS)
 
-subdirs (cmd plug-ins user-ops)
+subdirs (Arnold-Mesh Arnold-Implicit Arnold-Particle Arnold-Render Arnold-ASS-Write)
