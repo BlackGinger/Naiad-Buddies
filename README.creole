@@ -1,6 +1,7 @@
-= 1.0 Installing the Build Tools And Configuring Your Environment
+= 1.0 Installing Build Tools & Environment
+This is only required if your version of Naiad does NOT contain pre-built binaries for the Maya version you are using.
 
-You only need to follow the instructions in this section 1.0 once (the first time you want to use the Naiad Buddy for Maya).  **However, please follow the instructions in section 2.0 every time you need to update the Naiad Buddy for Maya due to a new Naiad release.**
+You only need to follow the instructions in this section 1.0 once (the first time you want to compile the Naiad Buddy for Maya).  **However, please follow the instructions in sections 2-3 every time you need to recompile the Naiad Buddy for Maya due to a new Naiad release.**
 
 Since you will be compiling and building the Naiad Buddy yourself, you will need the following tools and utilities installed:
 
@@ -32,13 +33,7 @@ Next, you have to set up the environment for the plugin manually by editing the 
 
 The first step is to determine which shell you are using; there are two main types: bash and tcsh/csh. 
 
-To determine which shell you're using, please type
-
-{{{
-$ echo $SHELL
-}}}
-
-if you see /bin/bash - then you are using a bash shell.  Otherwise it's tcsh/csh.
+To determine which shell you're using, please type {{{$ echo $SHELL}}}.  If you see /bin/bash - then you are using a bash shell.  Otherwise it's tcsh/csh.
 
 == 1.1 Bash Configuration
 
@@ -56,8 +51,6 @@ export CC=gcc
 export CXX=g++
 export EM_PLAT=LINUX
 export EM_ARCH=`uname -m`
-export MAYA_MODULE_PATH=$NAIAD_PATH/buddies/maya/config:$MAYA_MODULE_PATH
-source $NAIAD_PATH/buddies/maya/config/naiadBuddyForMayaConfig_bash
 }}}
 
 == 1.2 tcsh/csh Configuration
@@ -76,37 +69,15 @@ setenv CC gcc
 setenv CXX g++
 setenv EM_PLAT LINUX
 setenv EM_ARCH `uname -m`
-setenv MAYA_MODULE_PATH $NAIAD_PATH/buddies/maya/config:$MAYA_MODULE_PATH
-source $NAIAD_PATH/buddies/maya/config/naiadBuddyForMayaConfig_csh
 }}}
 
-== 1.3 Verifying Your Configuration
-
-Once the environment has been set up, Maya will use the $NAIAD_PATH/buddies/maya/config/NaiadBuddyForMayaModule.txt file to determine the location of the scripts, icons and the plugin binary.
-
-Quit the text editor and close the shell. Open a new shell, which should take into account the new variables you've added.  You should verify this by typing:
-
-{{{
-$ echo $NAIAD_PATH
-}}}
-
-This should print the path to your current Naiad installation.
-
-{{{
-$ echo $MAYA_MODULE_PATH
-}}}
-
-That should print the correct path relative to your Naiad installation directory.  If it does not, then you've made a mistake.
-
-
-
-= 2.0 Compiling And Installing Naiad Buddy for Maya
+= 2.0 Compiling
 
 You need to do this every time a new version of Naiad is released.  
 
-For quicker and easier installation procedure, please skip to the section called **Automatic Installation Script** at the end of this README.
+For quicker and easier installation procedure, please skip to the section called **Automatic Installation Script** in section 3.2 (at the end of this README).
 
-**Basic Installation Procedure**
+**Basic Procedure**
 
 We assume the following:
 
@@ -139,6 +110,7 @@ sudo make install
 cd .. 
 sudo rm -rf build
 }}}
+
 
 == 2.1 Example: Installation for Maya 2010 and 2011
 
@@ -174,7 +146,37 @@ cd ..
 sudo rm -rf build
 }}}
 
-== 2.2 Automatic Installation Script
+== 3.0 Install and Setup
+
+The Naiad Buddy for Maya should now be compiled and installed in the following location: {{{$NAIAD_PATH/buddies/maya}}}.  All that remains is to let Maya know about it:
+
+=== 3.1 Adding the Maya Module Path
+
+First we need to create the {{{buddy.mod}}} file that lets Maya know where the buddy plugin is located. This is accomplished by opening any terminal shell and typing:
+
+{{{
+sudo echo "+ NaiadBuddyForMaya 1.0 $NAIAD_PATH/buddies/maya/" > $NAIAD_PATH/buddies/maya/buddy.mod
+}}}
+
+Next we need to source the buddy setup script.  This step is done slightly differently, based on if you are using bash or tcsh/csh:
+
+==== Configuring the BASH Environment
+
+If you are using a bash shell, please edit the .bashrc configuration file in your home directory, and add the following line to the end of it:
+
+{{{
+source $NAIAD_PATH/buddies/maya/config/setup_bash
+}}}
+
+==== Configuring the TCSH/CSH Environment
+
+If you are using a tcsh/csh shell, please edit the .cshrc configuration file in your home directory, and add the following line to the end of it:
+
+{{{
+source $NAIAD_PATH/buddies/maya/config/setup_csh
+}}}
+
+=== 3.2 Automatic Installation Script
 
 Creating an automatic installation script for this is easy, and eliminates the necessity of running all those commands every time Exotic Matter releases a new version of Naiad.
 
@@ -210,6 +212,12 @@ sudo make install
 cd .. 
 sudo rm -rf build
 
+# setup Maya Module
+sudo echo "+ NaiadBuddyForMaya 1.0 $NAIAD_PATH/buddies/maya/" > $NAIAD_PATH/buddies/maya/buddy.mod
+
+# source the setup file
+echo "source $NAIAD_PATH/buddies/maya/config/setup_bash" >> ~/.bashrc
+
 # clean up (we don't need no stinkin' code anymore)
 cd ~
 rm -rf ~/naiad-buddy-maya-src
@@ -227,7 +235,8 @@ And that's it!  You're done.  Every time you need to install the latest Naiad Bu
 $ ~/naiadBuddyForMayaInstall_bash
 }}}
 
-== 2.3 Troubleshooting
+
+== 4.0 Troubleshooting
 
 If you receive compiler errors when running the script, or the {{{make install}}} command in the shell, please do the following:
 
@@ -235,3 +244,5 @@ If you receive compiler errors when running the script, or the {{{make install}}
 * Ensure that the $NAIAD_PATH environment variable is correct.  You can check it by typing: {{{echo $NAIAD_PATH}}} in a shell, and you should see the correct Naiad installation path appear.
 
 Once you have corrected your paths as shown above, you can just re-run the installation script.
+
+
