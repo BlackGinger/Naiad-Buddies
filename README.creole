@@ -198,6 +198,8 @@ And that's it!  You're done.  Every time you need to install the latest Naiad Bu
 $ ~/naiadBuddyForMayaInstall_bash
 }}}
 
+You have compiled Naiad Buddy for Maya successfully.  For setup and installation instructions, please visit [[https://github.com/ExoticMatter/Naiad-Buddy-For-Maya/wiki/Setup-And-Installation-%2864-bit-Linux%29]].
+
 == 2.3 Troubleshooting
 
 If you receive compiler errors when running the script, or the {{{make install}}} command in the shell, please do the following:
@@ -206,3 +208,5 @@ If you receive compiler errors when running the script, or the {{{make install}}
 * Ensure that the $NAIAD_PATH environment variable is correct.  You can check it by typing: {{{echo $NAIAD_PATH}}} in a shell, and you should see the correct Naiad installation path appear.
 
 Once you have corrected your paths as shown above, you can just re-run the installation script.
+
+
