@@ -56,8 +56,7 @@ export CC=gcc
 export CXX=g++
 export EM_PLAT=LINUX
 export EM_ARCH=`uname -m`
-export MAYA_MODULE_PATH=$NAIAD_PATH/buddies/maya/config:$MAYA_MODULE_PATH
-source $NAIAD_PATH/buddies/maya/config/naiadBuddyForMayaConfig_bash
+source $NAIAD_PATH/buddies/maya/config/setup_bash
 }}}
 
 == 1.2 tcsh/csh Configuration
@@ -76,8 +75,7 @@ setenv CC gcc
 setenv CXX g++
 setenv EM_PLAT LINUX
 setenv EM_ARCH `uname -m`
-setenv MAYA_MODULE_PATH $NAIAD_PATH/buddies/maya/config:$MAYA_MODULE_PATH
-source $NAIAD_PATH/buddies/maya/config/naiadBuddyForMayaConfig_csh
+source $NAIAD_PATH/buddies/maya/config/setup_csh
 }}}
 
 == 1.3 Verifying Your Configuration
@@ -96,7 +94,7 @@ This should print the path to your current Naiad installation.
 $ echo $MAYA_MODULE_PATH
 }}}
 
-That should print the correct path relative to your Naiad installation directory.  If it does not, then you've made a mistake.
+The printout here should include the full path to where your Naiad Buddy for Maya is installed.  If it does not, then you've made a mistake.
 
 
 
