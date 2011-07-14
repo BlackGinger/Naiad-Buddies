@@ -1,7 +1,7 @@
 = 1.0 Installing the Build Tools And Configuring Your Environment
 This is only required if your version of Naiad does NOT contain pre-built binaries for the Maya version you are using.
 
-You only need to follow the instructions in this section 1.0 once (the first time you want to compile the Naiad Buddy for Maya).  **However, please follow the instructions in section 2.0 every time you need to recompile the Naiad Buddy for Maya due to a new Naiad release.**
+You only need to follow the instructions in this section 1.0 once (the first time you want to compile the Naiad Buddy for Maya).  **However, please follow the instructions in sections 2-3 every time you need to recompile the Naiad Buddy for Maya due to a new Naiad release.**
 
 Since you will be compiling and building the Naiad Buddy yourself, you will need the following tools and utilities installed:
 
@@ -198,9 +198,30 @@ And that's it!  You're done.  Every time you need to install the latest Naiad Bu
 $ ~/naiadBuddyForMayaInstall_bash
 }}}
 
-You have compiled Naiad Buddy for Maya successfully.  For setup and installation instructions, please visit [[https://github.com/ExoticMatter/Naiad-Buddy-For-Maya/wiki/Setup-And-Installation-%2864-bit-Linux%29]].
+== 3.0 Final Install and Setup
 
-== 2.3 Troubleshooting
+The Naiad Buddy for Maya should now be installed in the following location: {{{$NAIAD_PATH/buddies/maya}}}.
+
+=== 3.1 Adding the Maya Module Path
+
+First, Maya needs to know where the Naiad Buddy for Maya plugin is located. This is accomplished by opening any terminal shell and typing:
+
+sudo echo "+ NaiadBuddyForMaya 1.0 $NAIAD_PATH/buddies/maya/" > $NAIAD_PATH/buddies/maya/buddy.mod
+
+==== Configuring the BASH Environment
+
+If you are using a bash shell, please edit the .bashrc configuration file in your home directory, and add the following line to the end of it:
+
+{{{source $NAIAD_PATH/buddies/maya/config/setup_bash}}}
+
+==== Configuring the TCSH/CSH Environment
+
+If you are using a tcsh/csh shell, please edit the .cshrc configuration file in your home directory, and add the following line to the end of it:
+
+{{{source $NAIAD_PATH/buddies/maya/config/setup_csh}}}
+
+
+== 4.0 Troubleshooting
 
 If you receive compiler errors when running the script, or the {{{make install}}} command in the shell, please do the following:
 
