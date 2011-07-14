@@ -206,19 +206,25 @@ The Naiad Buddy for Maya should now be installed in the following location: {{{$
 
 First, Maya needs to know where the Naiad Buddy for Maya plugin is located. This is accomplished by opening any terminal shell and typing:
 
+{{{
 sudo echo "+ NaiadBuddyForMaya 1.0 $NAIAD_PATH/buddies/maya/" > $NAIAD_PATH/buddies/maya/buddy.mod
+}}}
 
 ==== Configuring the BASH Environment
 
 If you are using a bash shell, please edit the .bashrc configuration file in your home directory, and add the following line to the end of it:
 
-{{{source $NAIAD_PATH/buddies/maya/config/setup_bash}}}
+{{{
+source $NAIAD_PATH/buddies/maya/config/setup_bash
+}}}
 
 ==== Configuring the TCSH/CSH Environment
 
 If you are using a tcsh/csh shell, please edit the .cshrc configuration file in your home directory, and add the following line to the end of it:
 
-{{{source $NAIAD_PATH/buddies/maya/config/setup_csh}}}
+{{{
+source $NAIAD_PATH/buddies/maya/config/setup_csh
+}}}
 
 
 == 4.0 Troubleshooting
