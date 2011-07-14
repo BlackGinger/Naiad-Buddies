@@ -75,7 +75,7 @@ setenv EM_ARCH `uname -m`
 
 You need to do this every time a new version of Naiad is released.  
 
-For quicker and easier installation procedure, please skip to the section called **Automatic Installation Script** at the end of this README.
+For quicker and easier installation procedure, please skip to the section called **Automatic Installation Script** in section 3.2 (at the end of this README).
 
 **Basic Installation Procedure**
 
@@ -111,6 +111,7 @@ cd ..
 sudo rm -rf build
 }}}
 
+
 == 2.1 Example: Installation for Maya 2010 and 2011
 
 Let's say we want to put the buddy source code in our home directory under the folder {{{~/naiad-buddy-maya-src}}}.  Then, the first step is:
@@ -145,7 +146,35 @@ cd ..
 sudo rm -rf build
 }}}
 
-== 2.2 Automatic Installation Script
+== 3.0 Final Install and Setup
+
+The Naiad Buddy for Maya should now be installed in the following location: {{{$NAIAD_PATH/buddies/maya}}}.
+
+=== 3.1 Adding the Maya Module Path
+
+First, Maya needs to know where the Naiad Buddy for Maya plugin is located. This is accomplished by opening any terminal shell and typing:
+
+{{{
+sudo echo "+ NaiadBuddyForMaya 1.0 $NAIAD_PATH/buddies/maya/" > $NAIAD_PATH/buddies/maya/buddy.mod
+}}}
+
+==== Configuring the BASH Environment
+
+If you are using a bash shell, please edit the .bashrc configuration file in your home directory, and add the following line to the end of it:
+
+{{{
+source $NAIAD_PATH/buddies/maya/config/setup_bash
+}}}
+
+==== Configuring the TCSH/CSH Environment
+
+If you are using a tcsh/csh shell, please edit the .cshrc configuration file in your home directory, and add the following line to the end of it:
+
+{{{
+source $NAIAD_PATH/buddies/maya/config/setup_csh
+}}}
+
+=== 3.2 Automatic Installation Script
 
 Creating an automatic installation script for this is easy, and eliminates the necessity of running all those commands every time Exotic Matter releases a new version of Naiad.
 
@@ -181,6 +210,12 @@ sudo make install
 cd .. 
 sudo rm -rf build
 
+# setup Maya Module
+sudo echo "+ NaiadBuddyForMaya 1.0 $NAIAD_PATH/buddies/maya/" > $NAIAD_PATH/buddies/maya/buddy.mod
+
+# source the setup file
+echo "source $NAIAD_PATH/buddies/maya/config/setup_bash" >> ~/.bashrc
+
 # clean up (we don't need no stinkin' code anymore)
 cd ~
 rm -rf ~/naiad-buddy-maya-src
@@ -196,34 +231,6 @@ And that's it!  You're done.  Every time you need to install the latest Naiad Bu
 
 {{{
 $ ~/naiadBuddyForMayaInstall_bash
-}}}
-
-== 3.0 Final Install and Setup
-
-The Naiad Buddy for Maya should now be installed in the following location: {{{$NAIAD_PATH/buddies/maya}}}.
-
-=== 3.1 Adding the Maya Module Path
-
-First, Maya needs to know where the Naiad Buddy for Maya plugin is located. This is accomplished by opening any terminal shell and typing:
-
-{{{
-sudo echo "+ NaiadBuddyForMaya 1.0 $NAIAD_PATH/buddies/maya/" > $NAIAD_PATH/buddies/maya/buddy.mod
-}}}
-
-==== Configuring the BASH Environment
-
-If you are using a bash shell, please edit the .bashrc configuration file in your home directory, and add the following line to the end of it:
-
-{{{
-source $NAIAD_PATH/buddies/maya/config/setup_bash
-}}}
-
-==== Configuring the TCSH/CSH Environment
-
-If you are using a tcsh/csh shell, please edit the .cshrc configuration file in your home directory, and add the following line to the end of it:
-
-{{{
-source $NAIAD_PATH/buddies/maya/config/setup_csh
 }}}
 
 
