@@ -1,4 +1,4 @@
-= 1.0 Installing the Build Tools And Configuring Your Environment
+= 1.0 Installing Build Tools & Environment
 This is only required if your version of Naiad does NOT contain pre-built binaries for the Maya version you are using.
 
 You only need to follow the instructions in this section 1.0 once (the first time you want to compile the Naiad Buddy for Maya).  **However, please follow the instructions in sections 2-3 every time you need to recompile the Naiad Buddy for Maya due to a new Naiad release.**
@@ -71,13 +71,13 @@ setenv EM_PLAT LINUX
 setenv EM_ARCH `uname -m`
 }}}
 
-= 2.0 Compiling And Installing Naiad Buddy for Maya
+= 2.0 Compiling
 
 You need to do this every time a new version of Naiad is released.  
 
 For quicker and easier installation procedure, please skip to the section called **Automatic Installation Script** in section 3.2 (at the end of this README).
 
-**Basic Installation Procedure**
+**Basic Procedure**
 
 We assume the following:
 
@@ -146,17 +146,19 @@ cd ..
 sudo rm -rf build
 }}}
 
-== 3.0 Final Install and Setup
+== 3.0 Install and Setup
 
-The Naiad Buddy for Maya should now be installed in the following location: {{{$NAIAD_PATH/buddies/maya}}}.
+The Naiad Buddy for Maya should now be compiled and installed in the following location: {{{$NAIAD_PATH/buddies/maya}}}.  All that remains is to let Maya know about it:
 
 === 3.1 Adding the Maya Module Path
 
-First, Maya needs to know where the Naiad Buddy for Maya plugin is located. This is accomplished by opening any terminal shell and typing:
+First we need to create the {{{buddy.mod}}} file that lets Maya know where the buddy plugin is located. This is accomplished by opening any terminal shell and typing:
 
 {{{
 sudo echo "+ NaiadBuddyForMaya 1.0 $NAIAD_PATH/buddies/maya/" > $NAIAD_PATH/buddies/maya/buddy.mod
 }}}
+
+Next we need to source the buddy setup script.  This step is done slightly differently, based on if you are using bash or tcsh/csh:
 
 ==== Configuring the BASH Environment
 
