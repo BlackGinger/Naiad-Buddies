@@ -5,13 +5,16 @@ global proc createNaiadMenu( )
 	global string $gNaiadMenu; // Naiad main menu item
 
 	$gNaiadMenu = `menu -p $gMainWindow -label "Naiad"`;
-	menuItem -l "CacheSelectedToEMP" -c "NBuddy_CacheWindow()";
-	menuItem -l "Load Mesh(es) From Emp" -c "NBuddy_LoadEmpMeshesUI()";
-	menuItem -l "Load Transform(s) From Emp" -c "NBuddy_LoadEmpTransformsUI()";
-	menuItem -l "CreateEmpLoader" -c "NBuddy_EmpLoaderUI()";
+	menuItem -l "Export Selection" -c "NBuddy_CacheWindow()";
+	menuItem -divider true;
+	menuItem -l "Import Naiad Mesh" -c "NBuddy_LoadEmpMeshesUI()";
+	menuItem -l "Import Naiad Particle System" -c "NBuddy_empBodyQueryWindow( \"Create Particle Emitter System\" , \"NBuddy_CreateNaiadParticleEmissionSystem\"  )";
+	menuItem -l "Import Naiad Transform" -c "NBuddy_LoadEmpTransformsUI()";
+	menuItem -divider true;
+	menuItem -l "Create EMP Loader" -c "NBuddy_EmpLoaderUI()";
 	menuItem -l "Create Naiad Body Field" -c "NBuddy_CreateNaiadBodyField()";
 	menuItem -l "Create Naiad Body Display" -c "NBuddy_CreateNaiadBodyDisplay()";
-	menuItem -l "Create Naiad Particle System" -c "NBuddy_empBodyQueryWindow( \"Create Particle Emitter System\" , \"NBuddy_CreateNaiadParticleEmissionSystem\"  )";
+
 }
 
 global proc removeNaiadMenu()
