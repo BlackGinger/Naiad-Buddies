@@ -214,7 +214,7 @@ public:
             	AiNodeSetBool(node, "opaque", false);
     	}
     	// render now
-    	AiASSWrite("renderASS.ass", AI_NODE_ALL, FALSE); //too compare with ass write
+    	AiASSWrite(expandedFilename.c_str(), AI_NODE_ALL, FALSE); //too compare with ass write
 	//AiRender(AI_RENDER_MODE_CAMERA);
 
         // at this point we can shut down Arnold
