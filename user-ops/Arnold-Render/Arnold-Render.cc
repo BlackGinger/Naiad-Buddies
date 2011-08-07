@@ -108,6 +108,9 @@ public:
 		else
 			driver = AiNode("driver_tiff");
 		AiNodeSetStr(driver, "name", "render");
+		//todo add this as option in naiad
+		AiNodeSetFlt(driver, "gamma", 2.2f);
+
 
 		// expand output filename for each frame
 		const Nb::String sequenceFile = param1s("Output Image")->eval(tb);
