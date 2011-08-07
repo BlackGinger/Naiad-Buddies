@@ -195,7 +195,7 @@ public:
                 if (frametime == 0 || body->constPointShape().hasChannels3f("velocity"))
                 	node = NbAi::loadMesh(body, frametime);
                 else
-                	NB_THROW("Can't make motion blur, no velocity in the " << body->name() << " Mesh")
+                	node = NbAi::loadMesh(body, 0);
             }
             else if (body->prop1s("type")->eval(tb) == Nb::String("Particle")){
             	 node = NbAi::loadParticles(body
