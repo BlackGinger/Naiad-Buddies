@@ -107,7 +107,7 @@ public:
 			driver = AiNode("driver_jpeg");
 		else
 			driver = AiNode("driver_tiff");
-		AiNodeSetStr(driver, "name", "render");*/
+		AiNodeSetStr(driver, "name", "render");
 
 		// expand output filename for each frame
 		const int        padding = param1i("Frame Padding")->eval(tb);
