@@ -80,9 +80,18 @@ public:
     	// start an Arnold session
 		AiBegin();
 		AiLoadPlugin(param1s("Arnold Implicit Shader")->eval(tb).c_str());
-		AiASSLoad(param1s("Arnold Scene")->eval(tb).c_str());
 
-		/*//Get Global Options
+		const int padding = param1i("Frame Padding")->eval(tb);
+	        Nb::String sceneFile = Nb::sequenceToFilename(
+	            Ng::projectPath(),
+	            param1s("Arnold Scene")->eval(tb),
+	            tb.frame,
+	            tb.timestep,
+	            padding
+	        );
+		AiASSLoad(sceneFile.c_str());
+
+		//Get Global Options
 		AtNode *options = AiUniverseGetOptions();
 		AiNodeSetInt(options, "xres", param1i("Width")->eval(tb));
 		AiNodeSetInt(options, "yres", param1i("Height")->eval(tb));
@@ -110,7 +119,7 @@ public:
 			tb.timestep,
 			padding
 			);
-		/*AiNodeSetStr(driver, "filename", expandedFilename.c_str());
+		AiNodeSetStr(driver, "filename", expandedFilename.c_str());
 
 		//Output in message
 		NB_INFO("Rendering: " << expandedFilename);
@@ -122,13 +131,13 @@ public:
 		// assign the driver and filter to the main (beauty) AOV, which is called "RGB"
 		AtArray *outputs_array = AiArrayAllocate(1, 1, AI_TYPE_STRING);
 		AiArraySetStr(outputs_array, 0, "RGB RGB myfilter render");
-		AiNodeSetArray(options, "outputs", outputs_array);*/
+		AiNodeSetArray(options, "outputs", outputs_array);
 
 
 		//Grab the bodies
     	em::array1<const Nb::Body*> bodies =
     			groupPlugData("body-input",tb)->constMatchingBodies();
-    	/*const Nb::Body* camera =
+    	const Nb::Body* camera =
     			singlePlugData("cam-input",tb)->constBody();
 
     	if (camera != NULL){
@@ -162,7 +171,7 @@ public:
 			else if (AiNodeLookUpByName("persp_camera") == NULL)
 				NB_THROW("No camera attached. Arnold has no camera");
 
-    	}*/
+    	}
 
 		//Get the FPS from the global parameter
 		int fps = Ng::Store::globalOp()->param1i("Fps")->eval(tb);
@@ -214,8 +223,8 @@ public:
             	AiNodeSetBool(node, "opaque", false);
     	}
     	// render now
-    	AiASSWrite(expandedFilename.c_str(), AI_NODE_ALL, FALSE); //too compare with ass write
-	//AiRender(AI_RENDER_MODE_CAMERA);
+    	//AiASSWrite(expandedFilename.c_str(), AI_NODE_ALL, FALSE); //too compare with ass write
+	AiRender(AI_RENDER_MODE_CAMERA);
 
         // at this point we can shut down Arnold
         AiEnd();

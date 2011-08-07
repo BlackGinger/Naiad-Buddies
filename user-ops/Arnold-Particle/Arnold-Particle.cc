@@ -90,7 +90,7 @@ public:
 			stringstream ssRad;
 			ssRad << param1f("Radius")->eval(tb);
 			body->createProp1f("Arnold", "radius", ssRad.str());
-			cerr << "radius: " << body->prop1i("radius")->eval(tb) << "\n";
+			cerr << "radius: " << body->prop1f("radius")->eval(tb) << "\n";
 
 			//Particle render mode
 			body->createProp1s("Arnold", "particle-mode", param1s("Particle Mode")->eval(tb));
