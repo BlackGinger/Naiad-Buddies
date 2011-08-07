@@ -110,7 +110,6 @@ public:
 		AiNodeSetStr(driver, "name", "render");
 
 		// expand output filename for each frame
-		const int        padding = param1i("Frame Padding")->eval(tb);
 		const Nb::String sequenceFile = param1s("Output Image")->eval(tb);
 		Nb::String expandedFilename = Nb::sequenceToFilename(
 			Ng::projectPath(),
