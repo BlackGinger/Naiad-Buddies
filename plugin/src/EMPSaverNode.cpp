@@ -136,7 +136,7 @@ MStatus NBuddyEMPSaverNode::compute( const MPlug& plug, MDataBlock& data )
                 {
                     //Add body to writer
                     try{
-                        Nb::String channels("*/*");
+                        Nb::String channels("*.*");
                         writer->write(bodyData->nBody(),channels);
                     }
                     catch(std::exception& e) {
