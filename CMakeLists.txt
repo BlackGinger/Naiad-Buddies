@@ -68,7 +68,7 @@ else ($ENV{EM_COMPILER} STREQUAL "intel")
 
 # gcc compiler flags
 
-add_definitions (-Wl,-symbolic -m64 -fexceptions -fno-gnu-keywords -ftemplate-depth-25 -fno-common -fPIC -pipe -pthread -Wall -Wno-multichar -Wno-comment -Wno-sign-compare -funsigned-char -Wno-reorder -Wno-deprecated)
+add_definitions (-m64 -fexceptions -fno-gnu-keywords -ftemplate-depth-25 -fno-common -fPIC -pipe -pthread -Wall -Wno-multichar -Wno-comment -Wno-sign-compare -funsigned-char -Wno-reorder -Wno-deprecated)
 
 set (DEBUG_COMP_FLAGS "-DDEBUG -g3 -O0")
 set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -fno-strict-aliasing -fomit-frame-pointer -O3")
