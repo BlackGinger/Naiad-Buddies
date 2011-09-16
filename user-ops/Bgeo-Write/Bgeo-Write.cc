@@ -54,9 +54,9 @@ using namespace std;
 class Bgeo_Write : public Ng::BodyOp
 {
 public:
-	Bgeo_Write(const Nb::String& name)
+    Bgeo_Write(const Nb::String& name)
         : Ng::BodyOp(name) {}
-
+    
     virtual Nb::String
     typeName() const
     { return "Bgeo-Write"; }
