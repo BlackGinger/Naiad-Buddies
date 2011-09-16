@@ -61,7 +61,7 @@ if ($ENV{EM_COMPILER} STREQUAL "intel")
 
 # Intel compiler flags
 
-add_definitions (-Wl,Bsymbolic -pthread -fexceptions -Wall -fPIC -pipe -fno-common -diag-disable 981,383,1572,869,1418,193)
+add_definitions (-Wl,Bsymbolic -pthread -fexceptions -Wall -fPIC -pipe -fno-common -diag-disable 981,383,1572,869,1418,193 -gcc-version=430 -gxx-name=g++-4.3 -gcc-name=gcc-4.3)
 
 set (DEBUG_COMP_FLAGS "-g3 -DDEBUG=1 -DOMP_ENABLED -O0")
 set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -DQT_NO_DEBUG_OUTPUT -DOMP_ENABLED -O3 -fomit-frame-pointer")
