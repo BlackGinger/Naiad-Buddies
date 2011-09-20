@@ -1,6 +1,38 @@
-/*
-* Naiad distance field shader
-*/
+// ----------------------------------------------------------------------------
+//
+// naiad_distance_field.cc
+//
+// Copyright (c) 2011 Exotic Matter AB.  All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+//
+// * Neither the name of Exotic Matter AB nor its contributors may be used to
+//   endorse or promote products derived from this software without specific
+//   prior written permission.
+//
+//    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+//    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,  INCLUDING,  BUT NOT
+//    LIMITED TO,  THE IMPLIED WARRANTIES OF  MERCHANTABILITY AND FITNESS
+//    FOR  A  PARTICULAR  PURPOSE  ARE DISCLAIMED.  IN NO EVENT SHALL THE
+//    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+//    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+//    BUT  NOT LIMITED TO,  PROCUREMENT OF SUBSTITUTE GOODS  OR  SERVICES;
+//    LOSS OF USE,  DATA,  OR PROFITS; OR BUSINESS INTERRUPTION)  HOWEVER
+//    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,  STRICT
+//    LIABILITY,  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)  ARISING IN
+//    ANY  WAY OUT OF THE USE OF  THIS SOFTWARE,  EVEN IF ADVISED OF  THE
+//    POSSIBILITY OF SUCH DAMAGE.
+//
+// ----------------------------------------------------------------------------
 
 #include <ai.h>
 #include <string.h>
@@ -35,7 +67,6 @@ shader_evaluate
 {
    try
    {
-	   std::cerr << "inside shader\n";
        const Nb::Vec3f x(sg->P.x, sg->P.y, sg->P.z);
 
        const float ux =
@@ -63,38 +94,37 @@ node_initialize
 {
    try
    {
-	   if (std::string(AiNodeGetStr(node,"pointerBody")).size() == 0){
-		   // initialize the Naiad Base (Nb) library
-		   Nb::begin();
+       if (std::string(AiNodeGetStr(node,"pointerBody")).size() == 0){
+           // initialize the Naiad Base (Nb) library
+           Nb::begin();
 
 
-	       // construct a valid EMP Sequence name (for more info on EMP
-	       // sequences, we refer you to the Naiad Developer notes in the
-	       // Naiad documentation)
-	       std::stringstream ss;
-	       ss << AiNodeGetStr(node,"empcache") << ".#.emp";
-	       Nb::String empFilename =
-	           Nb::sequenceToFilename("", // project path
-	                                  ss.str(), // EMP sequence name
-	                                  AiNodeGetInt(node,"frame"), // frame
-	                                  0, // timestep
-	                                  AiNodeGetInt(node,"padding")); // padding
-	       // get access all the bodies in the EMP corresponding to this frame
-	       Nb::EmpReader empReader(empFilename,"*");
-		   // eject the one we want to render
-		   body = empReader.ejectBody(AiNodeGetStr(node,"body"));
-	   }
-	   else{
-		   char * end; //dummy
-		   int64_t address = strtol (AiNodeGetStr(node,"pointerBody"), &end,0);
-		   body = reinterpret_cast<const Nb::Body*> (address);
-		   std::cerr << "naiad_distance_field: body from address is "<<body->name() << "\n";
-	   }
+           // construct a valid EMP Sequence name (for more info on EMP
+           // sequences, we refer you to the Naiad Developer notes in the
+           // Naiad documentation)
+           std::stringstream ss;
+           ss << AiNodeGetStr(node,"empcache") << ".#.emp";
+           Nb::String empFilename =
+               Nb::sequenceToFilename("", // project path
+                                      ss.str(), // EMP sequence name
+                                      AiNodeGetInt(node,"frame"), // frame
+                                      0, // timestep
+                                      AiNodeGetInt(node,"padding")); // padding
+           // get access all the bodies in the EMP corresponding to this frame
+           Nb::EmpReader empReader(empFilename,"*");
+           // eject the one we want to render
+           body = empReader.ejectBody(AiNodeGetStr(node,"body"));
+       }
+       else{
+           char * end; //dummy
+           int64_t address = strtol (AiNodeGetStr(node,"pointerBody"), &end, 0);
+           body = reinterpret_cast<const Nb::Body*> (address);
+#ifndef NDEBUG
+           std::cerr << "naiad_distance_field: body from address is "<<
+                   body->name() << "\n";
+#endif
+       }
 
-	   if (body->constFieldShape().hasChannels1f(AiNodeGetStr(node,"channel")))
-		   std::cerr << "naiad_distance_field: " << AiNodeGetStr(node,"channel") << " was found!\n";
-	   else
-		   std::cerr << "naiad_distance_field: " << AiNodeGetStr(node,"channel") << " was not found!\n";
 
        // get access to the desired distance field
        fldDistance = &body->constFieldShape().constField1f(
@@ -113,10 +143,10 @@ node_initialize
 
 node_finish
 {
-	if (std::string(AiNodeGetStr(node,"pointerBody")).size() == 0){
-		delete body;
-		Nb::end();
-	}
+    if (std::string(AiNodeGetStr(node,"pointerBody")).size() == 0){
+        delete body;
+        Nb::end();
+    }
 }
 
 node_update

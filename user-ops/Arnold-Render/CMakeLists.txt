@@ -31,25 +31,10 @@
 #    ANY  WAY OUT OF THE USE OF  THIS SOFTWARE,  EVEN IF ADVISED OF  THE
 #    POSSIBILITY OF SUCH DAMAGE.
 #
-project               (NBUDDY_HOUDINI_USER_OPS_ARNOLD_RENDER)
-
-# include and library paths to the Naiad dynamics server..
-
-include_directories   (.
-                       $ENV{NAIAD_PATH}/server/include/system
-                       $ENV{NAIAD_PATH}/server/include/em
-                       $ENV{NAIAD_PATH}/server/include/Nb
-		       $ENV{NAIAD_PATH}/server/include/Ng
-                       $ENV{NAIAD_PATH}/server/include/Ni
-		       $ENV{ARNOLD_ROOT}/include
-		       "../../common")
-link_directories      ( $ENV{NAIAD_PATH}/server/lib
-			$ENV{ARNOLD_ROOT}/bin)
-
-# user op is a dynamic shared library
+project               (NBUDDY_ARNOLD_USER_OPS_ARNOLD_RENDER)
 
 add_library           (Arnold-Render SHARED 
-		       Arnold-Render)
+		       		   Arnold-Render)
 
 # on intel compiler, use static libraries...
 

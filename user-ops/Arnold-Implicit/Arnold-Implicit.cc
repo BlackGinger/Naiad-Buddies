@@ -34,75 +34,81 @@
 //
 // ----------------------------------------------------------------------------
 
-
-// Naiad Base API
-#include <NbFilename.h>
-#include <NbBlock.h>
-#include <../common/NbAi.cc>
-
 // Naiad Graph API
 #include <NgBodyOp.h>
-#include <NgProjectPath.h>
-
-// Naiad Interface
-#include <Ni.h>
-
-using namespace std;
+#include <NbAi.h>
 
 class Arnold_Implicit : public Ng::BodyOp
 {
 public:
-	Arnold_Implicit(const Nb::String& name)
+    Arnold_Implicit(const Nb::String& name)
         : Ng::BodyOp(name){  }
-
+// ----------------------------------------------------------------------------
     virtual Nb::String
     typeName() const
     { return "Arnold-Implicit"; }
-
+// ----------------------------------------------------------------------------
     virtual void
     stepAdmittedBody(Nb::Body*             body,
                      Ng::NelContext&       nelContext,
                      const Nb::TimeBundle& tb)
     {
-    	const Nb::String bodyNameList = param1s("Body Names")->eval(tb);
-    	if(body->name().listed_in(bodyNameList)){
-    		cerr << "Adding Arnold properties for " << body->name() << "\n";
-    		//What type Arnold should render the body as
-    		body->createProp1s("Arnold", "type", "Implicit");
-    		cerr << "type: " << body->prop1s("type")->eval(tb) << "\n";
-			//Node name
-			body->createProp1s("Arnold", "name", param1s("Node Name")->eval(tb).c_str());
-			cerr << "node name: " << body->prop1s("name")->eval(tb) << "\n";
+        const Nb::String bodyNameList = param1s("Body Names")->eval(tb);
+        if(body->name().listed_in(bodyNameList)){
 
-			body->createProp1s("Arnold", "channel", param1s("Channel")->eval(tb));
-			cerr << "channel: " << body->prop1s("channel")->eval(tb) << "\n";
+            //What type Arnold should render the body as
+            NbAi::setProp<Nb::ValueBase::StringType>(body, "type", "Implicit");
 
-			//Shader that can be found in the template ASS file (see Arnold-Render or Arnold-ASS-Write)
-			body->createProp1s("Arnold", "shader", param1s("Shader")->eval(tb));
-			cerr << "shader: " << body->prop1s("shader")->eval(tb) << "\n";
+            //Node name
+            NbAi::setProp<Nb::ValueBase::StringType>(
+                    body, "name", param1s("Node Name")->eval(tb));
 
-			//Solid shadows or not?
-			Nb::String opaque = "0";
-			if (Nb::String("On").listed_in(Nb::String(param1e("Opaque")->eval(tb))))
-				opaque = "1";
-			body->createProp1i("Arnold", "opaque", opaque);
-			cerr << "opaque: " << body->prop1i("opaque")->eval(tb) << "\n";
+            //What channel to render (where is sdf?)
+            NbAi::setProp<Nb::ValueBase::StringType>(
+                    body, "channel", param1s("Channel")->eval(tb));
 
-			//Implicit name
-			body->createProp1s("Arnold", "implicitname", param1s("Implicit Name")->eval(tb).c_str());
-			cerr << "implicit name: " << body->prop1s("implicitname")->eval(tb) << "\n";
+            //Shader that can be found in the template ASS file
+            //(see Arnold-Render or Arnold-ASS-Write)
+            NbAi::setProp<Nb::ValueBase::StringType>(
+                    body, "shader", param1s("Shader")->eval(tb));
 
-			stringstream ssRB, ssTH, ssSA;
-			ssRB << param1f("Ray Bias")->eval(tb);
-			ssTH << param1f("Threshold")->eval(tb);
-			ssSA << param1i("Samples")->eval(tb);
-			body->createProp1f("Arnold", "raybias", ssRB.str());
-			cerr << "Ray Bias: " << body->prop1f("raybias")->eval(tb) << "\n";
-			body->createProp1f("Arnold", "threshold", ssTH.str());
-			cerr << "Threshold: " << body->prop1f("treshold")->eval(tb) << "\n";
-			body->createProp1i("Arnold", "samples", ssSA.str());
-			cerr << "Samples: " << body->prop1i("samples")->eval(tb) << "\n";
-    	}
+            //Solid shadows or not?
+            Nb::String opaque = "0";
+            if (Nb::String("On")==Nb::String(param1e("Opaque")->eval(tb))){
+                opaque = "1";
+            }
+            NbAi::setProp<Nb::ValueBase::IntType>(body, "opaque", opaque);
+
+            //Implicit name (name of the implicit node in Arnold)
+            NbAi::setProp<Nb::ValueBase::StringType>(
+                    body, "implicitname", param1s("Implicit Name")->eval(tb));
+
+            std::stringstream ss;
+
+            //Raytracing properties
+            ss << param1f("Ray Bias")->eval(tb);
+            NbAi::setProp<Nb::ValueBase::FloatType>(body, "raybias", ss.str());
+            ss.str("");
+            ss << param1f("Threshold")->eval(tb);
+            NbAi::setProp<Nb::ValueBase::FloatType>(body, "threshold", ss.str());
+            ss.str("");
+            ss << param1i("Samples")->eval(tb);
+            NbAi::setProp<Nb::ValueBase::IntType>(body, "samples", ss.str());
+            ss.str("");
+
+#ifndef NDEBUG
+            std::cerr<< "Adding Arnold properties for " << body->name() << "\n"
+            << "\tYype: " << body->prop1s("type")->eval(tb) << "\n"
+            << "\tNode name: " << body->prop1s("name")->eval(tb) << "\n"
+            << "\tChannel: " << body->prop1s("channel")->eval(tb) << "\n"
+            << "\tImplicit: " << body->prop1s("implicitname")->eval(tb)<< "\n"
+            << "\tShader: " << body->prop1s("shader")->eval(tb) << "\n"
+            << "\tOpaque: " << body->prop1i("opaque")->eval(tb) << "\n"
+            << "Ray Bias: " << body->prop1f("raybias")->eval(tb) << "\n"
+            << "Threshold: " << body->prop1f("treshold")->eval(tb) << "\n"
+            << "Samples: " << body->prop1i("samples")->eval(tb) <<  std::endl;
+#endif
+        }
     }
 
 };

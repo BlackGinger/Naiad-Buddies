@@ -1,5 +1,5 @@
 #
-# CMAKE project for Exotic Matter User Arnold-ASS-Write
+# CMAKE project for Exotic Matter User Arnold-ASS-ASCII-Write
 # 
 # Copyright (c) 2011 Exotic Matter AB.  All rights reserved.
 #
@@ -31,23 +31,23 @@
 #    ANY  WAY OUT OF THE USE OF  THIS SOFTWARE,  EVEN IF ADVISED OF  THE
 #    POSSIBILITY OF SUCH DAMAGE.
 #
-project               (NBUDDY_ARNOLD_USER_OPS_ARNOLD_ASS_WRITE)
+project               (NBUDDY_ARNOLD_USER_OPS_ARNOLD_ASS_ASCII_WRITE)
 
 # user op is a dynamic shared library
 
-add_library           (Arnold-ASS-Write SHARED 
-		       		   Arnold-ASS-Write)
+add_library           (Arnold-ASS-ASCII-Write SHARED 
+		       		   Arnold-ASS-ASCII-Write)
 
 # on intel compiler, use static libraries...
 
 if ($ENV{EM_COMPILER} STREQUAL "intel")
-target_link_libraries (Arnold-ASS-Write Ni ai -static-intel)
+target_link_libraries (Arnold-ASS-ASCII-Write Ni ai -static-intel)
 else ($ENV{EM_COMPILER} STREQUAL "intel")
-target_link_libraries (Arnold-ASS-Write Ni ai)
+target_link_libraries (Arnold-ASS-ASCII-Write Ni ai)
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
 
 # destination location for user op
 
-set_target_properties (Arnold-ASS-Write PROPERTIES PREFIX "")
-install               (TARGETS Arnold-ASS-Write DESTINATION buddies/arnold/user-ops)
-install               (FILES Arnold-ASS-Write.BodyOp DESTINATION buddies/arnold/user-ops)
+set_target_properties (Arnold-ASS-ASCII-Write PROPERTIES PREFIX "")
+install               (TARGETS Arnold-ASS-ASCII-Write DESTINATION buddies/arnold/user-ops)
+install               (FILES Arnold-ASS-ASCII-Write.BodyOp DESTINATION buddies/arnold/user-ops)

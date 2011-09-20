@@ -33,59 +33,55 @@
 //    POSSIBILITY OF SUCH DAMAGE.
 //
 // ----------------------------------------------------------------------------
-
-
-// Naiad Base API
-#include <NbFilename.h>
-#include <NbBlock.h>
-#include <../common/NbAi.cc>
-
 // Naiad Graph API
 #include <NgBodyOp.h>
-#include <NgProjectPath.h>
-
-// Naiad Interface
-#include <Ni.h>
-
-using namespace std;
+#include <NbAi.h>
 
 class Arnold_Mesh : public Ng::BodyOp
 {
 public:
-	Arnold_Mesh(const Nb::String& name)
+    Arnold_Mesh(const Nb::String& name)
         : Ng::BodyOp(name) {  }
-
+// ----------------------------------------------------------------------------
     virtual Nb::String
     typeName() const
     { return "Arnold-Mesh"; }
-
+// ----------------------------------------------------------------------------
     virtual void
     stepAdmittedBody(Nb::Body*             body,
                      Ng::NelContext&       nelContext,
                      const Nb::TimeBundle& tb)
     {
-    	const Nb::String bodyNameList = param1s("Body Names")->eval(tb);
-    	if(body->name().listed_in(bodyNameList)){
-			cerr << "Adding Arnold properties for " << body->name() << "\n";
-			//What type Arnold should render the body as
-			body->createProp1s("Arnold", "type", "Mesh");
-			cerr << "type: " << body->prop1s("type")->eval(tb) << "\n";
-			//Node name
-			body->createProp1s("Arnold", "name", param1s("Node Name")->eval(tb).c_str());
-			cerr << "node name: " << body->prop1s("name")->eval(tb) << "\n";
+        const Nb::String bodyNameList = param1s("Body Names")->eval(tb);
+        if(body->name().listed_in(bodyNameList)){
 
-			//Shader that can be found in the template ASS file (see Arnold-Render or Arnold-ASS-Write)
-			body->createProp1s("Arnold", "shader", param1s("Shader")->eval(tb));
-			cerr << "shader: " << body->prop1s("shader")->eval(tb) << "\n";
+            //What type Arnold should render the body as
+            NbAi::setProp<Nb::ValueBase::StringType>(body, "type", "Mesh");
 
-			//Solid shadows or not?
-			Nb::String opaque = "0";
-			if (Nb::String("On").listed_in(Nb::String(param1e("Opaque")->eval(tb))))
-				opaque = "1";
-			body->createProp1i("Arnold", "opaque", opaque);
-			cerr << "opaque: " << body->prop1i("opaque")->eval(tb) << "\n";
 
-    	}
+            //Node name
+            NbAi::setProp<Nb::ValueBase::StringType>(
+                    body, "name", param1s("Node Name")->eval(tb));
+
+            //Shader that can be found in the template ASS file
+            //(see Arnold-Render or Arnold-ASS-Write)
+            NbAi::setProp<Nb::ValueBase::StringType>(
+                    body, "shader", param1s("Shader")->eval(tb));
+
+            //Solid shadows or not?
+            Nb::String opaque = "0";
+            if (Nb::String("On") == param1e("Opaque")->eval(tb))
+                opaque = "1";
+            NbAi::setProp<Nb::ValueBase::IntType>(body, "opaque", opaque);
+
+#ifndef NDEBUG
+            std::cerr<< "Adding Arnold properties for " << body->name() << "\n"
+            << "\tYype: " << body->prop1s("type")->eval(tb) << "\n"
+            << "\tNode name: " << body->prop1s("name")->eval(tb) << "\n"
+            << "\tShader: " << body->prop1s("shader")->eval(tb) << "\n"
+            << "\tOpaque: " << body->prop1i("opaque")->eval(tb) << std::endl;
+#endif
+        }
     }
 };
 // ----------------------------------------------------------------------------

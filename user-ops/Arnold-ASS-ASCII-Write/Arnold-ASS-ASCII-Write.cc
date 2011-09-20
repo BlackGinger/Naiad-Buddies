@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //
-// Arnold-ASS-Write.cc
+// Arnold-ASS-ASCII-Write.cc
 //
 // Copyright (c) 2011 Exotic Matter AB.  All rights reserved.
 //
@@ -34,7 +34,7 @@
 //
 // ----------------------------------------------------------------------------
 
-#include <NbAiOutputAssWrite.h>
+#include <NbAiOutputAssAsciiWrite.h>
 
 // Naiad Graph API
 #include <NgBodyOp.h>
@@ -42,23 +42,23 @@
 #include <NgBodySinglePlugData.h>
 #include <NgProjectPath.h>
 
-class Arnold_ASS_Write: public Ng::BodyOp {
+class Arnold_ASS_ASCII_Write: public Ng::BodyOp {
 public:
-    Arnold_ASS_Write(const Nb::String& name) :
+    Arnold_ASS_ASCII_Write(const Nb::String& name) :
         Ng::BodyOp(name) {
     }
 // ----------------------------------------------------------------------------
     virtual Nb::String typeName() const {
-        return "Arnold-ASS-Write";
+        return "Arnold-ASS-ASCII-Write";
     }
 // ----------------------------------------------------------------------------
-    virtual void stepBodies(const Nb::TimeBundle& tb)
-    {
+    virtual void stepBodies(const Nb::TimeBundle& tb) {
         const em::array1<const Nb::Body*> & bodies =
                 groupPlugData("body-input",tb)->constMatchingBodies();
         const Nb::Body * camera = singlePlugData("cam-input",tb)->constBody();
 
-        NbAi::OutputAssWrite output(_getArnoldParams(tb), bodies, camera, tb);
+        NbAi::OutputAssAsciiWrite output(
+                _getArnoldParams(tb), bodies, camera, tb);
         output.processBodies(tb);
         output.createOutput(tb);
     }
@@ -77,9 +77,7 @@ private:
                                     param1f("Motion Blur")->eval(tb),
              Ng::Store::globalOp()->param1i("Fps")->eval(tb),
                                     param1i("Frame Padding")->eval(tb),
-                           _evalStr(param1s("Output ASS file")->eval(tb),tb),
-                                    param1s("Kick Ass")->eval(tb),
-                                    param1s("Arnold Procedural")->eval(tb)
+                           _evalStr(param1s("Output ASS file")->eval(tb),tb)
                      );
     };
 // ----------------------------------------------------------------------------
@@ -101,7 +99,7 @@ private:
 
 extern "C" Ng::Op*
 NiUserOpAlloc(const Nb::String& name) {
-    return new Arnold_ASS_Write(name);
+    return new Arnold_ASS_ASCII_Write(name);
 }
 
 // ----------------------------------------------------------------------------

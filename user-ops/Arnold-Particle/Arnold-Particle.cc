@@ -34,68 +34,67 @@
 //
 // ----------------------------------------------------------------------------
 
-
-// Naiad Base API
-#include <NbFilename.h>
-#include <NbBlock.h>
-#include <../common/NbAi.cc>
-
 // Naiad Graph API
 #include <NgBodyOp.h>
-#include <NgProjectPath.h>
-
-// Naiad Interface
-#include <Ni.h>
-
-using namespace std;
+#include <NbAi.h>
 
 class Arnold_Particle : public Ng::BodyOp
 {
 public:
-	Arnold_Particle(const Nb::String& name)
+    Arnold_Particle(const Nb::String& name)
         : Ng::BodyOp(name) {  }
-
+// ----------------------------------------------------------------------------
     virtual Nb::String
     typeName() const
     { return "Arnold-Particle"; }
-
+// ----------------------------------------------------------------------------
     virtual void
     stepAdmittedBody(Nb::Body*             body,
                      Ng::NelContext&       nelContext,
                      const Nb::TimeBundle& tb)
     {
-    	const Nb::String bodyNameList = param1s("Body Names")->eval(tb);
-    	if(body->name().listed_in(bodyNameList)){
+        const Nb::String bodyNameList = param1s("Body Names")->eval(tb);
+        if(body->name().listed_in(bodyNameList)){
 
-    		cerr << "Adding Arnold properties for " << body->name() << "\n";
-    		//What type Arnold should render the body as
-    		body->createProp1s("Arnold", "type", "Particle");
-    		cerr << "type: " << body->prop1s("type")->eval(tb) << "\n";
-			//Node name
-			body->createProp1s("Arnold", "name", param1s("Node Name")->eval(tb).c_str());
-			cerr << "node name: " << body->prop1s("name")->eval(tb) << "\n";
+            //What type Arnold should render the body as
+            NbAi::setProp<Nb::ValueBase::StringType>(body, "type", "Particle");
 
-			//Shader that can be found in the template ASS file (see Arnold-Render or Arnold-ASS-Write)
-			body->createProp1s("Arnold", "shader", param1s("Shader")->eval(tb));
-			cerr << "shader: " << body->prop1s("shader")->eval(tb) << "\n";
+            //Node name
+            NbAi::setProp<Nb::ValueBase::StringType>(
+                    body, "name", param1s("Node Name")->eval(tb));
 
-			//Solid shadows or not?
-			Nb::String opaque = "0";
-			if (Nb::String("On").listed_in(Nb::String(param1e("Opaque")->eval(tb))))
-				opaque = "1";
-			body->createProp1i("Arnold", "opaque", opaque);
-			cerr << "opaque: " << body->prop1i("opaque")->eval(tb) << "\n";
+            //Shader that can be found in the template ASS file
+            //(see Arnold-Render or Arnold-ASS-Write)
+            NbAi::setProp<Nb::ValueBase::StringType>(
+                    body, "shader", param1s("Shader")->eval(tb));
 
-			//Radius
-			stringstream ssRad;
-			ssRad << param1f("Radius")->eval(tb);
-			body->createProp1f("Arnold", "radius", ssRad.str());
-			cerr << "radius: " << body->prop1f("radius")->eval(tb) << "\n";
+            //Solid shadows or not?
+            Nb::String opaque = "0";
+            if (Nb::String("On") == Nb::String(param1e("Opaque")->eval(tb))){
+                opaque = "1";
+            }
+            NbAi::setProp<Nb::ValueBase::IntType>(body, "opaque", opaque);
 
-			//Particle render mode
-			body->createProp1s("Arnold", "particle-mode", param1s("Particle Mode")->eval(tb));
-			cerr << "particle-mode: " << body->prop1s("particle-mode")->eval(tb) << "\n";
-    	}
+            //Radius
+            std::stringstream ss;
+            ss << param1f("Radius")->eval(tb);
+            NbAi::setProp<Nb::ValueBase::FloatType>(body, "radius", ss.str());
+
+            //Particle render mode
+            NbAi::setProp<Nb::ValueBase::StringType>(
+                    body, "particle-mode", param1s("Particle Mode")->eval(tb));
+
+#ifndef NDEBUG
+            std::cerr<< "Adding Arnold properties for " << body->name() << "\n"
+            << "\tType: " << body->prop1s("type")->eval(tb) << "\n"
+            << "\tNode name: " << body->prop1s("name")->eval(tb) << "\n"
+            << "\tShader: " << body->prop1s("shader")->eval(tb) << "\n"
+            << "\tOpaque: " << body->prop1i("opaque")->eval(tb) << "\n"
+            << "\tRadius: " << body->prop1f("radius")->eval(tb) << "\n"
+            << "\tParticle-mode: " << body->prop1s("particle-mode")->eval(tb) <<
+            std::endl;
+#endif
+        }
     }
 };
 // ----------------------------------------------------------------------------
