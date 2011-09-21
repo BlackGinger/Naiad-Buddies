@@ -59,7 +59,8 @@ public:
                 groupPlugData("body-input",tb)->constMatchingBodies();
         const Nb::Body * camera = singlePlugData("cam-input",tb)->constBody();
 
-        NbAi::OutputRender output(_getArnoldParams(tb), bodies, camera, tb);
+        const NbAi::OutputParams p = _getArnoldParams(tb);
+        NbAi::OutputRender output(p, bodies, camera, tb);
         output.processBodies(tb);
         output.createOutput(tb);
     }

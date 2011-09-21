@@ -104,9 +104,9 @@ public:
             << "\tImplicit: " << body->prop1s("implicitname")->eval(tb)<< "\n"
             << "\tShader: " << body->prop1s("shader")->eval(tb) << "\n"
             << "\tOpaque: " << body->prop1i("opaque")->eval(tb) << "\n"
-            << "Ray Bias: " << body->prop1f("raybias")->eval(tb) << "\n"
-            << "Threshold: " << body->prop1f("treshold")->eval(tb) << "\n"
-            << "Samples: " << body->prop1i("samples")->eval(tb) <<  std::endl;
+            << "\tRay Bias: " << body->prop1f("raybias")->eval(tb) << "\n"
+            << "\tThreshold: " << body->prop1f("threshold")->eval(tb) << "\n"
+            << "\tSamples: " << body->prop1i("samples")->eval(tb) <<  std::endl;
 #endif
         }
     }

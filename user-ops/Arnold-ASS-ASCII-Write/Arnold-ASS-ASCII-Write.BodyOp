@@ -33,10 +33,6 @@ BodyOp Arnold-ASS-ASCII-Write
 	{
 		FileName "Arnold Scene" "scenefile.ASS"
 		|* Enter the path to your Arnold Scene File. In this file you specify render options, shaders, lights and static geometry. *|
-		
-		PathName "Arnold Implicit Shader" "'$NAIAD_PATH'/buddies/arnold/plug-ins/naiad_distance.so"
-		|* The fields will be rendered as an <i>Implicit</i> Arnold node. This node will use the naiad_distance_field shader to render Naiad field data and 
-		in this option you enter the path to this shader (By default it can be found in Arnold/plug-ins in the buddies folder). *|		
 	}
 
     ParamSection "File Output"

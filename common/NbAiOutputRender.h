@@ -48,7 +48,7 @@ public:
                  const em::array1<const Nb::Body*> & bodies,
                  const Nb::Body *                    camera,
                  const Nb::TimeBundle &                  tb) :
-                     Output(p, bodies, camera, tb)
+                     Output(p, bodies, camera, tb), _allowImplicit(true)
     {
     };
 // ----------------------------------------------------------------------------
@@ -82,12 +82,17 @@ public:
                                 tFrame
                               );
             }else if (body->prop1s("type")->eval(tb) == Nb::String("Implicit")){
-                node = _createImplicitNode(body, tb);
+                if (_allowImplicit){
+                    AtNode* nDFnode;
+                    node = _createImplicitNode(body, tb, nDFnode);
 
-                //Tell Arnold to render directly from Naiad Body in graph
-                std::stringstream ss;
-                ss << body;
-                AiNodeSetStr(node, "pointerBody", ss.str().c_str());
+                    //Tell Arnold to render directly from Naiad Body in graph
+                    std::stringstream ss;
+                    ss << body;
+                    AiNodeSetStr(nDFnode, "pointerBody", ss.str().c_str());
+                } else {
+                    NB_THROW("Field data is not allowed.");
+                }
             }
 
             _setCommonAtr(node, body, tb);
@@ -101,7 +106,10 @@ public:
 
         //Render time!
         AiRender(AI_RENDER_MODE_CAMERA);
+
     };
+protected:
+    bool _allowImplicit;
 };
 
 }//end namespace

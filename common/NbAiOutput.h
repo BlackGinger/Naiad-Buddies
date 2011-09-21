@@ -141,10 +141,12 @@ protected:
     const em::array1<const Nb::Body*> & _bodies;
 // ----------------------------------------------------------------------------
     AtNode *
-    _createImplicitNode(const Nb::Body * body, const Nb::TimeBundle & tb) const
+    _createImplicitNode(const Nb::Body *     body,
+                        const Nb::TimeBundle & tb,
+                        AtNode * &        nodeNDF) const
     {
         //The implicit geometry shader
-        AtNode * nodeNDF = AiNode("naiad_distance_field");
+        nodeNDF = AiNode("naiad_distance_field");
 
         AiNodeSetStr(nodeNDF, "body", body->name().c_str());
         AiNodeSetInt(nodeNDF, "frame", tb.frame);
@@ -163,7 +165,7 @@ protected:
 
         //Implicit parameters
         AiNodeSetStr(
-                 nodeImplicit,
+                nodeNDF,
                  "name",
                  body->prop1s("implicitname")->eval(tb).c_str()
                  );
@@ -174,7 +176,7 @@ protected:
         AiNodeSetFlt(
                 nodeImplicit, "threshold", body->prop1f("threshold")->eval(tb));
 
-        return nodeNDF;
+        return nodeImplicit;
     };
 // ----------------------------------------------------------------------------
     void

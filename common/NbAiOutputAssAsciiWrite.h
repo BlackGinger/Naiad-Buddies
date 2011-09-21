@@ -50,6 +50,7 @@ public:
                         const Nb::TimeBundle &                  tb) :
                             OutputRender(p, bodies, camera, tb)
     {
+        _allowImplicit = false;
     };
 // ----------------------------------------------------------------------------
     virtual void

@@ -1,5 +1,5 @@
 #
-# CMAKE project for the Naiad Buddy for Arnold
+# CMAKE project for the Arnold demos
 # 
 # Copyright (c) 2010-2011 Exotic Matter AB.  All rights reserved.
 #
@@ -32,31 +32,6 @@
 #    POSSIBILITY OF SUCH DAMAGE.
 #
 
-cmake_minimum_required(VERSION 2.6)
+project (NBUDDY_ARNOLD_DEMOS)
 
-project (NBUDDY_ARNOLD)
-
-include_directories   (.
-                       $ENV{NAIAD_PATH}/server/include/system
-                       $ENV{NAIAD_PATH}/server/include/em
-                       $ENV{NAIAD_PATH}/server/include/Nb
-                       $ENV{NAIAD_PATH}/server/include/Ng
-                       $ENV{NAIAD_PATH}/server/include/Ni
-                       $ENV{ARNOLD_ROOT}/include
-                       common)
-link_directories      ( $ENV{NAIAD_PATH}/server/lib
-                        $ENV{ARNOLD_ROOT}/bin)
-
-# Intel compiler flags
-if ("$ENV{EM_COMPILER}" STREQUAL "intel")
-add_definitions(-static-intel -ansi-alias -parallel -DOMP_ENABLED -fexceptions -Wall -fPIC -pipe -fno-common -openmp -openmp-report2 -no-ipo -diag-disable 981,383,1572,869,1418,193 -gcc-version=430 -gxx-name=g++-4.3 -gcc-name=gcc-4.3)
-set (DEBUG_COMP_FLAGS "-DDEBUG -g3 -O0 -inline-level=1")
-set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -O3 -fomit-frame-pointer")
-endif ("$ENV{EM_COMPILER}" STREQUAL "intel")
-
-set(CMAKE_C_FLAGS_DEBUG ${DEBUG_COMP_FLAGS})
-set(CMAKE_CXX_FLAGS_DEBUG ${DEBUG_COMP_FLAGS})
-set(CMAKE_C_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
-set(CMAKE_CXX_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
-
-subdirs (demos plug-ins user-ops)
+subdirs (simple waterTank)

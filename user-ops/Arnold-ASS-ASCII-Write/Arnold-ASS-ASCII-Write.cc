@@ -57,8 +57,9 @@ public:
                 groupPlugData("body-input",tb)->constMatchingBodies();
         const Nb::Body * camera = singlePlugData("cam-input",tb)->constBody();
 
-        NbAi::OutputAssAsciiWrite output(
-                _getArnoldParams(tb), bodies, camera, tb);
+
+        const NbAi::OutputParams p = _getArnoldParams(tb);
+        NbAi::OutputAssAsciiWrite output(p, bodies, camera, tb);
         output.processBodies(tb);
         output.createOutput(tb);
     }
@@ -67,7 +68,7 @@ private:
     NbAi::OutputParams _getArnoldParams(const Nb::TimeBundle& tb)
     {
        return NbAi::OutputParams(
-                                    param1s("Arnold Implicit Shader")->eval(tb),
+                                   "",//no need for implicit shader in this op
                            _evalStr(param1s("Arnold Scene")->eval(tb),tb),
                                     param1e("Output Format")->eval(tb),
                            _evalStr(param1s("Output Image")->eval(tb),tb),

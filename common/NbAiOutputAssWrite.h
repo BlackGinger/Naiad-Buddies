@@ -103,9 +103,10 @@ private:
             const Nb::String & pMode = body->prop1s("particle-mode")->eval(tb);
             AiNodeSetStr(node, "mode", pMode.c_str());
         } else if (body->prop1s("type")->eval(tb) == Nb::String("Implicit")){
-            node = _createImplicitNode(body, tb);
+            AtNode* nDFnode;
+            node = _createImplicitNode(body, tb, nDFnode);
 
-            AiNodeSetStr(node, "empcache", _getEmp(body, tb));
+            AiNodeSetStr(nDFnode, "empcache", _getEmp(body, tb));
         }
 
         _setCommonAtr(node, body, tb);
@@ -146,6 +147,7 @@ private:
     const char *
     _getEmp(const Nb::Body * body, const Nb::TimeBundle & tb) const
     {
+        //todo!
         return "";
     };
 // ----------------------------------------------------------------------------

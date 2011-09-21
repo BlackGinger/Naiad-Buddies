@@ -33,6 +33,9 @@ BodyOp Arnold-Implicit
     	String "Implicit Name" ""
     	|| Each implicit node will fetch its field data from a naiad_distance_field node. The name of that node can be specified here.
     	
+    	String "Channel" "fluid-distance"
+    	|| Enter the name of the channel where the signed distance field can be found.
+    	
     	Float "Threshold" "0"
     	|| What treshold value defines the surface? Default 0 is common for rendering of distance fields.
     	
