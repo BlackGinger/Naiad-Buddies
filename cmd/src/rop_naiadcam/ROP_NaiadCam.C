@@ -197,7 +197,7 @@ ROP_RENDER_CODE ROP_NaiadCam::renderFrame(float curTime, UT_Interrupt *)
 	//Write the camera body to an EMP file
 
 	Nb::EmpWriter empWriter("", filename.buffer(), curFrame, fps, 4, curTime ); 
-	empWriter.write(cameraBody, Nb::String("*/*"));
+	empWriter.write(cameraBody, Nb::String("*.*"));
 	
 	delete cameraBody;
 	
