@@ -117,7 +117,7 @@ MStatus NBuddyBodyToMeshNode::compute( const MPlug& plug, MDataBlock& data )
 		    float blurStrength = vbsHdl.asFloat();
 			std::cout << "Creating velocity interpolated mesh timeIndexes: " << bodyData->bodyTimeIndex << " vs " << timeInSeconds << std::endl;
 
-	                meshObj = naiadBodyToMayaMeshVelocityInterpolate( bodyData->nBody, newOutputData , timeInSeconds , bodyData->bodyTimeIndex, blurStrength);		
+	                meshObj = naiadBodyToMayaMeshVelocityInterpolate( bodyData->nBody, newOutputData , timeInSeconds , bodyData->bodyTimeIndex, blurStrength);
 		}
             }
             catch (std::exception & ex )
