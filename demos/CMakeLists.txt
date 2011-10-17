@@ -34,4 +34,5 @@
 
 project (NBUDDY_ARNOLD_DEMOS)
 
-subdirs (simple waterTank)
+#subdirs (simple waterTank)
+subdirs (simple)
