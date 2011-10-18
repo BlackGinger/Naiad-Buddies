@@ -147,7 +147,7 @@ private:
     const char *
     _getEmp(const Nb::Body * body, const Nb::TimeBundle & tb) const
     {
-        return body->prop1s("EMP")->eval(tb);
+        return body->prop1s("EMP")->eval(tb).c_str();
     };
 // ----------------------------------------------------------------------------
     void
