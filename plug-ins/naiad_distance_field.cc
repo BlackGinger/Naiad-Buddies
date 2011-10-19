@@ -52,7 +52,7 @@ const Nb::Field1f* fldDistance(0);
 const Nb::Field1f* u(0);
 const Nb::Field1f* v(0);
 const Nb::Field1f* w(0);
-const float        level(0);
+float              level(0);
 
 node_parameters
 {
