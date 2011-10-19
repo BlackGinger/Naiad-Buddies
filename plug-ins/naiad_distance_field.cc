@@ -52,6 +52,7 @@ const Nb::Field1f* fldDistance(0);
 const Nb::Field1f* u(0);
 const Nb::Field1f* v(0);
 const Nb::Field1f* w(0);
+const float        level(0);
 
 node_parameters
 {
@@ -61,6 +62,7 @@ node_parameters
    AiParameterSTR("body" , "Particle-Liquid");
    AiParameterSTR("channel" , "fluid-distance");
    AiParameterSTR("pointerBody", "");
+   AiParameterFLT("level", 0);
 }
 
 shader_evaluate
@@ -81,7 +83,7 @@ shader_evaluate
 
        const Nb::Vec3f dx=time*dt*Nb::Vec3f(ux,vx,wx);
 
-       sg->out.FLT =
+       sg->out.FLT = level + 
            Nb::sampleFieldQuadratic1f(x+dx,body->constLayout(),*fldDistance);
    }
    catch(std::exception& e)
@@ -94,10 +96,10 @@ node_initialize
 {
    try
    {
-       if (std::string(AiNodeGetStr(node,"pointerBody")).size() == 0){
-           // initialize the Naiad Base (Nb) library
-           Nb::begin();
+       // initialize the Naiad Base (Nb) library
+       Nb::begin();
 
+       if (std::string(AiNodeGetStr(node,"pointerBody")).size() == 0) {
 
            // construct a valid EMP Sequence name (for more info on EMP
            // sequences, we refer you to the Naiad Developer notes in the
@@ -114,18 +116,16 @@ node_initialize
            Nb::EmpReader empReader(empFilename,"*");
            // eject the one we want to render
            body = empReader.ejectBody(AiNodeGetStr(node,"body"));
-       }
-       else{
+       } else {
            char * end; //dummy
            int64_t address = strtol (AiNodeGetStr(node,"pointerBody"), &end, 0);
            body = reinterpret_cast<const Nb::Body*> (address);
-#ifndef NDEBUG
+#ifdef DEBUG
            std::cerr << "naiad_distance_field: body from address is "<<
-                   body->name() << "\n";
+               body->name() << "\n";
 #endif
        }
-
-
+       
        // get access to the desired distance field
        fldDistance = &body->constFieldShape().constField1f(
            AiNodeGetStr(node,"channel")
@@ -134,6 +134,8 @@ node_initialize
        u = &body->constFieldShape().constField3f("velocity",0);
        v = &body->constFieldShape().constField3f("velocity",1);
        w = &body->constFieldShape().constField3f("velocity",2);
+       // and iso-surface level
+       level = AiNodeGetFlt(node,"level");
    }
    catch(std::exception& e)
    {

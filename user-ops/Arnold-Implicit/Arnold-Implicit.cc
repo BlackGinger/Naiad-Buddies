@@ -84,6 +84,9 @@ public:
                     body, "implicitname", param1s("Implicit Name")->eval(tb));
 
             std::stringstream ss;
+            ss << param1f("Level")->eval(tb);
+            NbAi::setProp<Nb::ValueBase::FloatType>(body, "level", ss.str());
+            ss.str("");
 
             //Raytracing properties
             ss << param1f("Ray Bias")->eval(tb);
