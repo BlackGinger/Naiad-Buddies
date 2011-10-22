@@ -64,6 +64,9 @@
 // initializePlugin
 // ------
 //! Registres all the nodes, commands and datatypes in Maya when the plugin is loaded.
+#ifdef WIN32
+extern "C" __declspec(dllexport)
+#endif
 MStatus initializePlugin(MObject obj)
 {
     MStatus status;
@@ -172,6 +175,9 @@ MStatus initializePlugin(MObject obj)
 // uninitializePlugin
 // ------
 //! UnInitializes all the nodes, commands and datatypes so the plugin can be unloaded from Maya
+#ifdef WIN32
+extern "C" __declspec(dllexport) 
+#endif
 MStatus uninitializePlugin(MObject obj)
 {
     MStatus status;
