@@ -65,10 +65,6 @@ endif ($ENV{EM_COMPILER} STREQUAL "gcc")
 if ($ENV{EM_COMPILER} STREQUAL "MSVC")
 set_target_properties(naiadBuddyForMaya${MAYA_VERSION} PROPERTIES SUFFIX ".mll")
 target_link_libraries(naiadBuddyForMaya${MAYA_VERSION} -symbolic)
-#set(EMLIBS exm
-#           Nb
-#           dparse${CMAKE_DEBUG_POSTFIX}.lib
-#           zlib${CMAKE_DEBUG_POSTFIX}.lib)
 set(EMLIBS Nb)
 endif ($ENV{EM_COMPILER} STREQUAL "MSVC")
 
