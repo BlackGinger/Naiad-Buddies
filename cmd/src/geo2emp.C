@@ -185,10 +185,10 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 		}
 	}
 
-        Nb::end();
-
 	if ( empReader )
 		delete empReader;
+
+        Nb::end();
 
 	return EC_SUCCESS;
 }
