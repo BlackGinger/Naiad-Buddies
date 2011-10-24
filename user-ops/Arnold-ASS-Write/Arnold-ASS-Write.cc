@@ -97,6 +97,8 @@ private:
 };
 
 // -----------------------------------------------------------------------------
+
+extern "C" {
     
 NI_EXPORT bool
 NiBeginPlugin(NtForeignFactory* factory)
@@ -121,6 +123,6 @@ NiUserOpAlloc(const NtCString type, const NtCString name)
     return new Arnold_ASS_Write(name);
 }
 
-extern "C" 
+}
 
 // ----------------------------------------------------------------------------
