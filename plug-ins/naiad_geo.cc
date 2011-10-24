@@ -48,7 +48,7 @@ std::vector<const Nb::Body *> * bodies;
 
 int Init(AtNode *proc_node, void **user_ptr)
 {
-#ifndef NDEBUG
+#ifdef DEBUG
     std::cerr << "naiad_geo: Initiating... \n";
 #endif
     try
@@ -60,11 +60,18 @@ int Init(AtNode *proc_node, void **user_ptr)
         Nb::String empCache = AiNodeGetStr(proc_node, "data");
 
         //Get the body/bodies
+        AiNodeDeclare(proc_node, "body", "constant STRING");
         Nb::String bodyStr  = AiNodeGetStr(proc_node, "body");
 
         //Frame and padding info
+        AiNodeDeclare(proc_node, "frame", "constant INT");
         int frame = AiNodeGetInt(proc_node, "frame");
+        AiNodeDeclare(proc_node, "padding", "constant INT");
         int padding = AiNodeGetInt(proc_node, "padding");
+
+        std::cerr << "naiad_geo: Data: " << empCache << "\n";
+        std::cerr << "naiad_geo: Frame: " << frame << "\n";
+        std::cerr << "naiad_geo: Padding: " << padding << "\n";
 
         //Add the .#.emp to the end of the emp cache (
         //Because Arnold treats everything after a # as a comment :)
@@ -89,18 +96,19 @@ int Init(AtNode *proc_node, void **user_ptr)
         delete empReader;
 
         //Check framtime. If 0, no motion blur at all.
+        AiNodeDeclare(proc_node, "frametime", "constant FLOAT");
         const float frametime = AiNodeGetFlt(proc_node, "frametime");
 
 
         //Read the type
         Nb::String type  = AiNodeGetStr(proc_node, "type");
 
-#ifndef NDEBUG
+//#ifdef DEBUG
         std::cerr << "naiad_geo: Reading emp: " << empFileName << "\n";
         std::cerr << "naiad_geo: Bodies: " << bodyStr << "\n";
         std::cerr << "naiad_geo: Frametime: " << frametime << "\n";
         std::cerr << "naiad_geo: Type: " << type << "\n";
-#endif
+//#endif
 
         bodies = new std::vector<const Nb::Body *>();
         if (type == std::string("Polymesh")){
@@ -120,7 +128,7 @@ int Init(AtNode *proc_node, void **user_ptr)
 
                   //Only if it the file exists
                   if (NbAi::empExists(empFileNameNext)){
-#ifndef NDEBUG
+#ifdef DEBUG
                          std::cerr << "naiad_geo: " <<
                                  "Creating motion blur from next frame. \n";
 #endif
@@ -136,14 +144,14 @@ int Init(AtNode *proc_node, void **user_ptr)
                          delete empReaderNext;
                   } else {
                       //no motionblur available
-#ifndef NDEBUG
+#ifdef DEBUG
                       std::cerr << "naiad_geo: " <<
                               "Can't create motion blur. No next frame. \n";
 #endif
                       node = NbAi::loadMesh(body, 0);
                   }
               } else {
-#ifndef NDEBUG
+#ifdef DEBUG
                   std::cerr << "naiad_geo: " <<
                           "Creating motion blur from velocity channel. \n";
 #endif
@@ -157,7 +165,7 @@ int Init(AtNode *proc_node, void **user_ptr)
             const float radius = AiNodeGetFlt(proc_node, "radius");
             const char * pointsMode = AiNodeGetStr(proc_node, "mode");
 
-#ifndef NDEBUG
+#ifdef DEBUG
             std::cerr << "naiad_geo: Radius: " << radius << "\n";
             std::cerr << "naiad_geo: Points Mode: " << pointsMode << "\n";
 #endif
@@ -181,7 +189,7 @@ int Init(AtNode *proc_node, void **user_ptr)
         return false;
     }
 
-#ifndef NDEBUG
+#ifdef DEBUG
     std::cerr << "naiad_geo: Initiate process done. \n";
 #endif
 
@@ -190,14 +198,14 @@ int Init(AtNode *proc_node, void **user_ptr)
 
 int Cleanup(void *user_ptr)
 {
-#ifndef NDEBUG
+#ifdef DEBUG
     std::cerr << "naiad_geo: Cleanup... \n";
 #endif
 
     for (int i = 0; i < bodies->size(); ++i)
         delete bodies->at(i);
 
-#ifndef NDEBUG
+#ifdef DEBUG
     std::cerr << "naiad_geo: Cleanup done. \n";
 #endif
 

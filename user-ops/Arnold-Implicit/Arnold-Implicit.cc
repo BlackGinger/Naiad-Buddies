@@ -115,12 +115,28 @@ public:
     }
 
 };
+
 // ----------------------------------------------------------------------------
+    
+NI_EXPORT bool
+NiBeginPlugin(NtForeignFactory* factory)
+{
+    NiSetForeignFactory(factory);
+    return true;
+}
 
-// Register and upload this user op to the dynamics server
+// -----------------------------------------------------------------------------
+   
+NI_EXPORT bool
+NiEndPlugin(NtForeignFactory* factory)
+{
+    return true;
+}
 
-extern "C" Ng::Op*
-NiUserOpAlloc(const Nb::String& name)
+// -----------------------------------------------------------------------------
+
+NI_EXPORT Nb::Object*
+NiUserOpAlloc(const NtCString type, const NtCString name)
 {
     return new Arnold_Implicit(name);
 }
