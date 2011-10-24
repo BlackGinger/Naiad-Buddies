@@ -35,6 +35,7 @@
 // ----------------------------------------------------------------------------
 
 #include <ai.h>
+#include <Ni.h>
 #include <Nb.h>
 #include <NbBody.h>
 #include <NbBlock.h>
