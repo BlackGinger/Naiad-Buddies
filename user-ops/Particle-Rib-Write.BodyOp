@@ -1,0 +1,77 @@
+BodyOp Particle-Rib-Write
+|*
+   <h3>Overview</h3>
+   This operator outputs all admitted particle bodies into a series of 
+   PhotoRealistic RenderMan RIB files, representing the particles using
+   the RiPoints primitive.
+
+   <h3>OBJ File Output</h3>
+   Each admitted particle body will generate its own RIB file.  The name of the
+   file is formed by combining the "Output Path" parameter, body name, 
+   and frame number in the following way: 
+   <code>Output Path/BodyName.#.rib</code>, where # is the current frame,
+   with the appropriate zero-padding applied using the "Frame Padding" 
+   parameter.
+
+   <h3>Constant Particle Radius</h3>
+   If you want all the particles to share the same radius in the ouput
+   RIB file, simply leave the "Per-Particle Radius" toggle unchecked, and
+   specify the constant (shared) radius using the "Constant Radius" parameter.
+
+   <h3>Per-Particle Radius</h3>
+   Per-particle radii are possible assuming there is a scalar particle channel
+   containing the per-particle radii.  To enable this feature, the 
+   "Per-Particle Radius" toggle needs to be checked, and the 
+   "Per-Particle Radius Channel" parameter needs to contain the name of the
+   channel containing the radii.  By default this channel is called "radius"
+   but you'll need to change it if you are storing your per-particle radii
+   in some other channel.
+*|
+{    
+    Category "File"
+    Category "Particle"
+
+    EnumGroup RIBFormat
+    {
+        "Binary (Compressed)"
+        "ASCII"
+    }
+
+    ParamSection "File Output" 
+    {
+        Int "Frame Padding" "4" 
+        || Amount of zero-padding to apply to each frame number
+
+        PathName "Output Path" ""
+        || The path to where the OBJ files are to be output.
+
+        BodyNameList "Body Names" "*"
+        || The list of body names to include in the write.
+
+        RIBFormat "RIB Format" "Binary (Compressed)"
+    }
+
+    ParamSection "Particle Radius"
+    {
+        Toggle "Per-Particle Radius" "Off"
+        || Enables varying particle radii in the RIB.
+
+        ChannelName "Per-Particle Radius Channel" "Particle.radius"
+        || Specifies the name of the particle channel containing the radii.
+
+        Float "Constant Radius" "0.25 cells"
+        |* Specifies the worldspace radius of all particles, if 
+          "Per-Particle Radius" is off. *|
+    }
+
+    Group(Particle) Input b ""
+    |* All bodies matching the particle signature are admitted and output 
+       to disk. *|
+
+    Group(Body) Output 0 ""
+    || All bodies encountered in input b are passed out through this output.
+
+    Passthrough "b" "0"
+}
+
+Code "NBuddy-Prman"
