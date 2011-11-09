@@ -1,0 +1,3 @@
+C:/naiad-0.6-WINDOWS-x64/server/user-ops/NBuddy-Prman.lib
+C:/naiad-0.6-WINDOWS-x64/server/user-ops/NBuddy-Prman.dll
+C:/naiad-0.6-WINDOWS-x64/server/user-ops/Particle-Rib-Write.BodyOp

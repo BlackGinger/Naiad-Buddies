@@ -99,7 +99,7 @@ public:
             RiOption("rib", "compression", (RtPointer) compression, RI_NULL);
         }
 
-        RiBegin(fileName.c_str());
+        RiBegin((RtToken)fileName.c_str());
 
         // Set output format to binary
         if(binaryRib) {
@@ -110,7 +110,7 @@ public:
             RiOption( "rib", "format", (RtPointer)format, RI_NULL );
         }
 
-        RtToken tokens[2] = { "P", "constantwidth" };
+        RtToken tokens[2] = { (RtToken)"P", (RtToken)"constantwidth" };
       
         // write points
         const int bcount=xBlocks.block_count();

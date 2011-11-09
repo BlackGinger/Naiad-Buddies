@@ -30,17 +30,17 @@ add_library           (NBuddy-Prman SHARED
 
 # Intel compiler
 if ($ENV{EM_COMPILER} STREQUAL "intel")
-target_link_libraries (NBuddy-Prman -static-intel Ni rib)
+target_link_libraries (NBuddy-Prman -static-intel Ni libprman)
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
 
 # GCC compiler
 if ($ENV{EM_COMPILER} STREQUAL "gcc")
-target_link_libraries (NBuddy-Prman Ni rib)
+target_link_libraries (NBuddy-Prman Ni libprman)
 endif ($ENV{EM_COMPILER} STREQUAL "gcc")
 
 # MSVC compiler
 if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
-target_link_libraries (NBuddy-Prman Ni${EM_D} rib)
+target_link_libraries (NBuddy-Prman Ni${EM_D} libprman)
 endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
 
 # destination location for user op
