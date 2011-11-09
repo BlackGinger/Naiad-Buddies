@@ -44,11 +44,9 @@ include_directories (.
                      $ENV{NAIAD_PATH}/server/include/em
                      $ENV{NAIAD_PATH}/server/include/Nb
                      $ENV{NAIAD_PATH}/server/include/Ng
-                     $ENV{NAIAD_PATH}/server/include/Ni
-		     $ENV{RMAN_INCLUDE_PATH})
+                     $ENV{NAIAD_PATH}/server/include/Ni)
                        
-link_directories ($ENV{NAIAD_PATH}/server/lib
-                  $ENV{RMAN_LIB_PATH})
+link_directories ($ENV{NAIAD_PATH}/server/lib)
 
 # WINDOWS
 
@@ -89,4 +87,4 @@ set(CMAKE_CXX_FLAGS_DEBUG ${DEBUG_COMP_FLAGS})
 set(CMAKE_C_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
 set(CMAKE_CXX_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
 
-subdirs (user-ops)
+subdirs (user-ops prman 3delight)

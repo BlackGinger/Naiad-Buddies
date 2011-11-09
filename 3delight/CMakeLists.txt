@@ -23,8 +23,30 @@
 #    POSSIBILITY OF SUCH DAMAGE.
 #
 
-project (NBUDDY_RENDERMAN_USER_OPS)
+project               (NBUDDY_RENDERMAN_3DELIGHT)
+
+include_directories   ($ENV{RMAN_3DELIGHT_INCLUDE_PATH})                      
+link_directories      ($ENV{RMAN_3DELIGHT_LIB_PATH})
+
+add_library           (NBuddy-3delight SHARED 
+                       ../user-ops/plugin)
+
+# Intel compiler
+if ($ENV{EM_COMPILER} STREQUAL "intel")
+target_link_libraries (NBuddy-3delight -static-intel Ni 3delight)
+endif ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# GCC compiler
+if ($ENV{EM_COMPILER} STREQUAL "gcc")
+target_link_libraries (NBuddy-3delight Ni 3delight)
+endif ($ENV{EM_COMPILER} STREQUAL "gcc")
+
+# MSVC compiler
+if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+target_link_libraries (NBuddy-3delight Ni${EM_D} lib3delight)
+endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
 
 # destination location for user op
 
-install (FILES Particle-Rib-Write.BodyOp DESTINATION server/user-ops)
+set_target_properties (NBuddy-3delight PROPERTIES PREFIX "")
+install               (TARGETS NBuddy-3delight DESTINATION server/user-ops)

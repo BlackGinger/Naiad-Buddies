@@ -110,4 +110,4 @@ BodyOp Particle-Rib-Write
     Passthrough "b" "0"
 }
 
-Code "NBuddy-Prman"
+Code "NBuddy-Prman NBuddy-3delight"

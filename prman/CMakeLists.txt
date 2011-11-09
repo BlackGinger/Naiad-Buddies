@@ -23,8 +23,30 @@
 #    POSSIBILITY OF SUCH DAMAGE.
 #
 
-project (NBUDDY_RENDERMAN_USER_OPS)
+project               (NBUDDY_RENDERMAN_PRMAN)
+
+include_directories   ($ENV{RMAN_INCLUDE_PATH})                      
+link_directories      ($ENV{RMAN_LIB_PATH})
+
+add_library           (NBuddy-Prman SHARED 
+                       ../user-ops/plugin)
+
+# Intel compiler
+if ($ENV{EM_COMPILER} STREQUAL "intel")
+target_link_libraries (NBuddy-Prman -static-intel Ni prman)
+endif ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# GCC compiler
+if ($ENV{EM_COMPILER} STREQUAL "gcc")
+target_link_libraries (NBuddy-Prman Ni prman)
+endif ($ENV{EM_COMPILER} STREQUAL "gcc")
+
+# MSVC compiler
+if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+target_link_libraries (NBuddy-Prman Ni${EM_D} libprman)
+endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
 
 # destination location for user op
 
-install (FILES Particle-Rib-Write.BodyOp DESTINATION server/user-ops)
+set_target_properties (NBuddy-Prman PROPERTIES PREFIX "")
+install               (TARGETS NBuddy-Prman DESTINATION server/user-ops)
