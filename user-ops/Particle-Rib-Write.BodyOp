@@ -2,16 +2,22 @@ BodyOp Particle-Rib-Write
 |*
    <h3>Overview</h3>
    This operator outputs all admitted particle bodies into a series of 
-   PhotoRealistic RenderMan RIB files, representing the particles using
+   PhotoRealistic RenderMan RIB archive files, representing the particles using
    the RiPoints primitive.
 
-   <h3>OBJ File Output</h3>
-   Each admitted particle body will generate its own RIB file.  The name of the
-   file is formed by combining the "Output Path" parameter, body name, 
+   <h3>RIB Archive Output</h3>
+   Each admitted particle body will generate its own RIB archive.  The name of
+   the archive is formed by combining the "Output Path" parameter, body name, 
    and frame number in the following way: 
    <code>Output Path/BodyName.#.rib</code>, where # is the current frame,
    with the appropriate zero-padding applied using the "Frame Padding" 
    parameter.
+
+   <h3>Motion Blur</h3>
+   The particles may be motion blurred by enabling the "Motion Blur" toggle,
+   and specifying two or more motion samples in the "Motion Samples" parameter.
+   The particle body must have a <code>Particle.velocity</code> channel in
+   order for the motion blur to work.
 
    <h3>Constant Particle Radius</h3>
    If you want all the particles to share the same radius in the ouput
@@ -37,6 +43,12 @@ BodyOp Particle-Rib-Write
         "ASCII"
     }
 
+    EnumGroup VelocitySource
+    {
+        "Particle.velocity"
+        "Field.velocity"
+    }
+
     ParamSection "File Output" 
     {
         Int "Frame Padding" "4" 
@@ -49,6 +61,30 @@ BodyOp Particle-Rib-Write
         || The list of body names to include in the write.
 
         RIBFormat "RIB Format" "Binary (Compressed)"
+    }
+
+    ParamSection "Motion Blur"
+    {
+        Toggle "Motion Blur" "Off"
+        |* Produces a RIB archive with MotionBlocks corresponding to the
+           motion samples specified in the "Motion Samples" parameter below. 
+           Note that a <code>Particle.velocity</code> channel must be present
+           in the particle body for motion blur to work. *|
+
+        VelocitySource "Velocity Source" "Particle.velocity"
+        |* The source channel of the velocities used for motion blur.  
+           By default the Particle.velocity channel is used.  However, for 
+           highly accurate motion blur (involving, for example, high degrees of
+           rotational motion) you should instead use the 
+           <code>Field.velocity</code> setting, if that channel is available in
+	   the particle body.  Particle-Liquid bodies have this channel, as do
+	   most standard fluid body signatures. *|
+
+        String "Motion Samples" "-0.25 0.25"
+        |* A whitespace separated list of motion sample times, normalized around
+           the current frame, such that 0 = frame begin and 1 = frame end. 
+           Any number of motion samples are acceptable.  For example, specifying
+           three motion samples <code>0.1 0.5 0.9</code> is perfectly OK. *|
     }
 
     ParamSection "Particle Radius"
