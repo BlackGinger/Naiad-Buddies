@@ -1,3 +1,0 @@
-C:/Users/Marcus/naiad-buddy-renderman.git/stage-WINDOWS-x64/debug/user-ops/CMakeFiles/ALL_BUILD.dir
-C:/Users/Marcus/naiad-buddy-renderman.git/stage-WINDOWS-x64/debug/user-ops/CMakeFiles/NBuddy-Prman.dir
-C:/Users/Marcus/naiad-buddy-renderman.git/stage-WINDOWS-x64/debug/CMakeFiles/ZERO_CHECK.dir
