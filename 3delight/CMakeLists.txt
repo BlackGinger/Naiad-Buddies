@@ -43,7 +43,7 @@ endif ($ENV{EM_COMPILER} STREQUAL "gcc")
 
 # MSVC compiler
 if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
-target_link_libraries (NBuddy-3delight Ni${EM_D} lib3delight)
+target_link_libraries (NBuddy-3delight Ni${EM_D} 3delight)
 endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
 
 # destination location for user op
