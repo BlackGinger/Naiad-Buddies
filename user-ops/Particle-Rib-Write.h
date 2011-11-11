@@ -123,11 +123,6 @@ public:
                      param1s("Per-Particle Radius Channel")->eval(tb) << "' " <<
                      "not found");
 
-        // 10 MB write buffer
-        const int bufSize = 10000000;
-        const int pad = 1000;
-        char*     buf = new char[bufSize];
-
         // setup file paths etc
 
         const Nb::String filePath =
