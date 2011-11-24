@@ -189,8 +189,10 @@ ROP_RENDER_CODE ROP_NaiadCam::renderFrame(float curTime, UT_Interrupt *)
 	float aperture = camNode->APERTURE(curTime);
 	float near = camNode->getNEAR(curTime);
 	float far = camNode->getFAR(curTime);
+	float focal = camNode->FOCAL(curTime);
 	
-	cameraBody->prop1f("Angle Of View")->setExpr( geo2emp::toString<float>(aperture) );
+	cameraBody->prop1f("Horizontal Aperture")->setExpr( geo2emp::toString<float>(aperture) );
+	cameraBody->prop1f("Focal Length")->setExpr( geo2emp::toString<float>(focal) );
 	cameraBody->prop1f("Near Clip")->setExpr( geo2emp::toString<float>(near) );
 	cameraBody->prop1f("Far Clip")->setExpr( geo2emp::toString<float>(far) );
 

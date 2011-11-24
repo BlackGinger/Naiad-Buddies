@@ -630,10 +630,29 @@ private:
 
 // ----------------------------------------------------------------------------
 
-// Register and upload this user op to the dynamics server 
+extern "C" {
+    
+NI_EXPORT bool
+NiBeginPlugin(NtForeignFactory* factory)
+{
+    NiSetForeignFactory(factory);
+    return true;
+}
 
-extern "C" Ng::Op* 
+// -----------------------------------------------------------------------------
+   
+NI_EXPORT bool
+NiEndPlugin(NtForeignFactory* factory)
+{
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+
+NI_EXPORT Ng::Op*
 NiUserOpAlloc(const Nb::String& name)
 {
     return new Bgeo_Read(name);
 }
+
+} // extern "C"
