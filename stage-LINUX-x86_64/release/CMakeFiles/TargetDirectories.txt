@@ -1,1 +1,0 @@
-/home/marcus/naiad-buddy-maya.git/stage-LINUX-x86_64/release/plugin/src/CMakeFiles/naiadBuddyForMaya2011.dir

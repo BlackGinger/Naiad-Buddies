@@ -1,6 +1,0 @@
-if ( ! $?NAIAD_PATH ) then
-	echo "NAIAD_PATH is not set!"
-else
-setenv MAYA_MODULE_PATH $NAIAD_PATH/buddies/maya:$MAYA_MODULE_PATH
-setenv PATH $NAIAD_PATH/buddies/maya/bin:$PATH
-endif
