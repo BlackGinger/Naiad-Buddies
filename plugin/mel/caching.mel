@@ -183,7 +183,11 @@
 			{
 				// Set the frame
 				currentTime -u true ($i+$j*$oneOverSamples);
-				setAttr ($empSaver+".timeStep") $j;
+				if($j==$overSamples-1) {
+				    setAttr ($empSaver+".timeStep") -1;
+				} else {
+				    setAttr ($empSaver+".timeStep") $j;
+                                }
 				refresh -f;
 				print("Frame: "+$i+ " timestep: "+$j+" currentTime:"+($i+$j*$oneOverSamples)+"\n");
 

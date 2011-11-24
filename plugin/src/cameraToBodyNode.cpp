@@ -124,23 +124,38 @@ MStatus NBuddyCameraToBodyNode::compute( const MPlug& plug, MDataBlock& data )
             MDataHandle inFocalLengthHdl = 
                 data.inputValue( inFocalLength, &status );
             double focalLength = inFocalLengthHdl.asDouble();
+
             // convert to vertical aperture to mm
             MDataHandle inVertApertureHdl = 
                 data.inputValue( inVertAperture, &status );
-            double vertAperture = inVertApertureHdl.asDouble()*25.4;
-            // compute the angle of view, in degrees
-            double aov = 57.29 * 2 * atan(vertAperture/(2*focalLength));
-            strStream << aov;
-            cameraNaiadBody->prop1f("Angle Of View")->setExpr(strStream.str());
+            double vertAperture = inVertApertureHdl.asDouble();
+            strStream << vertAperture;
+            cameraNaiadBody->prop1f("Vertical Aperture")->
+                setExpr(strStream.str());
 
-            // compute the aspect ratio           
+            // convert horizontal aperture to mm
             MDataHandle inHorizApertureHdl = 
                 data.inputValue( inHorizAperture, &status );
-            double aspectRatio = 
-                inHorizApertureHdl.asDouble() / inVertApertureHdl.asDouble();
+            double horizAperture = inHorizApertureHdl.asDouble();
             strStream.str("");
-            strStream << aspectRatio;
-            cameraNaiadBody->prop1f("Aspect Ratio")->setExpr( strStream.str() );
+            strStream << horizAperture;
+            cameraNaiadBody->prop1f("Horizontal Aperture")->
+                setExpr(strStream.str());
+
+            // compute the angle of view, in degrees
+            //double vertAperture = inVertApertureHdl.asDouble()*25.4;
+            //double aov = 57.29 * 2 * atan(vertAperture/(2*focalLength));
+            //strStream << aov;
+            //cameraNaiadBody->prop1f("Angle Of View")->setExpr(strStream.str());
+
+            // compute the aspect ratio           
+//            MDataHandle inHorizApertureHdl = 
+//                data.inputValue( inHorizAperture, &status );
+//            double aspectRatio = 
+//                inHorizApertureHdl.asDouble() / inVertApertureHdl.asDouble();
+//            strStream.str("");
+//            strStream << aspectRatio;
+//            cameraNaiadBody->prop1f("Aspect Ratio")->setExpr( strStream.str() );
 
             MDataHandle inFarClipHdl = 
                 data.inputValue( inFarClip, &status );

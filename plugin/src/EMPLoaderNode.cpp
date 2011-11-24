@@ -111,7 +111,7 @@ MStatus NBuddyEMPLoaderNode::compute( const MPlug& plug, MDataBlock& data )
 	            "",                 // ignore project path
 		    inputPath.asChar(), // absolute fullpath of emp
 		    frameNr,            // frame
-		    0,                  // timestep
+		    -1,                 // timestep (always whole frame)
 		    numPad);            // zero-padding
 
 	    empReader = new Nb::EmpReader(empFullname,"*");
