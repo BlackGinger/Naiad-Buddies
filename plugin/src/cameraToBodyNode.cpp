@@ -124,11 +124,16 @@ MStatus NBuddyCameraToBodyNode::compute( const MPlug& plug, MDataBlock& data )
             MDataHandle inFocalLengthHdl = 
                 data.inputValue( inFocalLength, &status );
             double focalLength = inFocalLengthHdl.asDouble();
+            strStream.str("");
+            strStream << focalLength;
+            cameraNaiadBody->prop1f("Focal Length")->
+                setExpr(strStream.str());
 
             // convert to vertical aperture to mm
             MDataHandle inVertApertureHdl = 
                 data.inputValue( inVertAperture, &status );
             double vertAperture = inVertApertureHdl.asDouble();
+            strStream.str("");
             strStream << vertAperture;
             cameraNaiadBody->prop1f("Vertical Aperture")->
                 setExpr(strStream.str());

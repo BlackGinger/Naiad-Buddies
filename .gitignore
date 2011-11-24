@@ -1,4 +1,5 @@
 build
+stage*
 *.swp
 *.o
 *.backup
