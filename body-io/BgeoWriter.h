@@ -34,7 +34,9 @@
 //
 // ----------------------------------------------------------------------------
 
-#include <NbUnnamedBodyWriter.h>
+#include <NbBodyWriter.h>
+#include <NbBody.h>
+#include <NbBlock.h>
 
 #include "Bgeo.h"
 
@@ -51,8 +53,7 @@ public:
     virtual void
     open(const Nb::String& filename)
     {
-        setFileName(filename);        
-        _bodies.resize(1,0);
+        _fileName = filename;
     }
     
     virtual void
@@ -62,7 +63,9 @@ public:
     }
 
     virtual void
-    write(const Body* body, const String& channels)
+    write(const Nb::Body*   body, 
+          const Nb::String& channels,
+          const bool        compressed)
     {
     	if(body->matches("Mesh")) {
             //WRITE MESH BGEO
@@ -97,7 +100,7 @@ public:
             uint32_t nPrimGrps = 0; // no idea what nPrimGrps is used for
             uint32_t paraArr[]={vNr,nPoints,nPrims,nPointGrps,nPrimGrps,nPointAtr,nVtxAtr,nPrimAtr,nAtr};
 
-            cout << "Bgeo-Write >> Creating BGEO: " << fileName << endl;
+            cout << "Bgeo-Write >> Creating BGEO: " << fileName() << endl;
 
             Bgeo b(fileName().c_str(), paraArr);
             char** pointData = new char*[nPointAtr + 1];
@@ -272,7 +275,7 @@ public:
             uint32_t nPrimGrps = 0; // no idea what nPrimGrps is used for
             uint32_t paraArr[]={vNr,nPoints,nPrims,nPointGrps,nPrimGrps,nPointAtr,nVtxAtr,nPrimAtr,nAtr};
 
-            cout << "Creating BGEO: " << fileName << endl;
+            cout << "Creating BGEO: " << fileName() << endl;
             Bgeo b(fileName().c_str(),paraArr);
             char** pointData = new char*[nPointAtr + 1];
             char** pointData_start = new char*[nPointAtr + 1];

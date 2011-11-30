@@ -35,6 +35,7 @@
 // ----------------------------------------------------------------------------
 
 #include <NbBodyReader.h>
+#include <NbBody.h>
 
 #include "Bgeo.h"
 
@@ -53,7 +54,7 @@ public:
     virtual void
     open(const Nb::String& filename)
     {
-        setFileName(filename);
+        _fileName=filename;
         _bodies.resize(1,0);
     }
     
@@ -64,7 +65,7 @@ public:
     }
 
     virtual void
-    incarnate(Nb::Body* body, const String& sigName)
+    incarnate(Nb::Body* body, const Nb::String& sigName)
     {
         // open the bgeo file
 	Bgeo b(fileName().c_str());
@@ -100,7 +101,7 @@ public:
 	} else {
             //If particle, fill particles with position           
             Nb::ParticleShape& particle = body->mutableParticleShape();
-            createParticleChannels(b,_pointAttrs,body);
+            _createParticleChannels(b,_pointAttrs,body);
             particle.beginBlockChannelData(body->mutableLayout());
             particle.blockChannelData3f("position", (Nb::Vec3f*)points,nPoints);
             _readPointAtr(b,_pointAttrs,particle,nPoints);

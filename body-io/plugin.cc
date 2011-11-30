@@ -31,6 +31,8 @@
 #include "BgeoReader.h"
 #include "BgeoWriter.h"
 
+#include "Ni.h"
+
 extern "C" {
 
 // -----------------------------------------------------------------------------

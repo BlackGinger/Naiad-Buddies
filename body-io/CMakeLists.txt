@@ -1,5 +1,5 @@
 #
-# CMAKE project for the Naiad Buddy for Houdini
+# CMAKE project for the Naiad Buddy for Houdini, user operators
 # 
 # Copyright (c) 2010-2011 Exotic Matter AB.  All rights reserved.
 #
@@ -32,30 +32,26 @@
 #    POSSIBILITY OF SUCH DAMAGE.
 #
 
-cmake_minimum_required(VERSION 2.6)
+project (NBUDDY_HOUDINI_BODY_IO)
 
-project (NBUDDY_HOUDINI)
+add_library (BodyIO-Bgeo SHARED plugin Bgeo)
 
-# include and library paths to the Naiad dynamics server..
+# Intel compiler
+if ($ENV{EM_COMPILER} STREQUAL "intel")
+target_link_libraries (BodyIO-Bgeo -static-intel Ni)
+endif ($ENV{EM_COMPILER} STREQUAL "intel")
 
-include_directories   (.
-                       $ENV{NAIAD_PATH}/server/include/system
-                       $ENV{NAIAD_PATH}/server/include/em
-                       $ENV{NAIAD_PATH}/server/include/Nb
-	               $ENV{NAIAD_PATH}/server/include/Ng
-                       $ENV{NAIAD_PATH}/server/include/Ni)
-link_directories      ($ENV{NAIAD_PATH}/server/lib)
+# GCC compiler
+if ($ENV{EM_COMPILER} STREQUAL "gcc")
+target_link_libraries (BodyIO-Bgeo Ni)
+endif ($ENV{EM_COMPILER} STREQUAL "gcc")
 
-# Intel compiler flags
-if ("$ENV{EM_COMPILER}" STREQUAL "intel")
-add_definitions(-static-intel -ansi-alias -parallel -DOMP_ENABLED -fexceptions -Wall -fPIC -pipe -fno-common -openmp -openmp-report2 -no-ipo -diag-disable 981,383,1572,869,1418,193 -gcc-version=430 -gxx-name=g++-4.3 -gcc-name=gcc-4.3)
-set (DEBUG_COMP_FLAGS "-DDEBUG -g3 -O0 -inline-level=1")
-set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -O3 -fomit-frame-pointer")
-endif ("$ENV{EM_COMPILER}" STREQUAL "intel")
+# MSVC compiler
+if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+target_link_libraries (BodyIO-Bgeo Ni${EM_D})
+endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
 
-set(CMAKE_C_FLAGS_DEBUG ${DEBUG_COMP_FLAGS})
-set(CMAKE_CXX_FLAGS_DEBUG ${DEBUG_COMP_FLAGS})
-set(CMAKE_C_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
-set(CMAKE_CXX_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
+# destination location for user op
 
-subdirs (body-io user-ops)
+set_target_properties (BodyIO-Bgeo PROPERTIES PREFIX "")
+install               (TARGETS BodyIO-Bgeo DESTINATION server/body-io)
