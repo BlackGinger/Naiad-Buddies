@@ -35,27 +35,43 @@
 // ----------------------------------------------------------------------------
 
 #include <NbBodyReader.h>
+#include <NbFactory.h>
 #include <NbBody.h>
+#include <NbFilename.h>
 
 #include "Bgeo.h"
 
 // ----------------------------------------------------------------------------
 
+// BGEO files fall into the "special" category of geometry files containing
+// a single unnamed object definition.  To give the object a name, we follow
+// the suggested Naiad BodyReader rules of transferring the name of the
+// BGEO file itself onto the object, so that "lookup by name" is possible.
+
 class BgeoReader : public Nb::BodyReader
 {
 public:   
     BgeoReader() 
-        : Nb::BodyReader()          
-    {}
+        : Nb::BodyReader() {}
 
     virtual
     ~BgeoReader() {}
 
+    virtual Nb::String
+    format() const
+    { return "bgeo"; }
+
     virtual void
-    open(const Nb::String& filename)
+    open(const Nb::String& filename, 
+         const Nb::String& bodyNameFilter,
+         const Nb::String& sigFilter)
     {
-        _fileName=filename;
-        _bodies.resize(1,0);
+        // register the filename by calling the base class' open()        
+        Nb::BodyReader::open(filename, bodyNameFilter, sigFilter);
+
+        // initialize the body-table;
+        // NOTE that for bgeo's, the body-name is same as filename
+        _addBodyEntry(Nb::extractFileName(filename), 0, 0);
     }
     
     virtual void
@@ -63,10 +79,15 @@ public:
     {
         // do nothing, since opening actually takes place inside loadBody
     }
+    
+protected:
+    virtual Nb::Body*
+    _loadBody(const int i)
+    {   
+        // create the body
+        const Nb::String bodyName = _bodyEntry(i).name;
+        Nb::Body* body = Nb::Factory::createBody(sigFilter(), bodyName, true);
 
-    virtual void
-    incarnate(Nb::Body* body, const Nb::String& sigName)
-    {
         // open the bgeo file
 	Bgeo b(fileName().c_str());
 
@@ -75,7 +96,7 @@ public:
 	int nPoints = b.getNumberOfPoints();
 	float * points = b.getPoints3v();
 
-	if(sigName=="Mesh") {
+	if(sigFilter()=="Mesh") {
             //If mesh, fill points with position data       
             Nb::PointShape&    point = body->mutablePointShape();
             Nb::Buffer3f& x = point.mutableBuffer3f("position");
@@ -98,7 +119,7 @@ public:
             
             _readPrimAtr(b,_primAttrs,triangle,nPrims);
             _readVtxAtr(b,_vertexAttrs,triangle,nPrims);
-	} else {
+	} else if(sigFilter()=="Particle") {
             //If particle, fill particles with position           
             Nb::ParticleShape& particle = body->mutableParticleShape();
             _createParticleChannels(b,_pointAttrs,body);
@@ -106,12 +127,18 @@ public:
             particle.blockChannelData3f("position", (Nb::Vec3f*)points,nPoints);
             _readPointAtr(b,_pointAttrs,particle,nPoints);
             particle.endBlockChannelData();
-	}
+	} else {
+            NB_THROW("Body Signature '" << sigFilter() << 
+                     "' is incompatible with the " << format() << 
+                     " file format");
+        }
 
 	//no need for points anymore
 	delete[] points;
-    }
 
+        return body;
+    }
+    
 private:
     void
     _createParticleChannels(Bgeo &           b, 
