@@ -58,4 +58,4 @@ set(CMAKE_CXX_FLAGS_DEBUG ${DEBUG_COMP_FLAGS})
 set(CMAKE_C_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
 set(CMAKE_CXX_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
 
-subdirs (body-io user-ops)
+subdirs (body-io)

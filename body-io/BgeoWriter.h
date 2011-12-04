@@ -45,23 +45,9 @@
 class BgeoWriter : public Nb::BodyWriter
 {
 public:   
-    BgeoWriter() : Nb::BodyWriter() {}
-
-    virtual
-    ~BgeoWriter() {}
-
-    virtual void
-    open(const Nb::String& filename)
-    {
-        _fileName = filename;
-    }
+    BgeoWriter() 
+        : Nb::BodyWriter() {}
     
-    virtual void
-    close()
-    {
-        // do nothing, since opening actually takes place inside loadBody
-    }
-
     virtual void
     write(const Nb::Body*   body, 
           const Nb::String& channels,
@@ -73,7 +59,6 @@ public:
             const uint32_t nPoints = point.channel(0)->size();
             const uint32_t nPointAtr = point.channelCount() - 1; // position doesn't count
 
-            cout << endl;
             const Nb::TriangleShape& triangle = body->constTriangleShape();
             const uint32_t nPrims= triangle.channel(0)->size();
             uint32_t nVtxAtr = 0;
@@ -87,7 +72,6 @@ public:
                         ++nVtxAtr;
                 }
             }
-            cout << endl;
             uint32_t vNr = 5;
             uint32_t nPrimAtr = totalTriangleAtr - nVtxAtr;
             uint32_t nAtr ;
@@ -99,8 +83,6 @@ public:
             uint32_t nPointGrps = 0; // no idea what nPointGrps is used for
             uint32_t nPrimGrps = 0; // no idea what nPrimGrps is used for
             uint32_t paraArr[]={vNr,nPoints,nPrims,nPointGrps,nPrimGrps,nPointAtr,nVtxAtr,nPrimAtr,nAtr};
-
-            cout << "Bgeo-Write >> Creating BGEO: " << fileName() << endl;
 
             Bgeo b(fileName().c_str(), paraArr);
             char** pointData = new char*[nPointAtr + 1];
@@ -139,13 +121,9 @@ public:
                         NB_THROW("Bgeo-Write error!; Error when reading channel type.");
                 }
             }
-            cout << "Done linking data from buffers and done loading Point parameters!" << endl;
 
             b.writePointAtr();
-            cout << "Done writing point parameters to file!" << endl;
-
             b.writePoints(pointData);
-            cout << "Done writing points to file" << endl;
 
             //vtx and prim attributes
             int vtxDataChannels = 0;
@@ -202,7 +180,7 @@ public:
                             break;
                         }
                         case Nb::ValueBase::Vec3fType: {
-                            if (point.channel(i)->name().find("$3f") != string::npos)
+                            if (name.find("$3f") != string::npos)
                                 b.addPrimAttribute(primAtrCounter, name.c_str(), 3, 0, def);
                             else
                                 b.addPrimAttribute(primAtrCounter, name.c_str(), 3, 5, def);
