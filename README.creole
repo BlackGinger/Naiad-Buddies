@@ -168,8 +168,5 @@ cmd/hip/ - Sample .hip file for Houdini to illustrate export process
 cmd/houdini/ - Files that need to be placed in the Houdini path
 cmd/sample_hip/ - Sample Houdini files to show how to use geo2emp
 
-user-ops/ - Source code for the Naiad file operators
-
-user-ops/Bgeo-Read/ - Source code for the Bgeo-Read file op
-user-ops/Bgeo-Write/ - Source code for the Bgeo-Write file op
+body-io/ - Source code for the Naiad Body-Io plugin for the BGEO format 
 }}}
