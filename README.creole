@@ -1,11 +1,11 @@
 = 1.0 Introduction
 
-The Naiad Buddy for Houdini facilitates data translation between the Naiad and Houdini 3D graphics software packages.
+The Naiad Buddy for Houdini facilitates data translation between Exotic Matter's Naiad and Side Effects' Houdini.
 
 The Naiad Buddy for Houdini comprises two workflows, which can be used separately or together:
 
 * Houdini .bgeo files may be translated into Naiad EMP files (and vice versa) using the {{{geo2emp}}} command-line tools.
-* Houdini .bgeo files may be natively read and written inside Naiad itself, using the Naiad file operators {{{Bgeo-Read}}} and {{{Bgeo-Write}}}.
+* Houdini .bgeo files may be natively read and written inside Naiad itself, using the Naiad file operators {{{Mesh-Read}}}, {{{Mesh-Write}}},  {{{Particle-Read}}}, and {{{Particle-Write}}}.  These ops make use of the Naiad Body-Io plugin system, and this buddy implements the Bgeo file format as a Naiad Body-Io plugin.
 
 == 1.1 The Command-Line Tools
 
@@ -42,7 +42,7 @@ Please note that it is slower to load EMP files through a File SOP than their .b
 
 == 1.2 The Naiad File Operators
 
-The Naiad File Operators {{{Bgeo-Read}}} and {{{Bgeo-Write}}} allows native BGEO reading and writing from within Naiad itself, eliminating the command-line BGEO-to-EMP conversion step that is otherwise required.  They are easy to use - just create them inside your Naiad scene and specify the BGEO file (or sequence) to load or write.
+The Naiad File Operators {{{Mesh-Read}}}, {{{Mesh-Write}}},  {{{Particle-Read}}}, and {{{Particle-Write}}} will read/write mesh and particle data for any file format for which there is a Body-Io plugin.  This buddy registers a Body-Io plugin for the BGEO format so that you can use these file ops to import and export BGEO mesh and particle data natively in Naiad, eliminating the command-line BGEO-to-EMP conversion step that is otherwise required.  They are easy to use - just create them inside your Naiad scene and specify the BGEO file (or sequence) to load or write.
 
 = 2.0 Compiling and Installing on Linux
 
