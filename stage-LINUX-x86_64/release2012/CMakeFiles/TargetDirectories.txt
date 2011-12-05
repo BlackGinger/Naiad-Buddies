@@ -1,0 +1,14 @@
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/arnold/user-ops/Arnold-ASS-ASCII-Write/CMakeFiles/Arnold-ASS-ASCII-Write.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/arnold/user-ops/Arnold-ASS-Write/CMakeFiles/Arnold-ASS-Write.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/arnold/user-ops/Arnold-Implicit/CMakeFiles/Arnold-Implicit.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/arnold/user-ops/Arnold-Mesh/CMakeFiles/Arnold-Mesh.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/arnold/user-ops/Arnold-Particle/CMakeFiles/Arnold-Particle.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/arnold/user-ops/Arnold-Render/CMakeFiles/Arnold-Render.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/houdini/body-io/CMakeFiles/BodyIO-Bgeo.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/krakatoa/body-io/CMakeFiles/BodyIO-Prt.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/renderman/3delight/CMakeFiles/NBuddy-3delight.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/renderman/prman/CMakeFiles/NBuddy-Prman.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/krakatoa/cmd/CMakeFiles/emp2prt.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/maya/plugin/src/CMakeFiles/naiadBuddyForMaya2012.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/arnold/plug-ins/CMakeFiles/naiad_distance_field.dir
+/home/marcus/nbuddies.git/stage-LINUX-x86_64/release2012/arnold/plug-ins/CMakeFiles/naiad_geo.dir

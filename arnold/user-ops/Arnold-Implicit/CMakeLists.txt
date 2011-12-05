@@ -47,5 +47,5 @@ endif ($ENV{EM_COMPILER} STREQUAL "intel")
 # destination location for user op
 
 set_target_properties (Arnold-Implicit PROPERTIES PREFIX "")
-install               (TARGETS Arnold-Implicit DESTINATION buddies/arnold/user-ops)
-install               (FILES Arnold-Implicit.BodyOp DESTINATION buddies/arnold/user-ops)
+install               (TARGETS Arnold-Implicit DESTINATION server/user-ops)
+install               (FILES Arnold-Implicit.BodyOp DESTINATION server/user-ops)

@@ -49,5 +49,5 @@ endif ($ENV{EM_COMPILER} STREQUAL "intel")
 # destination location for user op
 
 set_target_properties (Arnold-ASS-Write PROPERTIES PREFIX "")
-install               (TARGETS Arnold-ASS-Write DESTINATION buddies/arnold/user-ops)
-install               (FILES Arnold-ASS-Write.BodyOp DESTINATION buddies/arnold/user-ops)
+install               (TARGETS Arnold-ASS-Write DESTINATION server/user-ops)
+install               (FILES Arnold-ASS-Write.BodyOp DESTINATION server/user-ops)

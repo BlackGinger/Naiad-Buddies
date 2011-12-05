@@ -1,0 +1,9 @@
+if [[ ! -n $NAIAD_PATH  ]]; then 
+	echo "NAIAD_PATH is not set!"
+
+else
+
+export MAYA_MODULE_PATH=$NAIAD_PATH/buddies/maya:$MAYA_MODULE_PATH
+export PATH=$NAIAD_PATH/buddies/maya/bin:$PATH
+
+fi

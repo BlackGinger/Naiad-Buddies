@@ -34,7 +34,7 @@
 project               (NBUDDY_ARNOLD_USER_OPS_ARNOLD_RENDER)
 
 add_library           (Arnold-Render SHARED 
-		       		   Arnold-Render)
+		       Arnold-Render)
 
 # on intel compiler, use static libraries...
 
@@ -47,5 +47,5 @@ endif ($ENV{EM_COMPILER} STREQUAL "intel")
 # destination location for user op
 
 set_target_properties (Arnold-Render PROPERTIES PREFIX "")
-install               (TARGETS Arnold-Render DESTINATION buddies/arnold/user-ops)
-install               (FILES Arnold-Render.BodyOp DESTINATION buddies/arnold/user-ops)
+install               (TARGETS Arnold-Render DESTINATION server/user-ops)
+install               (FILES Arnold-Render.BodyOp DESTINATION server/user-ops)
