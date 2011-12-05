@@ -1,0 +1,11 @@
+global proc AENBuddySurfaceToBodyTemplate ( string $nodeName )
+{
+editorTemplate -beginScrollLayout;
+	editorTemplate -beginLayout "conversionSettings"  -collapse 0;
+		editorTemplate -addControl "useTransform";
+		editorTemplate -addControl "bodyName";
+		editorTemplate -addControl "subDivide";
+	editorTemplate -endLayout;	
+editorTemplate -addExtraControls;
+editorTemplate -endScrollLayout;
+}

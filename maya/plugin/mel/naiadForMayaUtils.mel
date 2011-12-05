@@ -1,0 +1,117 @@
+global proc string NBuddy_MeshFromBody( string $bodyPlug )
+{
+	//create the conversion node
+	string $bodyToMeshNode = `createNode("NBuddyBodyToMesh")`;
+	
+	connectAttr $bodyPlug ($bodyToMeshNode+".inBody");
+
+	//Create the polyshape and assign it to the default shading group
+	string $bodyMeshTransform = `createNode transform -n "bodyMesh"`;
+	string $mesh = `createNode mesh -n "bodyMeshShape" -p $bodyMeshTransform`;
+	sets -add initialShadingGroup $mesh;
+
+	//Connect in the mesh from the conversion node output.
+	connectAttr ($bodyToMeshNode+".outMesh") ($mesh+".inMesh");
+	return $mesh;
+}
+
+global proc string NBuddy_CreateNaiadBodyField()
+{
+	//Create the field
+	string $field = `createNode -n "NBuddyBodyField#" "NBuddyBodyField"`;
+
+	//Attach it to all the particle systems selected
+	string $particles[] = `ls -sl -dag -shapes -type particle`;
+	for ( $par in $particles )
+	{
+		connectDynamic -f $field $par;
+	}
+	return $field;
+}
+
+global proc string NBuddy_CreateNaiadBodyDisplay()
+{
+	//Create the field
+	string $displayNode = `createNode -n "NBuddyBodyDisplay#" "NBuddyBodyDisplay"`;
+	return $displayNode;
+}
+
+global proc string NBuddy_CreateNaiadParticleEmissionSystem( string $empLoaderBodyPlug )
+{
+	string $particleEmitter = `createNode NBuddyParticleEmitter -name "nBuddyEmitter"`;
+	string $particleNode[] = `particle -name "nBuddyParticles"` ;
+	
+	setAttr ($particleNode[1]+".conserve") 0;
+	setAttr ($particleNode[1]+".lifespanMode") 1;
+	setAttr ($particleNode[1]+".lifespan") 0.0001;
+	
+	connectDynamic -em $particleEmitter $particleNode[0];
+	
+	connectAttr -f $empLoaderBodyPlug ($particleEmitter+".inBody");
+	return $particleEmitter;	
+}
+
+global proc NBuddy_BodyDataTypeOutputs( string $node, string $bodyAttributes[], string $bodyNames[], string $bodyTypes[] )
+{
+	string $attributes[] = `listAttr -multi -hasData -readOnly $node`;
+	for ( $attribute in $attributes )
+	{
+		if ( `getAttr -type ($node+"."+$attribute)` == "naiadBody" )
+		{
+			string $bodyInfo[] = `naiad -bodyPlugInfo ($node+"."+$attribute)`;
+			$bodyAttributes[`size $bodyAttributes`] = $attribute;
+			if ( $bodyInfo[0] != "" && $bodyInfo[1] != "" )
+			{
+				$bodyNames[`size $bodyNames`] = $bodyInfo[0];
+				$bodyTypes[`size $bodyTypes`] = $bodyInfo[1];
+			}
+			else
+			{
+				$bodyNames[`size $bodyNames`] = "EMPTY";
+				$bodyTypes[`size $bodyTypes`] = "NONE";
+			}
+		}
+	}
+}
+global proc string[] NBuddy_BodyDataTypeOutputs2( string $node )
+{
+	string $resultStrings[];
+	string $attributes[] = `listAttr -multi -hasData -readOnly $node`;
+	for ( $attribute in $attributes )
+	{
+		if ( `getAttr -type ($node+"."+$attribute)` == "naiadBody" )
+		{
+			string $bodyInfo[] = `naiad -bodyPlugInfo ($node+"."+$attribute)`;
+			$resultStrings[`size $resultStrings`] = $attribute;
+			$resultStrings[`size $resultStrings`] = $bodyInfo[0];
+			$resultStrings[`size $resultStrings`] = $bodyInfo[1];
+		}
+	}
+	return $resultStrings;
+}
+
+global string $naiadNodeTypes[];
+$naiadNodeTypes[0] = "NBuddySurfaceToBody";
+$naiadNodeTypes[1] = "NBuddyCameraToBody";
+$naiadNodeTypes[2] = "NBuddyParticlesToBody";
+$naiadNodeTypes[3] = "NBuddyBodyToMesh";
+$naiadNodeTypes[4] = "NBuddyBodyField";
+$naiadNodeTypes[5] = "NBuddyEMPLoader";
+$naiadNodeTypes[6] = "NBuddyEMPSaver";
+
+global proc string[] NBuddy_GetNaiadNodesInScene( )
+{
+	global string $naiadNodeTypes[];
+
+	string $nodes[];
+	for ( $naiadType in $naiadNodeTypes )
+	{
+		string $naiadNodes[] = `ls -type $naiadType`;
+		for ( $naiadNode in $naiadNodes )
+		{
+			$nodes[`size $nodes`] = $naiadNode;
+		}
+	}
+	
+	return $nodes;
+}

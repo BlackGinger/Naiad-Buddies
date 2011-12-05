@@ -1,0 +1,9 @@
+global proc AENBuddyParticlesToBodyTemplate ( string $nodeName )
+{
+editorTemplate -beginScrollLayout;
+	editorTemplate -beginLayout "conversionSettingsSettings"  -collapse 0;
+		editorTemplate -addControl "bodyName";
+	editorTemplate -endLayout;	
+editorTemplate -addExtraControls;
+editorTemplate -endScrollLayout;
+}

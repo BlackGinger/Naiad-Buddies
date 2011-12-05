@@ -1,0 +1,102 @@
+global proc NBuddy_BodyPopUpMenuNew(string $attributeName )
+{
+    // Extract the name of the node from the node.attribute name
+	string $tokenArray[]; clear $tokenArray;
+	tokenize( $attributeName, ".", $tokenArray);
+
+	string $node = $tokenArray[0];
+    string $attrib = $tokenArray[1];
+
+	setUITemplate -pst attributeEditorTemplate;
+	rowLayout -numberOfColumns 1;
+		string $connection = `connectionInfo -sfd $attributeName`;
+		if ( $connection != "" )
+		{
+			string $txt = `text -align "right" -label ($attrib+"->"+$connection) "AE_BODY_TEMPLATE_TEXT"`;
+		}
+		else
+		{
+			string $txt = `text -align "right" -label ($attrib+" (rightClickToConnect)") "AE_BODY_TEMPLATE_TEXT"`;
+		}
+
+		//Create the popup menu
+		string $popMenu = `popupMenu "AE_BODY_TEMPLATE_POPUP"`;
+		popupMenu -e -postMenuCommand ("NBuddy_BodyListMenu(\""+$popMenu+"\",\""+$node+"\",\""+$attrib+"\");refreshAE;") $popMenu;
+
+	setParent ..;
+	setUITemplate -ppt;
+}
+
+global proc NBuddy_BodyPopUpMenuReplace(string $attributeName )
+{		
+	string $tokenArray[]; clear $tokenArray;
+	tokenize( $attributeName, ".", $tokenArray);
+
+	string $node = $tokenArray[0];
+    string $attrib = $tokenArray[1];
+
+	string $connection = `connectionInfo -sfd $attributeName`;
+	if ( $connection != "" )
+		text -e -label ($attrib+"->"+$connection) "AE_BODY_TEMPLATE_TEXT";
+	else
+		text -e -label ($attrib+" (rightClickToConnect)") "AE_BODY_TEMPLATE_TEXT";
+
+	string $popMenu = "AE_BODY_TEMPLATE_POPUP";
+	popupMenu -e -postMenuCommand ("NBuddy_BodyListMenu(\""+$popMenu+"\",\""+$node+"\",\""+$attrib+"\");refreshAE;") $popMenu;
+}
+    
+global proc NBuddy_BodyListMenu( string $popUpMenuItem , string $thisNode , string $thisAttribute )
+{
+	popupMenu -e -deleteAllItems $popUpMenuItem;
+	
+	string $naiadNodes[] = NBuddy_GetNaiadNodesInScene();
+	print($naiadNodes);
+	for ( $nNode in $naiadNodes )
+	{
+		if ( $nNode != $thisNode ) // Make sure its not the same node
+		{
+/*			string $attributes[]; clear $attributes;
+			string $bodyNames[];  clear $bodyNames;
+			string $bodyTypes[];  clear $bodyTypes;
+
+			//Now get the dataTypes for this guy
+			NBuddy_BodyDataTypeOutputs( $nNode, $attributes , $bodyNames , $bodyTypes );
+			print($attributes);
+			print($bodyNames);
+			print($bodyTypes);
+			
+			int $numBodyNames = `size $bodyNames`;
+			print("NumBodies: "+$numBodyNames+"\n");
+			if ( $numBodyNames > 0 )
+			{
+				//Create the submenu 
+				string $nodeMenuItem = `menuItem -p $popUpMenuItem -subMenu true -label ($nNode)`;
+				for ( $i=0; $i< $numBodyNames; $i++ )
+				{
+					menuItem -label ($attributes[$i]+"->"+$bodyNames[$i]+":"+$bodyTypes[$i]) -command ("connectAttr -f "+$nNode+"."+$attributes[$i]+" "+$thisNode+"."+$thisAttribute); 
+				}
+				setParent -menu ..;
+			}*/
+			
+			string $results[] = NBuddy_BodyDataTypeOutputs2( $nNode );
+			print("bodyDataTypes::::");
+			print($results);
+			int $numBodyNames = `size $results`/3;
+			if ( $numBodyNames > 0 )
+			{
+				//Create the submenu 
+				string $nodeMenuItem = `menuItem -p $popUpMenuItem -subMenu true -label ($nNode)`;
+				for ( $i=0; $i< $numBodyNames; $i++ )
+				{
+					menuItem -label ($results[$i*3]+"->"+$results[$i*3+1]+":"+$results[$i*3+2]) -command ("connectAttr -f "+$nNode+"."+$results[$i*3]+" "+$thisNode+"."+$thisAttribute); 
+				}
+				setParent -menu ..;
+			}
+			
+		}
+	}
+	
+	if ( `popupMenu -q -numberOfItems $popUpMenuItem` == 0 )
+		menuItem -p $popUpMenuItem -label "No Body plugs available in scene"; 
+
+}
