@@ -44,7 +44,7 @@ NiBeginPlugin(NtForeignFactory* factory)
 // -----------------------------------------------------------------------------
    
 NI_EXPORT bool
-NiEndPlugin(NtForeignFactory* factory)
+NiEndPlugin()
 {
     return true;
 }
