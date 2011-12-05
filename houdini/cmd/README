@@ -1,0 +1,92 @@
+Naiad Buddy for Houdini toolkit
+-------------------------------
+
+Version: v0.4.0
+
+The project home can be found at: http://code.google.com/p/geo2emp/
+
+The source has been tested with:
+Gentoo 64bit, GCC 4.4.4
+Houdini 11.0.458 (www.sidefx.com)
+Naiad 0.5.0 (www.exoticmatter.com)
+
+This library is *not* backwards compatible with Naiad. It *may* work with, or compile against, previous versions but proper functionality is not
+guaranteed.
+
+Description:
+------------
+This tool converts Houdini's .bgeo files to Naiad's .emp files. This tool was built in order to import/export .EMP files directly from Houdini.
+
+Current Features:
+-----------------
+ * Writes triangulated geometry and point velocities to EMP files.
+ * Loads particles and particle velocities from EMP files.
+ * Loads multiple meshes from EMP files.
+ * Allow setting timestep value for EMP files (needed for EMP sequences)
+ * Allow explicitly setting body name for writing data to EMP files
+
+Components:
+-----------
+ * Geo2Emp class for converting between Naiad's .emp and Houdini's .bgeo format
+ * geo2emp commandline tool to server as frontend to the converter class
+
+
+Directories:
+------------
+src/ - Source code for bgeo2emp converter tool
+bin/ - Script and binary used to to run bgeo2emp tool
+hip/ - Sample .hip file for Houdini to illustrate export process
+houdini/ - Files that need to be placed in the Houdini path
+sample_hip/ - Sample Houdini files to show how to use geo2emp
+
+
+Command Line Usage:
+-------------------
+Convert BGEO to EMP:
+	geo2emp source.bgeo dest.emp
+
+Convert EMP to BGEO:
+	geo2emp source.emp dest.bgeo
+
+For more help:
+	geo2emp -h 
+
+
+Recommended usage of the commandline tool: 
+------------------------------------------
+It is recommended to integrate the commandline tool into Houdini using Houdini's GEOio mechanism so that you can read and write .emp files from within Houdini (see Installing section). 
+
+Performance tip:
+----------------
+Please take note that it is indeed slower to load .emp files through a File SOP than their .bgeo equivalent since it has to convert all the .emp data on each frame. Rather convert your .emp sequences to a .bgeo sequence and load the .bgeo files to allow for faster loading & scrubbing.
+
+Compiling (Linux):
+------------------
+1. source houdini_setup
+2. Make sure your NAIAD_PATH has been set up, and the $NAIAD_PATH/lib directory is in the linker path (either through ld.so.conf or LD_LIBRARY_PATH)
+3. type "make" 
+
+If the compile was successful, a binary file (geo2emp) will be output in the bin/ directory.
+
+Installing (Linux):
+-------------------
+2. Copy the "geo2emp" binary to a directory in your path variable, e.g., /usr/bin or /usr/local/bin.
+3. Copy the houdini/GEOio script to a directory in your HOUDINI_PATH or append the contents to an existing GEOio file.
+
+The "geo2emp" tool should now be ready to run. Make sure your Houdini and Naiad environment is properly set up, then type "geo2emp" in the console. If the installation was successful, this should print the usage instructions for the tool.
+
+Changes:
+--------
+0.2b)
+	- Completely rewritten for Naiad beta.
+	- Restored functionality of previous version (see Features section)
+
+0.1)
+	- First release. 
+
+
+Contributors
+------------
+*) Van Aarde Krynauw
+*) Morné Chamberlain
+*) Marcus Nordenstam

@@ -1,0 +1,172 @@
+= 1.0 Introduction
+
+The Naiad Buddy for Houdini facilitates data translation between Exotic Matter's Naiad and Side Effects' Houdini.
+
+The Naiad Buddy for Houdini comprises two workflows, which can be used separately or together:
+
+* Houdini .bgeo files may be translated into Naiad EMP files (and vice versa) using the {{{geo2emp}}} command-line tools.
+* Houdini .bgeo files may be natively read and written inside Naiad itself, using the Naiad file operators {{{Mesh-Read}}}, {{{Mesh-Write}}},  {{{Particle-Read}}}, and {{{Particle-Write}}}.  These ops make use of the Naiad Body-Io plugin system, and this buddy implements the Bgeo file format as a Naiad Body-Io plugin.
+
+== 1.1 The Command-Line Tools
+
+The Command-Line Tools convert Houdini's .bgeo files to Naiad's .emp files, and has the current set of features:
+* Writes triangulated geometry and point velocities to EMP files.
+* Loads particles and particle velocities from EMP files.
+* Loads multiple meshes from EMP files.
+* Allow setting timestep value for EMP files (needed for EMP sequences)
+* Allow explicitly setting body name for writing data to EMP files
+
+The command-line tools were originally written by Van Aarde and have since been "adopted" by Exotic Matter.
+
+=== Command Line Usage:
+Convert BGEO to EMP:
+{{{
+geo2emp source.bgeo dest.emp
+}}}
+
+Convert EMP to BGEO:
+{{{
+emp2geo source.emp dest.bgeo
+}}}
+
+Command-Line Help:
+{{{
+geo2emp -h 
+}}}
+
+=== Houdini Integration
+It is recommended to integrate the geo2emp directly into Houdini using Houdini's GEOio mechanism so that you can read and write EMP files from within Houdini (for instructions on how to do this, please see the installation section below). 
+
+=== Performance tip
+Please note that it is slower to load EMP files through a File SOP than their .bgeo equivalent since it has to convert all the .emp data on each frame. Rather convert your .emp sequences to a .bgeo sequence and load the .bgeo files to allow for faster loading & scrubbing.
+
+== 1.2 The Naiad File Operators
+
+The Naiad File Operators {{{Mesh-Read}}}, {{{Mesh-Write}}},  {{{Particle-Read}}}, and {{{Particle-Write}}} will read/write mesh and particle data for any file format for which there is a Body-Io plugin.  This buddy registers a Body-Io plugin for the BGEO format so that you can use these file ops to import and export BGEO mesh and particle data natively in Naiad, eliminating the command-line BGEO-to-EMP conversion step that is otherwise required.  They are easy to use - just create them inside your Naiad scene and specify the BGEO file (or sequence) to load or write.
+
+= 2.0 Compiling and Installing on Linux
+
+If you have already compiled this buddy before, you can skip ahead to section 2.2 ("Building the Buddy") below (since you already have all the build tools you need).
+
+== 2.1 Build Tools
+If you want to compile and build this Naiad Buddy yourself, you need the following tools and utilities installed:
+
+* a C++ compiler such as gcc/g++
+* cmake
+* git
+
+These are very common tools you can find on any flavor of Linux.  Unfortunately, each Linux distribution handles the exact method of installation slightly differently.  Using Ubuntu, you can install these build tools by writing:
+
+{{{
+sudo apt-get install git-core gcc g++ cmake -y
+}}}
+
+(on other Linux distros, please consult Google).
+
+Next, you have to set up the build environment manually by editing the appropriate shell resource configuration file.  The first step is to determine which shell you are using; there are two main types: bash and tcsh/csh. To determine which shell you're using, please type
+
+{{{
+$ echo $SHELL
+}}}
+
+if you see /bin/bash, then you are using a bash shell.  
+
+=== bash shell configuration
+
+Please edit the .bashrc configuration file to add the necessary environment variables.  The .bashrc configuration file is a text file which is located in your home directory.  You can use any text editor (such as gedit) to edit the .bashrc file:
+
+{{{
+$ gedit ~/.bashrc
+}}}
+
+Once inside the .bashrc file, please skip to the very end, and add the following lines:
+
+{{{
+export EM_COMPILER=gcc
+export CC=gcc
+export CXX=g++
+export EM_PLAT=LINUX
+export EM_ARCH=`uname -m`
+}}}
+
+=== tcsh/csh shell configuration
+
+If you are NOT using a bash shell, you need to edit the .cshrc configuration file, which is located in your home directory.  You can use any text editor (such as gedit) to edit the .cshrc file:
+
+{{{
+$ gedit ~/.cshrc
+}}}
+
+Once inside the .cshrc file, please skip to the very end, and add the following lines:
+
+{{{
+setenv EM_COMPILER gcc
+setenv CC gcc
+setenv CXX g++
+setenv EM_PLAT LINUX
+setenv EM_ARCH `uname -m`
+}}}
+
+=== Verifying Your Configuration
+
+Quit the text editor and close the shell. Open a new shell, which should take into account the new variables you've added.  You should verify this by typing:
+
+{{{
+$ echo $NAIAD_PATH
+}}}
+
+This should print the path to your current Naiad installation.  If it does not, then you've made a mistake.
+
+== 2.2 Building the Buddy
+
+You need to do this every time a new version of Naiad is released that contains API changes.  This is typically semi-major or major releases, such as 1.0 to 1.5 or 2.0, etc.  It may also be necessary between Houdini releases. 
+
+First, get a fresh copy of the latest Naiad Buddy for Houdini source code (in this example we are assuming you want to keep the buddy source code in a folder inside your home directory):
+
+{{{
+rm -rf ~/naiad-buddy-houdini.git
+git clone git://github.com/ExoticMatter/Naiad-Buddy-For-Houdini.git ~/naiad-buddy-houdini.git
+}}}
+
+Next, ensure the Naiad environment has been properly set up (e.g. $NAIAD_PATH/server/lib is included in the $LD_LIBRARY_PATH).  A good sanity check is if you can run Open Naiad Studio, then everything should work.  Also ensure your Houdini environment has been properly set up (e.g. you have sourced {{{houdini_setup}}}.
+
+=== Compiling the command-line tools (geo2emp, emp2geo)
+
+To compile the command-line tools, just run make from inside the cmd/ subdirectory:
+
+{{{
+cd ~/naiad-buddy-houdini.git/cmd
+make
+}}}
+
+* If the compile was successful, a binary files (geo2emp/emp2geo) will be output in the {{{~/naiad-buddy-houdini.git/cmd/bin/}}} directory.
+* Copy the "geo2emp" binary to a directory in your path variable, e.g., /usr/bin or /usr/local/bin.
+* Copy the houdini/GEOio script to a directory in your HOUDINI_PATH or append the contents to an existing GEOio file.
+
+The command-line tools should now be ready to run. 
+
+=== Compiling the Naiad file operators (Bgeo-Read, Bgeo-Write)
+To compile the Naiad file operators, run the following commands:
+
+{{{
+cd ~/naiad-buddy-houdini.git
+mkdir -p build && cd build
+cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=$NAIAD_PATH ~/naiad-buddy-houdini.git
+make
+cd .. 
+rm -rf build
+}}}
+
+= 3.0 Directory Structure
+The Naiad Buddy for Houdini source code has the following directory structure:
+{{{
+cmd/ - Source code for the command-line tools
+
+cmd/src/ - Source code for bgeo2emp converter tool
+cmd/bin/ - Script and binary used to to run bgeo2emp tool
+cmd/hip/ - Sample .hip file for Houdini to illustrate export process
+cmd/houdini/ - Files that need to be placed in the Houdini path
+cmd/sample_hip/ - Sample Houdini files to show how to use geo2emp
+
+body-io/ - Source code for the Naiad Body-Io plugin for the BGEO format 
+}}}
