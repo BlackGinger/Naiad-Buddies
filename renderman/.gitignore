@@ -1,0 +1,15 @@
+*.swp
+*.o
+*.backup
+*.bgeo
+*.swo
+*~
+tags
+cmd/bin
+user-ops/bin
+build*
+buddies
+.cproject
+.project
+.settings
+stage*
