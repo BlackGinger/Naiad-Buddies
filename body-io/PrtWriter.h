@@ -66,15 +66,6 @@
 #include <vector>
 #include <algorithm>
 
-#include <errno.h>
-#include <sys/stat.h>
-#include <cstdio>
-#include <typeinfo>
-
-#ifdef WINDOWS
-#include <Windows.h>
-#endif
-
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
 #  include <fcntl.h>
 #  include <io.h>
@@ -171,12 +162,6 @@ public:
 
         // Start file write, write complete PRT header.
 
-        const Nb::String path = Nb::extractPath(fileName());
-#ifdef WINDOWS
-        const int result = CreateDirectory(path.c_str(), NULL);
-#else
-        mkdir(path.c_str(),0777);
-#endif
         FILE* prtFile = fopen(fileName().c_str(), "wb");
         prtFileHeader.write(prtFile);
         prtReservedBytes.write(prtFile);
