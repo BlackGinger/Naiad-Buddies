@@ -1,0 +1,35 @@
+### exported: Wed Jul  6 18:20:07 2011
+### from:     Arnold 3.3.8.0 linux 64-bit gcc412 glibc2112 oiio1000 sse (build date: Jun 24 2011 19:08:23)
+
+options
+{
+ name options
+}
+
+point_light
+{
+ name light
+ position 1 1 POINT -10 0 3
+ color 1 1 1
+ intensity 1
+ normalize on
+}
+
+standard
+{
+ name red
+ Kd_color 1 0 0 
+}
+
+standard
+{
+ name green
+ Kd_color 0 1 0 
+}
+
+standard
+{
+ name blue
+ Kd_color 0 0 1
+}
+

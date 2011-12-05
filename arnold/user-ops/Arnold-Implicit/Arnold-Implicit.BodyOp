@@ -1,0 +1,66 @@
+BodyOp Arnold-Implicit
+|*
+   <h3>Overview</h3>
+   This operator "prepares" Naiad bodies with a field shape and is required 
+   for Arnold implicit rendering. It attaches Naiad properties to the body so
+   that one of the <i>Arnold-Render</i> or <i>Arnold-ASS-Write</i> operators 
+   knows how the render the body.
+*|
+{
+    Category "Arnold"
+
+    Group(Field) Input "body-input"
+    || All admitted bodies enter through this input.
+
+	ParamSection "General"
+	{
+            String "Node Name" ""
+            |* The the procedural's node name*|
+		
+            BodyNameList "Body Names" "*"
+            |* The list of body names to be rendered (each a separate node in
+               Arnold). *|
+	}
+
+    ParamSection "Shading"
+    {
+         String "Shader" ""
+         |* The node name of the Arnold shader you want to use. This shader 
+            must exist in the Arnold scene file (.ASS) that you later specify
+            in either <i>Arnold-Render</i> or <i>Arnold-ASS-Write</i>. *|
+
+         Toggle "Opaque" "Off"
+         || Is the implicit rendered as opaque or not?
+    }
+    
+    ParamSection "Implicit"
+    {
+    	String "Implicit Name" ""
+    	|* Each implicit node will fetch its field data from a 
+           naiad_distance_field node. The name of that node can be specified
+           here. *|
+    	
+    	String "Channel" "fluid-distance"
+    	|* Enter the name of the channel where the signed distance field can 
+           be found. *|
+
+    	Float "Level" "0"
+    	|* The exact distance value that defines the visible iso-surface in the
+           signed distance field. *|
+    	
+    	Float "Threshold" "0"
+    	|* What treshold value defines the surface? Default 0 is common for 
+           rendering of distance fields. *|
+    	
+    	Int "Samples" "5"
+    	|* See Arnold documentation for the implicit node. The attribute is 
+           called <i>samples</i> there. *|
+    	
+    	Float "Ray Bias" "0.01"
+    	|* See Arnold documentation for the implicit node. The attribute is 
+           called <i>ray_bias</i> there. *|
+    }
+    
+    Group(Field) Output "body-output"
+    || All bodies exit through the output.    
+}

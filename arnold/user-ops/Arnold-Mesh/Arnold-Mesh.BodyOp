@@ -1,0 +1,34 @@
+BodyOp Arnold-Mesh
+|*
+   <h3>Overview</h3>
+   This operator "prepares" Naiad bodies with a Mesh shape and is required for Arnold polymesh rendering. It attaches 
+   Naiad properties to the body so that one of the <i>Arnold-Render</i> or <i>Arnold-ASS-Write</i> operators knows how the render the body.
+*|
+{
+    Category "Arnold"
+
+    Group(Mesh) Input "body-input"
+    || All admitted bodies enter through this input.
+
+	ParamSection "General"
+	{
+		String "Node Name" ""
+		|* The the procedural's node name *|
+		
+		BodyNameList "Body Names" "*"
+         || The list of body names to be rendered (each a separate node in Arnold).
+	}
+
+    ParamSection "Shading"
+    {
+         String "Shader" ""
+         || The node name of the Arnold shader you want to use. This shader must exist in the Arnold scene file (.ASS) that you later specify in either <i>Arnold-Render</i> or <i>Arnold-ASS-Write</i>.
+
+         Toggle "Opaque" "Off"
+         || Is the mesh rendered as opaque or not?
+    }
+    
+    Group(Mesh) Output "body-output"
+    || All bodies exit through the output. 
+    
+}
