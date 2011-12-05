@@ -205,13 +205,9 @@ public:
             }
 
             b.writeVtxAtr();
-            cout << "Done writing Vertex parameters to file!" << endl;
-
             b.writePrimAtr();
-            cout << "Done writing Prim parameters to file!" << endl;
-
             b.writePrimsMesh(&vtxData[0],&vtxAtrPtr[0],vtxAtrCounter-1,&primData[0]);
-            cout << "Done writing Prim (&vertex data) to file!" << endl;
+
 
             if (nAtr)
                 b.writeDetailAtrMesh();
@@ -253,7 +249,6 @@ public:
             uint32_t nPrimGrps = 0; // no idea what nPrimGrps is used for
             uint32_t paraArr[]={vNr,nPoints,nPrims,nPointGrps,nPrimGrps,nPointAtr,nVtxAtr,nPrimAtr,nAtr};
 
-            cout << "Creating BGEO: " << fileName() << endl;
             Bgeo b(fileName().c_str(),paraArr);
             char** pointData = new char*[nPointAtr + 1];
             char** pointData_start = new char*[nPointAtr + 1];
@@ -385,9 +380,7 @@ public:
                 pointData[j] = pointData_start[j];
 
             b.writePointAtr();
-            cout << "Done writing point parameters to file!" << endl;
             b.writePoints(pointData);
-            cout << "Done writing points to file" << endl;
             
             b.writePrimsParticle();
             b.writeDetailAtrParticle(expFromHoudini);
@@ -400,6 +393,8 @@ public:
     	} else {
             NB_WARNING("Skipping body " << body->name() << " because it does not match Mesh or Particle signature.");           
         }
+
+        NB_INFO("Wrote " << fileName());
     }
 };
 
