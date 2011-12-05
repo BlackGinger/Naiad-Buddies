@@ -104,8 +104,8 @@ protected:
             memcpy(x.data,points,sizeof(float) * 3 * nPoints);
             
             //Read point attributes
-            cerr << "Reading point attributes with: " << _pointAttrs << endl;
-            _readPointAtr(b,_pointAttrs,point,nPoints);
+            cerr << "Reading point attributes with: " << _pointAttributes << endl;
+            _readPointAtr(b,_pointAttributes,point,nPoints);
             
             //Read primitives in form of triangles
             Nb::TriangleShape& triangle = body->mutableTriangleShape();
@@ -117,15 +117,15 @@ protected:
             memcpy(index.data,indices,sizeof(uint32_t) *3* nPrims);
             delete[] indices;
             
-            _readPrimAtr(b,_primAttrs,triangle,nPrims);
-            _readVtxAtr(b,_vertexAttrs,triangle,nPrims);
+            _readPrimAtr(b,_primitiveAttributes,triangle,nPrims);
+            _readVtxAtr(b,_vertexAttributes,triangle,nPrims);
 	} else if(sigFilter()=="Particle") {
             //If particle, fill particles with position           
             Nb::ParticleShape& particle = body->mutableParticleShape();
-            _createParticleChannels(b,_pointAttrs,body);
+            _createParticleChannels(b,_pointAttributes,body);
             particle.beginBlockChannelData(body->mutableLayout());
             particle.blockChannelData3f("position", (Nb::Vec3f*)points,nPoints);
-            _readPointAtr(b,_pointAttrs,particle,nPoints);
+            _readPointAtr(b,_pointAttributes,particle,nPoints);
             particle.endBlockChannelData();
 	} else {
             NB_THROW("Body Signature '" << sigFilter() << 
@@ -142,12 +142,12 @@ protected:
 private:
     void
     _createParticleChannels(Bgeo &           b, 
-                            const Nb::String pointAttrs,
+                            const Nb::String pointAttributes,
                             Nb::Body*        body)
     {
     	Bgeo::attribute * atr = b.getPointAtr();
         for (int i = 0; i < b.getNumberOfPointAtr(); ++i){
-            if (Nb::String(atr[i].name).listed_in(pointAttrs)){
+            if (Nb::String(atr[i].name).listed_in(pointAttributes)){
                 switch (atr[i].type){
                     case 0:
                         if (atr[i].size == 1){
@@ -238,7 +238,7 @@ private:
 
     void
     _readPointAtr(Bgeo&            b,
-                  const Nb::String pointAttrs,
+                  const Nb::String pointAttributes,
                   Nb::PointShape&  point,
                   const int        nPoints)
     {
@@ -246,7 +246,7 @@ private:
         Bgeo::attribute * atr = b.getPointAtr();
         int offset = sizeof(float) * 4 ;
         for (int i = 0; i < b.getNumberOfPointAtr(); ++i){
-            if (Nb::String(atr[i].name).listed_in(pointAttrs)){
+            if (Nb::String(atr[i].name).listed_in(pointAttributes)){
                 switch (atr[i].type){
                     case 0:
                         if (atr[i].size == 1){
@@ -366,7 +366,7 @@ private:
 
     void
     _readPointAtr(Bgeo&              b, 
-                  const Nb::String   pointAttrs,
+                  const Nb::String   pointAttributes,
                   Nb::ParticleShape& particle,
                   const int          nPoints)
     {
@@ -374,7 +374,7 @@ private:
         Bgeo::attribute * atr = b.getPointAtr();
         int offset = sizeof(float) * 4 ;
         for (int i = 0; i < b.getNumberOfPointAtr(); ++i){
-            if (Nb::String(atr[i].name).listed_in(pointAttrs)){
+            if (Nb::String(atr[i].name).listed_in(pointAttributes)){
                 switch (atr[i].type){
                     case 0:
                         if (atr[i].size == 1){
@@ -458,7 +458,7 @@ private:
 
     void
     _readPrimAtr(Bgeo&              b, 
-                 const Nb::String   primAttrs,
+                 const Nb::String   primitiveAttributes,
                  Nb::TriangleShape& triangle, 
                  const int          nPrims)
     {
@@ -466,7 +466,7 @@ private:
         Bgeo::attribute * atr = b.getPrimAtr();
         int offset = b.getBytesPerPrimLine() - b.getPrimAtrBytes() ;
         for (int i = 0; i < b.getNumberOfPrimAtr(); ++i){
-            if (Nb::String(atr[i].name).listed_in(primAttrs)){
+            if (Nb::String(atr[i].name).listed_in(primitiveAttributes)){
                 switch (atr[i].type){
                     case 0:
                         if (atr[i].size == 1){
@@ -584,7 +584,7 @@ private:
 
     void 
     _readVtxAtr(Bgeo&              b,
-                const Nb::String   vertexAttrs,
+                const Nb::String   vertexAttributes,
                 Nb::TriangleShape& triangle,
                 const int          nPrims)
     {
@@ -592,7 +592,7 @@ private:
         Bgeo::attribute *atr = b.getVtxAtr();
         int offset = 5 + b.getIdxBytes();
         for (int i = 0; i < b.getNumberOfVtxAtr(); ++i){
-            if (Nb::String(atr[i].name).listed_in(vertexAttrs)){
+            if (Nb::String(atr[i].name).listed_in(vertexAttributes)){
                 switch (atr[i].type){
                     case 0:
                         if (atr[i].size == 1){
