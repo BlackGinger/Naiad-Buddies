@@ -46,16 +46,11 @@ include_directories   (.
                        $ENV{NAIAD_PATH}/server/include/em
                        $ENV{NAIAD_PATH}/server/include/Ng
                        $ENV{NAIAD_PATH}/server/include/Nb
-                       $ENV{NAIAD_PATH}/include
-                       $ENV{NAIAD_PATH}/include/system
-                       $ENV{NAIAD_PATH}/include/em
-                       $ENV{NAIAD_PATH}/include/Ng
-                       $ENV{NAIAD_PATH}/include/Nb)
+		       $ENV{NAIAD_PATH}/server/include/Ni)
 
 
 link_directories      ($ENV{NAIAD_PATH}/server/lib
-  		       $ENV{NAIAD_PATH}/lib
-		       )
+  		       $ENV{NAIAD_PATH}/lib)
 
 if ($ENV{EM_COMPILER} STREQUAL "intel")
 
@@ -111,4 +106,4 @@ set(CMAKE_CXX_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
 
 # The source directories we are building
 
-subdirs(cmd user-ops)
+subdirs(cmd body-io)

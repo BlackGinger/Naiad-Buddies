@@ -1,7 +1,7 @@
 #
-# CMAKE project for Naiad Buddy For Krakatoa - Naiad File Ops
-#
-# Copyright (c) 2011 Exotic Matter AB, Prime Focus, and Thinkbox Software.
+# CMAKE project for the Naiad Buddy for Houdini, user operators
+# 
+# Copyright (c) 2010-2011 Exotic Matter AB.  All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -32,4 +32,26 @@
 #    POSSIBILITY OF SUCH DAMAGE.
 #
 
-project               (NAIAD_BUDDY_FOR_KRAKATOA_USER_OPS)
+project (NBUDDY_KRAKATOA_BODY_IO)
+
+add_library (BodyIO-Prt SHARED plugin)
+
+# Intel compiler
+if ($ENV{EM_COMPILER} STREQUAL "intel")
+target_link_libraries (BodyIO-Prt -static-intel Ni)
+endif ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# GCC compiler
+if ($ENV{EM_COMPILER} STREQUAL "gcc")
+target_link_libraries (BodyIO-Prt Ni)
+endif ($ENV{EM_COMPILER} STREQUAL "gcc")
+
+# MSVC compiler
+if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+target_link_libraries (BodyIO-Prt Ni${EM_D})
+endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+
+# destination location for user op
+
+set_target_properties (BodyIO-Prt PROPERTIES PREFIX "")
+install               (TARGETS BodyIO-Prt DESTINATION server/body-io)
