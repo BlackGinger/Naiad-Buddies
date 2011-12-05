@@ -1,0 +1,35 @@
+# only add source files, makefiles etc
+
+.DS_Store
+*.o
+*.lo
+*~
+*.mpp
+*.emp
+core.*
+*.dyn
+*.dpi
+*.dpi.lock
+*.a
+
+# do not add binaries
+
+stage*
+*-build-*
+qtcreator*
+public/stage*
+docs/naiad
+*_debug
+*_release
+*_release_assert
+
+# nor ANY freakin' quicktimes!!!
+
+*.mov
+*.playblast*
+
+# nor the dparse crap
+
+make_dparser
+sample_dparser
+
