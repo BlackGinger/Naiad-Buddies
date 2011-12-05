@@ -1,0 +1,104 @@
+= 1.0 Installing the Build Tools And Configuring Your Environment
+
+You only need to follow the instructions in this section 1.0 once (the first time you want to use the Naiad Buddy for Krakatoa).  **However, please follow the instructions in section 2.0 every time you need to update the Naiad Buddy for Krakatoa due to a new Naiad release.**
+
+Since you will be compiling and building the Naiad Buddy yourself, you will need the following tools and utilities installed:
+
+* a C++ compiler such as gcc/g++
+* cmake
+* git
+
+These are very common tools you can find on any flavor of Linux.
+
+Unfortunately, each Linux distribution handles the exact method of installation slightly differently.  We will show how to install these using Ubuntu:
+
+{{{
+sudo apt-get install git-core gcc g++ cmake -y
+}}}
+
+(for installing these common build tools on other Linux distros, please consult Google).
+
+Next, you have to set up the environment for the plugin manually by editing the appropriate shell resource configuration file.
+
+The first step is to determine which shell you are using; there are two main types: bash and tcsh/csh. 
+
+To determine which shell you're using, please type
+
+{{{
+$ echo $SHELL
+}}}
+
+if you see /bin/bash - then you are using a bash shell.  Otherwise it's tcsh/csh.
+
+== 1.1 Bash Configuration
+
+Please edit the .bashrc configuration file to add the necessary environment variables.  The .bashrc configuration file is a text file which is located in your home directory.  You can use any text editor (such as gedit) to edit the .bashrc file:
+
+{{{
+$ gedit ~/.bashrc
+}}}
+
+Once inside the .bashrc file, please skip to the very end, and add the following lines:
+
+{{{
+export EM_COMPILER=gcc
+export CC=gcc
+export CXX=g++
+export EM_PLAT=LINUX
+export EM_ARCH=`uname -m`
+}}}
+
+== 1.2 tcsh/csh Configuration
+
+If you are NOT using a bash shell, you need to edit the .cshrc configuration file, which is located in your home directory.  You can use any text editor (such as gedit) to edit the .cshrc file:
+
+{{{
+$ gedit ~/.cshrc
+}}}
+
+Once inside the .cshrc file, please skip to the very end, and add the following lines:
+
+{{{
+setenv EM_COMPILER gcc
+setenv CC gcc
+setenv CXX g++
+setenv EM_PLAT LINUX
+setenv EM_ARCH `uname -m`
+}}}
+
+= 2.0 Compiling And Installing Naiad Buddy for Krakatoa
+
+You need to do this every time a new version of Naiad is released.  
+
+**Basic Installation Procedure**
+
+We assume the following:
+
+* Naiad and Krakatoa have been installed.  
+* The environment variable {{{$NAIAD_PATH}}} points to the location of the Naiad installation.  
+
+Let's say we want to put the buddy source code in our home directory under the folder {{{~/naiad-buddy-krakatoa.git}}}.  Then, the first step is:
+
+{{{
+rm -rf ~/naiad-buddy-krakatoa.git
+git clone git://github.com/ExoticMatter/Naiad-Buddy-For-Krakatoa.git ~/naiad-buddy-krakatoa.git
+cd ~/naiad-buddy-krakatoa.git
+}}}
+
+Now, to build the Naiad Buddy for Krakatoa, we run:
+
+{{{
+mkdir -p build && cd build
+cmake -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=$NAIAD_PATH ~/naiad-buddy-krakatoa.git
+sudo make install
+cd .. 
+sudo rm -rf build
+}}}
+
+== 2.1 Troubleshooting
+
+If you receive compiler errors when running the script, or the {{{make install}}} command in the shell, please do the following:
+
+* Ensure that the $NAIAD_PATH environment variable is correct.  You can check it by typing: {{{echo $NAIAD_PATH}}} in a shell, and you should see the correct Naiad installation path appear.
+
+Once you have corrected your paths as shown above, you can just re-run the installation commands.
