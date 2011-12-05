@@ -1,1 +1,0 @@
-/opt/intel/composerxe-2011.2.137/bin/intel64/icpc  -fPIC -g3 -DDEBUG=1 -DOMP_ENABLED -O0  -shared -Wl,-soname,BodyIO-Prt.so -o BodyIO-Prt.so CMakeFiles/BodyIO-Prt.dir/plugin.cc.o -L/home/marcus/naiad-0.6-x86_64/server/lib -L/home/marcus/naiad-0.6-x86_64/lib -static-intel -lNi -Wl,-rpath,/home/marcus/naiad-0.6-x86_64/server/lib:/home/marcus/naiad-0.6-x86_64/lib: 

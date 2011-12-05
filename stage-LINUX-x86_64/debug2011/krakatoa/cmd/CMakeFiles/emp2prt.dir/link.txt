@@ -1,1 +1,0 @@
-/opt/intel/composerxe-2011.2.137/bin/intel64/icpc   -g3 -DDEBUG=1 -DOMP_ENABLED -O0   CMakeFiles/emp2prt.dir/emp2prt.cc.o  -o emp2prt -rdynamic -L/home/marcus/naiad-0.6-x86_64/server/lib -L/home/marcus/naiad-0.6-x86_64/lib -lNb -static-intel -lpthread -Wl,-rpath,/home/marcus/naiad-0.6-x86_64/server/lib:/home/marcus/naiad-0.6-x86_64/lib: 

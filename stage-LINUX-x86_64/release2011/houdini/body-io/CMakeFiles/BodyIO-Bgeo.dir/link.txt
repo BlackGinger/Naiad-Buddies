@@ -1,1 +1,0 @@
-/opt/intel/composerxe-2011.2.137/bin/intel64/icpc  -fPIC -DRELEASE -DNDEBUG -O3 -fomit-frame-pointer  -shared -Wl,-soname,BodyIO-Bgeo.so -o BodyIO-Bgeo.so CMakeFiles/BodyIO-Bgeo.dir/plugin.cc.o CMakeFiles/BodyIO-Bgeo.dir/Bgeo.cc.o -L/home/marcus/naiad-0.6-x86_64/server/lib -static-intel -lNi -Wl,-rpath,/home/marcus/naiad-0.6-x86_64/server/lib: 
