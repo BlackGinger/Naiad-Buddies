@@ -47,10 +47,6 @@ public:
 
     ~Particle_Rib_Write() {}
 
-    virtual Nb::ObjectFreeFunc
-    freeFunc() const
-    { return NiPluginFree; }
-
     virtual Nb::String
     typeName() const
     { return "Particle-Rib-Write"; }
