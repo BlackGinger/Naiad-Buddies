@@ -28,8 +28,8 @@
 //
 // -----------------------------------------------------------------------------
 
-#include "PrtReader.h"
 #include "PrtWriter.h"
+#include "PrtReader.h"
 
 #include "Ni.h"
 

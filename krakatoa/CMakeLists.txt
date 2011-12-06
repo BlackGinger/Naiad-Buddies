@@ -52,25 +52,28 @@ include_directories   (.
 link_directories      ($ENV{NAIAD_PATH}/server/lib
   		       $ENV{NAIAD_PATH}/lib)
 
-if ($ENV{EM_COMPILER} STREQUAL "intel")
-
 # Intel compiler flags
 
+if ($ENV{EM_COMPILER} STREQUAL "intel")
 add_definitions (-Wl,Bsymbolic -pthread -fexceptions -Wall -fPIC -pipe -fno-common -diag-disable 981,383,1572,869,1418,193 -gcc-version=430 -gxx-name=g++-4.3 -gcc-name=gcc-4.3)
-
 set (DEBUG_COMP_FLAGS "-g3 -DDEBUG=1 -DOMP_ENABLED -O0")
 set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -DQT_NO_DEBUG_OUTPUT -DOMP_ENABLED -O3 -fomit-frame-pointer")
-
-else ($ENV{EM_COMPILER} STREQUAL "intel")
+endif ($ENV{EM_COMPILER} STREQUAL "intel")
 
 # gcc compiler flags
-
+if ($ENV{EM_COMPILER} STREQUAL "gcc")
 add_definitions (-Wl,-symbolic -pthread -m64 -fexceptions -fno-gnu-keywords -ftemplate-depth-25 -fno-common -fPIC -pipe -pthread -Wall -Wno-multichar -Wno-comment -Wno-sign-compare -funsigned-char -Wno-reorder -Wno-deprecated)
-
 set (DEBUG_COMP_FLAGS "-DDEBUG -g3 -O0")
 set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -fno-strict-aliasing -fomit-frame-pointer -O3")
+endif ($ENV{EM_COMPILER} STREQUAL "gcc")
 
-endif ($ENV{EM_COMPILER} STREQUAL "intel")
+# MSVC compiler flags
+
+if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+set (DEBUG_COMP_FLAGS "-DDEBUG -DOMP_ENABLED /Od /MDd /Zi")
+set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -DQT_NO_DEBUG_OUTPUT -DOMP_ENABLED /O2 /MD")
+add_definitions(/openmp /MP /EHa)
+endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
 
 
 # UNIX/LINUX
@@ -106,4 +109,8 @@ set(CMAKE_CXX_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
 
 # The source directories we are building
 
+if (WIN32)
+subdirs(body-io)
+else()
 subdirs(cmd body-io)
+endif(WIN32)

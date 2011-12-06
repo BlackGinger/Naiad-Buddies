@@ -45,4 +45,8 @@ include_directories   (.
 
 link_directories      ($ENV{NAIAD_PATH}/server/lib)
 
+if (WIN32)
+subdirs (houdini maya krakatoa renderman)
+else()
 subdirs (arnold houdini maya krakatoa renderman)
+endif(WIN32)
