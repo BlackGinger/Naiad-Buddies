@@ -31,47 +31,45 @@
 #include "BgeoReader.h"
 #include "BgeoWriter.h"
 
-#include "Ni.h"
-
 extern "C" {
 
 // -----------------------------------------------------------------------------
     
-NI_EXPORT bool
-NiBeginPlugin(NtForeignFactory* factory)
+NB_EXPORT bool
+BodyIoBeginPlugin(Nb::ForeignFactory* factory)
 {
-    NiSetForeignFactory(factory);
+    Nb::setForeignFactory(factory);
     return true;
 }
 
 // -----------------------------------------------------------------------------
    
-NI_EXPORT bool
-NiEndPlugin()
+NB_EXPORT bool
+BodyIoEndPlugin()
 {
     return true;
 }
 
 // -----------------------------------------------------------------------------
 
-NI_EXPORT NtCString
-NiBodyIoType()
+NB_EXPORT char*
+BodyIoType()
 {
     return "bgeo";
 }
 
 // -----------------------------------------------------------------------------
 
-NI_EXPORT Nb::BodyIo*
-NiBodyReaderAlloc()
+NB_EXPORT Nb::BodyIo*
+BodyIoReaderAlloc()
 {
     return new BgeoReader();
 }
 
 // -----------------------------------------------------------------------------
 
-NI_EXPORT Nb::BodyIo*
-NiBodyWriterAlloc()
+NB_EXPORT Nb::BodyIo*
+BodyIoWriterAlloc()
 {
     return new BgeoWriter();
 }
