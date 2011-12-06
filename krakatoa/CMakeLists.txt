@@ -46,11 +46,11 @@ include_directories   (.
                        $ENV{NAIAD_PATH}/server/include/em
                        $ENV{NAIAD_PATH}/server/include/Ng
                        $ENV{NAIAD_PATH}/server/include/Nb
-		       $ENV{NAIAD_PATH}/server/include/Ni)
+                       $ENV{NAIAD_PATH}/server/include/Ni)
 
 
 link_directories      ($ENV{NAIAD_PATH}/server/lib
-  		       $ENV{NAIAD_PATH}/lib)
+                       $ENV{NAIAD_PATH}/lib)
 
 # Intel compiler flags
 
@@ -70,6 +70,11 @@ endif ($ENV{EM_COMPILER} STREQUAL "gcc")
 # MSVC compiler flags
 
 if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+if(CMAKE_BUILD_TYPE MATCHES "DEBUG")
+set(EM_D "d")
+else(CMAKE_BUILD_TYPE MATCHES "DEBUG")
+set(EM_D "")
+endif(CMAKE_BUILD_TYPE MATCHES "DEBUG")
 set (DEBUG_COMP_FLAGS "-DDEBUG -DOMP_ENABLED /Od /MDd /Zi")
 set (RELEASE_COMP_FLAGS "-DRELEASE -DNDEBUG -DQT_NO_DEBUG_OUTPUT -DOMP_ENABLED /O2 /MD")
 add_definitions(/openmp /MP /EHa)
