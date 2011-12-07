@@ -39,6 +39,14 @@
 
 #include <NbFilename.h>
 
+#include <errno.h>
+#include <sys/stat.h>
+#include <cstdio>
+
+#ifdef WINDOWS
+#include <Windows.h>
+#endif
+
 class Particle_Rib_Write : public Ng::BodyOp
 {
 public:
@@ -141,6 +149,13 @@ public:
             RiOption("rib", "compression", (RtPointer) compression, RI_NULL);
         }
 
+        // ensure output path exists before opening the file
+        const Nb::String path = Nb::extractPath(fileName);
+#ifdef WINDOWS
+        const int result = CreateDirectory(path.c_str(), NULL);
+#else
+        mkdir(path.c_str(),0777);
+#endif
         RiBegin((RtToken)fileName.c_str());
 
         // Set output format to binary

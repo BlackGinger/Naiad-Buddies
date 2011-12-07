@@ -77,7 +77,7 @@ MStatus naiadEmpInfoCmd::doIt( const MArgList& args )
     MStringArray resultStrings;
     for ( unsigned int i(0); i < numBodies; ++i )
     {
-        const Nb::Body * body = empReader->constBody(i);
+        const Nb::Body * body = empReader->ejectBody(i);
 
         //Append the name of the body
         if ( getBodyNames )
@@ -95,6 +95,8 @@ MStatus naiadEmpInfoCmd::doIt( const MArgList& args )
             else
                 resultStrings.append(MString("unknown"));
         }
+
+        delete body;
 
     }
 

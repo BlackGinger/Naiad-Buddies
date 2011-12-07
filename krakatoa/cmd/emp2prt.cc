@@ -75,7 +75,7 @@ requestConstBody(Nb::EmpReader    &empReader,
         << "Body Names in EMP:\n";
 
     for (int i(0); i < empReader.bodyCount(); ++i) {
-        const Nb::Body *empBody(empReader.constBody(i));
+        const Nb::Body *empBody(empReader.ejectBody(i));
 
         std::cerr << "\t'" << empBody->name().c_str() << "'\n";
 
@@ -168,7 +168,8 @@ int main( int argc, char *argv[] )
             << "Requesting body '" << argBodyName.c_str() << "' "
             << "from EMP file '" << argInputPath << "'...\n";
 
-        const Nb::Body *requestedBody(requestConstBody(empReader, argBodyName));
+        const Nb::Body *requestedBody = 
+            requestConstBody(empReader, argBodyName);
 
         if (0 == requestedBody)
         {
@@ -427,6 +428,8 @@ int main( int argc, char *argv[] )
             }
 
             blockParticleSum += positionBlocks(blockIndex).size();
+
+            delete requestedBody;
         }
 
         std::cerr << "\n";
