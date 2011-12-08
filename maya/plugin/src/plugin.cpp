@@ -70,7 +70,7 @@ extern "C" __declspec(dllexport)
 MStatus initializePlugin(MObject obj)
 {
     MStatus status;
-    MFnPlugin plugin(obj, PLUGIN_COMPANY, "3.0", "Any");
+    MFnPlugin plugin(obj, "Exotic Matter", "0.6", "Any");
 
     status = plugin.registerData( "naiadBody", naiadBodyData::id,
                                   &naiadBodyData::creator, MPxData::kData );

@@ -36,16 +36,8 @@
 #include <NgProjectPath.h>
 
 #include <NbBlock.h>
-
 #include <NbFilename.h>
-
-#include <errno.h>
-#include <sys/stat.h>
-#include <cstdio>
-
-#ifdef WINDOWS
-#include <Windows.h>
-#endif
+#include <NbFileIo.h>
 
 class Particle_Rib_Write : public Ng::BodyOp
 {
@@ -58,6 +50,48 @@ public:
     virtual Nb::String
     typeName() const
     { return "Particle-Rib-Write"; }
+
+    virtual void
+    preStep(const Nb::TimeBundle& tb) 
+    {
+        // open RIB archive for writing...
+
+        _fileName =
+            Nb::sequenceToFilename(
+                Ng::projectPath(),
+                param1s("RIB Cache")->eval(tb),
+                tb.frame,
+                tb.frameStep ? -1 : tb.timestep,
+                param1i("Frame Padding")->eval(tb)
+                );
+
+        // ensure output path exists before opening the file
+        const Nb::String path = Nb::extractPath(fileName);
+        Nb::mkdirp(path);
+
+        // figure out binary compression or not..
+        const bool binaryRib=
+            (param1e("RIB Format")->eval(tb)=="Binary (Compressed)");
+
+        if(binaryRib) {
+            RtString compression[1] = { "gzip" };
+            RiOption("rib", "compression", (RtPointer) compression, RI_NULL);
+        }
+
+        // open RIB...
+        RiBegin((RtToken)fileName.c_str());
+
+        // Set output format to binary
+        if(binaryRib) {
+            RtString format[1] = {"binary"};
+            RiOption( "rib", "format", (RtPointer)format, RI_NULL );
+        } else {
+            RtString format[1] = {"ascii"};
+            RiOption( "rib", "format", (RtPointer)format, RI_NULL );
+        }
+
+        _particleCount = 0;
+    }
 
     virtual void
     stepAdmittedBody(Nb::Body*             body, 
@@ -127,45 +161,7 @@ public:
                      param1s("Per-Particle Radius Channel")->eval(tb) << "' " <<
                      "not found");
 
-        // setup file paths etc
-
-        const Nb::String filePath =
-            Nb::fullFilename(Ng::projectPath(),
-                             param1s("Output Path")->eval(tb));
-        const Nb::String sequenceName = body->name() + Nb::String(".#.rib");
-        const Nb::String fileName =
-            Nb::sequenceToFilename(
-                filePath,sequenceName,tb.frame,tb.timestep,
-                param1i("Frame Padding")->eval(tb)
-                );
-
-        // write RIB archive
-
-        const bool binaryRib=
-            (param1e("RIB Format")->eval(tb)=="Binary (Compressed)");
-
-        if(binaryRib) {
-            RtString compression[1] = { "gzip" };
-            RiOption("rib", "compression", (RtPointer) compression, RI_NULL);
-        }
-
-        // ensure output path exists before opening the file
-        const Nb::String path = Nb::extractPath(fileName);
-#ifdef WINDOWS
-        const int result = CreateDirectory(path.c_str(), NULL);
-#else
-        mkdir(path.c_str(),0777);
-#endif
-        RiBegin((RtToken)fileName.c_str());
-
-        // Set output format to binary
-        if(binaryRib) {
-            RtString format[1] = {"binary"};
-            RiOption( "rib", "format", (RtPointer)format, RI_NULL );
-        } else {
-            RtString format[1] = {"ascii"};
-            RiOption( "rib", "format", (RtPointer)format, RI_NULL );
-        }
+        // output to RIB
 
         const char* width = ppRadius ? "width" : "constantwidth";   
         RtToken tokens[2] = { (RtToken)"P", (RtToken)width };
@@ -225,11 +221,21 @@ public:
             }
         }
 
-        RiEnd();
+        _particleCount += particle.size();
+    }
 
-        NB_INFO("Wrote " << particle.size() << " particles to '" << fileName 
+    virtual void
+    postStep(const Nb::TimeBundle& tb) 
+    {
+        RiEnd();
+        
+        NB_INFO("Wrote " << _particleCount << " particles to '" << _fileName 
                 << "'");
     }
+
+private:
+    Nb::String _fileName;
+    int64_t    _particleCount;
 };
 
 // ----------------------------------------------------------------------------

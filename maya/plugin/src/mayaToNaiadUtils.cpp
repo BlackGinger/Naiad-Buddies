@@ -97,7 +97,7 @@ Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & meshObject, std::string bodyName, 
 #else
         conversionMesh.getNormals( normals, MSpace::kWorld );
 #endif
-        // Create the normal channel on the particle shape
+        // Create the normal channel on the point shape
         pointShape.createChannel3f( "normal" , em::vec3f(0.0f) );
 
         //Get the normal channel and transfer the values
@@ -214,7 +214,7 @@ Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & meshObject, std::string bodyName, 
                         MDoubleArray blindData;
                         conversionMesh.getDoubleBlindData( MFn::kMeshVertComponent,  blindDataIds[i], longNames[j], indexArray, blindData  );
 
-                        //Create the channel in the particle shape
+                        //Create the channel in the point shape
                         pointShape.createChannel1f(longNames[j].asChar(), 0.0f);
 
                         Nb::Buffer1f&    data(pointShape.mutableBuffer1f(longNames[j].asChar()));
@@ -230,7 +230,7 @@ Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & meshObject, std::string bodyName, 
                         MFloatArray blindData;
                         conversionMesh.getFloatBlindData( MFn::kMeshVertComponent,  blindDataIds[i], longNames[j], indexArray, blindData  );
 
-                        //Create the channel in the particle shape
+                        //Create the channel in the point shape
                         pointShape.createChannel1f(longNames[j].asChar(), 0.0f);
 
                         Nb::Buffer1f&    data(pointShape.mutableBuffer1f(longNames[j].asChar()));
@@ -247,7 +247,7 @@ Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & meshObject, std::string bodyName, 
                         MIntArray blindData;
                         conversionMesh.getIntBlindData( MFn::kMeshVertComponent,  blindDataIds[i], longNames[j], indexArray, blindData  );
 
-                        //Create the channel in the particle shape
+                        //Create the channel in the point shape
                         pointShape.createChannel1i(longNames[j].asChar(), 0 );
 
                         Nb::Buffer1i&    data(pointShape.mutableBuffer1i(longNames[j].asChar()));
@@ -264,7 +264,7 @@ Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & meshObject, std::string bodyName, 
                         MIntArray blindData;
                         conversionMesh.getBoolBlindData( MFn::kMeshVertComponent,  blindDataIds[i], longNames[j], indexArray, blindData  );
 
-                        //Create the channel in the particle shape
+                        //Create the channel in the point shape
                         pointShape.createChannel1i(longNames[j].asChar(), 0 );
 
                         Nb::Buffer1i&    data(pointShape.mutableBuffer1i(longNames[j].asChar()));
