@@ -58,6 +58,8 @@ NiUserOpAlloc(const NtCString type, const NtCString name)
     const NtString typeName = NtString(type).toLower();
     if(typeName == "particle-rib-write")
         return new Particle_Rib_Write(name);
+    if(typeName == "particle-rib-terminal")
+        return new Particle_Rib_Terminal(name);
     NB_ERROR("NOT plugin: Don't know how to make user op: " << type);
     return 0;
 }

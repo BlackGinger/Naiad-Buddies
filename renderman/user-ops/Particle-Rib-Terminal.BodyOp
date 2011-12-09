@@ -1,4 +1,4 @@
-BodyOp Particle-Rib-Write
+BodyOp Particle-Rib-Terminal
 |*
    <h3>Overview</h3>
    This operator outputs all admitted particle bodies into a series of 
@@ -106,11 +106,6 @@ BodyOp Particle-Rib-Write
     Group(Particle) Input b ""
     |* All bodies matching the particle signature are admitted and output 
        to disk. *|
-
-    Group(Body) Output 0 ""
-    || All bodies encountered in input b are passed out through this output.
-
-    Passthrough "b" "0"
 }
 
 Code "NBuddy-Prman NBuddy-3delight"

@@ -28,3 +28,4 @@ project (NBUDDY_RENDERMAN_USER_OPS)
 # destination location for user op
 
 install (FILES Particle-Rib-Write.BodyOp DESTINATION server/user-ops)
+install (FILES Particle-Rib-Terminal.BodyOp DESTINATION server/user-ops)

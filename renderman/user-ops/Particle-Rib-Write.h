@@ -51,6 +51,14 @@ public:
     typeName() const
     { return "Particle-Rib-Write"; }
 
+    virtual bool
+    enabled(const Nb::TimeBundle& tb) const
+    { 
+        if(!tb.frameStep && param1e("Output Timesteps")->eval(tb)=="Off")
+            return false;
+        return Ng::BodyOp::enabled(tb);
+    }
+
     virtual void
     preStep(const Nb::TimeBundle& tb) 
     {
@@ -59,14 +67,14 @@ public:
         _fileName =
             Nb::sequenceToFilename(
                 Ng::projectPath(),
-                param1s("RIB Cache")->eval(tb),
+                param1s("RIB Archive")->eval(tb),
                 tb.frame,
                 tb.frameStep ? -1 : tb.timestep,
                 param1i("Frame Padding")->eval(tb)
                 );
 
         // ensure output path exists before opening the file
-        const Nb::String path = Nb::extractPath(fileName);
+        const Nb::String path = Nb::extractPath(_fileName);
         Nb::mkdirp(path);
 
         // figure out binary compression or not..
@@ -79,7 +87,7 @@ public:
         }
 
         // open RIB...
-        RiBegin((RtToken)fileName.c_str());
+        RiBegin((RtToken)_fileName.c_str());
 
         // Set output format to binary
         if(binaryRib) {
@@ -236,6 +244,21 @@ public:
 private:
     Nb::String _fileName;
     int64_t    _particleCount;
+};
+
+// ----------------------------------------------------------------------------
+
+class Particle_Rib_Terminal : public Particle_Rib_Write
+{
+public:
+    Particle_Rib_Terminal(const Nb::String& name)
+        : Particle_Rib_Write(name) {}
+
+    ~Particle_Rib_Terminal() {}
+
+    virtual Nb::String
+    typeName() const
+    { return "Particle-Rib-Terminal"; }
 };
 
 // ----------------------------------------------------------------------------
