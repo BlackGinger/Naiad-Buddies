@@ -27,5 +27,7 @@ project (NBUDDY_RENDERMAN_USER_OPS)
 
 # destination location for user op
 
-install (FILES Particle-Rib-Write.BodyOp DESTINATION server/user-ops)
-install (FILES Particle-Rib-Terminal.BodyOp DESTINATION server/user-ops)
+install (FILES Renderman-Mesh.BodyOp DESTINATION server/user-ops)
+install (FILES Renderman-Particle.BodyOp DESTINATION server/user-ops)
+install (FILES Rib-Write.BodyOp DESTINATION server/user-ops)
+

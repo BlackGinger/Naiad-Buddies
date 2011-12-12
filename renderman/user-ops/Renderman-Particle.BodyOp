@@ -1,0 +1,81 @@
+BodyOp Renderman-Particle
+|*
+   <h3>Overview</h3>
+
+   <h3>Motion Blur</h3>
+   The particles may be motion blurred by enabling the "Motion Blur" toggle,
+   and specifying two or more motion samples in the "Motion Samples" parameter.
+   The particle body must have a <code>Particle.velocity</code> channel in
+   order for the motion blur to work.
+
+   <h3>Constant Particle Radius</h3>
+   If you want all the particles to share the same radius in the ouput
+   RIB file, simply leave the "Per-Particle Radius" toggle unchecked, and
+   specify the constant (shared) radius using the "Constant Radius" parameter.
+
+   <h3>Per-Particle Radius</h3>
+   Per-particle radii are possible assuming there is a scalar particle channel
+   containing the per-particle radii.  To enable this feature, the 
+   "Per-Particle Radius" toggle needs to be checked, and the 
+   "Per-Particle Radius Channel" parameter needs to contain the name of the
+   channel containing the radii.  By default this channel is called "radius"
+   but you'll need to change it if you are storing your per-particle radii
+   in some other channel.
+*|
+{    
+    Category "Renderman"
+    Category "Particle"
+
+    EnumGroup VelocitySource
+    {
+        "Particle.velocity"
+        "Field.velocity"
+    }
+
+    ParamSection "Motion Blur"
+    {
+        Toggle "Motion Blur" "Off"
+        |* Produces a RIB archive with MotionBlocks corresponding to the
+           motion samples specified in the "Motion Samples" parameter below. 
+           Note that a <code>Particle.velocity</code> channel must be present
+           in the particle body for motion blur to work. *|
+
+        VelocitySource "Velocity Source" "Particle.velocity"
+        |* The source channel of the velocities used for motion blur.  
+           By default the <code>Particle.velocity</code> channel is used.  
+           However, for highly accurate motion blur (involving, for example,
+           high degrees of rotational motion) you should instead use the 
+           <code>Field.velocity</code> setting, if that channel is available in
+	   the particle body. *|
+
+        String "Motion Samples" "-0.25 0.25"
+        |* A whitespace separated list of motion sample times, normalized around
+           the current frame, such that 0 = frame begin and 1 = frame end. 
+           Any number of motion samples are acceptable.  For example, specifying
+           three motion samples <code>0.1 0.5 0.9</code> is perfectly OK. *|
+    }
+
+    ParamSection "Particle Radius"
+    {
+        Toggle "Per-Particle Radius" "Off"
+        || Enables varying particle radii in the RIB.
+
+        ChannelName "Per-Particle Radius Channel" "Particle.radius"
+        || Specifies the name of the particle channel containing the radii.
+
+        Float "Constant Radius" "0.25 voxels"
+        |* Specifies the worldspace radius of all particles, if 
+          "Per-Particle Radius" is off. *|
+    }
+
+    Group(Particle) Input b ""
+    |* All bodies matching the particle signature are admitted and output 
+       to disk. *|
+
+    Group(Body) Output 0 ""
+    || All bodies encountered in input b are passed out through this output.
+
+    Passthrough "b" "0"
+}
+
+Code "NBuddy-Prman NBuddy-3delight"

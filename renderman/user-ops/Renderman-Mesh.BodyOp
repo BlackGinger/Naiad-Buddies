@@ -1,0 +1,54 @@
+BodyOp Renderman-Mesh
+|*
+   <h3>Overview</h3>
+
+   <h3>Motion Blur</h3>
+   The particles may be motion blurred by enabling the "Motion Blur" toggle,
+   and specifying two or more motion samples in the "Motion Samples" parameter.
+   The particle body must have a <code>Particle.velocity</code> channel in
+   order for the motion blur to work.
+*|
+{    
+    Category "Renderman"
+    Category "Mesh"
+
+    EnumGroup VelocitySource
+    {
+        "Point.velocity"
+        "Field.velocity"
+    }
+
+    ParamSection "Motion Blur"
+    {
+        Toggle "Motion Blur" "Off"
+        |* Produces a RIB archive with MotionBlocks corresponding to the
+           motion samples specified in the "Motion Samples" parameter below. 
+           Note that a <code>Point.velocity</code> channel must be present
+           in the mesh body for motion blur to work. *|
+
+        VelocitySource "Velocity Source" "Point.velocity"
+        |* The source channel of the velocities used for motion blur.  
+           By default the <code>Point.velocity</code> channel is used.  
+           However, for highly accurate motion blur (involving, for example,
+           high degrees of rotational motion) you should instead use the 
+           <code>Field.velocity</code> setting, if that channel is available in
+	   the mesh body. *|
+
+        String "Motion Samples" "-0.25 0.25"
+        |* A whitespace separated list of motion sample times, normalized around
+           the current frame, such that 0 = frame begin and 1 = frame end. 
+           Any number of motion samples are acceptable.  For example, specifying
+           three motion samples <code>0.1 0.5 0.9</code> is perfectly OK. *|
+    }
+
+    Group(Mesh) Input b ""
+    |* All bodies matching the mesh signature are admitted and output 
+       to disk. *|
+
+    Group(Body) Output 0 ""
+    || All bodies encountered in input b are passed out through this output.
+
+    Passthrough "b" "0"
+}
+
+Code "NBuddy-Prman NBuddy-3delight"

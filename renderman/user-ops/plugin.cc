@@ -28,7 +28,9 @@
 //
 // -----------------------------------------------------------------------------
 
-#include "Particle-Rib-Write.h"
+#include "Renderman-Particle.h"
+#include "Renderman-Mesh.h"
+#include "Rib-Write.h"
 
 extern "C" {
 
@@ -56,10 +58,12 @@ NiUserOpAlloc(const NtCString type, const NtCString name)
 {
     // IMPORTANT: typenames are case insensitive!
     const NtString typeName = NtString(type).toLower();
-    if(typeName == "particle-rib-write")
-        return new Particle_Rib_Write(name);
-    if(typeName == "particle-rib-terminal")
-        return new Particle_Rib_Terminal(name);
+    if(typeName == "renderman-particle")
+        return new Renderman_Particle(name);
+    if(typeName == "renderman-mesh")
+        return new Renderman_Mesh(name);
+    if(typeName == "rib-write")
+        return new Rib_Write(name);
     NB_ERROR("NOT plugin: Don't know how to make user op: " << type);
     return 0;
 }
