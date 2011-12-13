@@ -1,4 +1,4 @@
-BodyOp Renderman-Particle
+BodyOp Delight-Particle
 |*
    <h3>Overview</h3>
 
@@ -23,7 +23,7 @@ BodyOp Renderman-Particle
    in some other channel.
 *|
 {    
-    Category "Renderman"
+    Category "3Delight"
     Category "Particle"
 
     EnumGroup VelocitySource
@@ -78,4 +78,4 @@ BodyOp Renderman-Particle
     Passthrough "b" "0"
 }
 
-Code "NBuddy-Prman"
+Code "NBuddy-3delight"

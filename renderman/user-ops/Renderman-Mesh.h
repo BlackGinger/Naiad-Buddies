@@ -40,30 +40,17 @@
 // Naiad Graph API
 #include <NgBodyOp.h>
 
-class Renderman_Mesh : public Ng::BodyOp
+#include "../common/Rib-Mesh.h"
+
+class Renderman_Mesh : public Rib_Mesh
 {
 public:
     Renderman_Mesh(const Nb::String& name)
-        : Ng::BodyOp(name) {  }
+        : Rib_Mesh(name) {  }
     
     virtual Nb::String
     typeName() const
-    { return "Renderman-Mesh"; }
-    
-    virtual void
-    stepAdmittedBody(Nb::Body*             body,
-                     Ng::NelContext&       nelContext,
-                     const Nb::TimeBundle& tb)
-    {
-        body->guaranteeProp1s("Renderman", "Motion Blur",
-                              param1e("Motion Blur")->eval(tb));
-        
-        body->guaranteeProp1s("Renderman", "Motion Samples",
-                              param1s("Motion Samples")->eval(tb));
-
-        body->guaranteeProp1s("Renderman", "Velocity Source",
-                              param1e("Velocity Source")->eval(tb));
-    }
+    { return "Renderman-Mesh"; }   
 };
 
 // ----------------------------------------------------------------------------

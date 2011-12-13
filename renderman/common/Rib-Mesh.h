@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //
-// Renderman-Particle.h
+// Rib-Mesh.h
 //
 // Copyright (c) 2011 Exotic Matter AB.  All rights reserved.
 //
@@ -34,23 +34,41 @@
 //
 // ----------------------------------------------------------------------------
 
+#ifndef RIB_MESH
+#define RIB_MESH
+
 // Renderman
 #include "ri.h"
 
 // Naiad Graph API
 #include <NgBodyOp.h>
 
-#include "../common/Rib-Particle.h"
-
-class Renderman_Particle : public Rib_Particle
+class Rib_Mesh : public Ng::BodyOp
 {
 public:
-    Renderman_Particle(const Nb::String& name)
-        : Rib_Particle(name) {  }
+    Rib_Mesh(const Nb::String& name)
+        : Ng::BodyOp(name) {  }
     
     virtual Nb::String
     typeName() const
-    { return "Renderman-Particle"; }
+    { return "Rib-Mesh"; }
+    
+    virtual void
+    stepAdmittedBody(Nb::Body*             body,
+                     Ng::NelContext&       nelContext,
+                     const Nb::TimeBundle& tb)
+    {
+        body->guaranteeProp1s("Renderman", "Motion Blur",
+                              param1e("Motion Blur")->eval(tb));
+        
+        body->guaranteeProp1s("Renderman", "Motion Samples",
+                              param1s("Motion Samples")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Velocity Source",
+                              param1e("Velocity Source")->eval(tb));
+    }
 };
+
+#endif RIB_MESH
 
 // ----------------------------------------------------------------------------

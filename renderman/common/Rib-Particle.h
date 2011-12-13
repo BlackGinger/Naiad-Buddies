@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //
-// Renderman-Particle.h
+// Rib-Particle.h
 //
 // Copyright (c) 2011 Exotic Matter AB.  All rights reserved.
 //
@@ -34,23 +34,50 @@
 //
 // ----------------------------------------------------------------------------
 
+#ifndef RIB_PARTICLE
+#define RIB_PARTICLE
+
 // Renderman
 #include "ri.h"
 
 // Naiad Graph API
 #include <NgBodyOp.h>
 
-#include "../common/Rib-Particle.h"
-
-class Renderman_Particle : public Rib_Particle
+class Rib_Particle : public Ng::BodyOp
 {
 public:
-    Renderman_Particle(const Nb::String& name)
-        : Rib_Particle(name) {  }
+    Rib_Particle(const Nb::String& name)
+        : Ng::BodyOp(name) {  }
     
     virtual Nb::String
     typeName() const
-    { return "Renderman-Particle"; }
+    { return "Rib-Particle"; }
+    
+    virtual void
+    stepAdmittedBody(Nb::Body*             body,
+                     Ng::NelContext&       nelContext,
+                     const Nb::TimeBundle& tb)
+    {
+        body->guaranteeProp1s("Renderman", "Motion Blur",
+                              param1e("Motion Blur")->eval(tb));
+        
+        body->guaranteeProp1s("Renderman", "Motion Samples",
+                              param1s("Motion Samples")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Velocity Source",
+                              param1e("Velocity Source")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Per-Particle Radius",
+                              param1e("Per-Particle Radius")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Per-Particle Radius Channel",
+                              param1s("Per-Particle Radius Channel")->eval(tb));
+
+        body->guaranteeProp1f("Renderman", "Constant Radius",
+                              param1f("Constant Radius")->expr());
+    }
 };
+
+#endif RIB_PARTICLE
 
 // ----------------------------------------------------------------------------

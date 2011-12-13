@@ -29,5 +29,9 @@ project (NBUDDY_RENDERMAN_USER_OPS)
 
 install (FILES Renderman-Mesh.BodyOp DESTINATION server/user-ops)
 install (FILES Renderman-Particle.BodyOp DESTINATION server/user-ops)
-install (FILES Rib-Write.BodyOp DESTINATION server/user-ops)
+install (FILES Renderman-Rib-Write.BodyOp DESTINATION server/user-ops)
+
+install (FILES Delight-Mesh.BodyOp DESTINATION server/user-ops)
+install (FILES Delight-Particle.BodyOp DESTINATION server/user-ops)
+install (FILES Delight-Rib-Write.BodyOp DESTINATION server/user-ops)
 

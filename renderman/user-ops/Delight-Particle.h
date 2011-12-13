@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //
-// Renderman-Particle.h
+// Delight-Particle.h
 //
 // Copyright (c) 2011 Exotic Matter AB.  All rights reserved.
 //
@@ -42,15 +42,15 @@
 
 #include "../common/Rib-Particle.h"
 
-class Renderman_Particle : public Rib_Particle
+class Delight_Particle : public Rib_Particle
 {
 public:
-    Renderman_Particle(const Nb::String& name)
+    Delight_Particle(const Nb::String& name)
         : Rib_Particle(name) {  }
     
     virtual Nb::String
     typeName() const
-    { return "Renderman-Particle"; }
+    { return "Delight-Particle"; }
 };
 
 // ----------------------------------------------------------------------------

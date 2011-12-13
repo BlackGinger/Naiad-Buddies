@@ -1,4 +1,4 @@
-BodyOp Rib-Write
+BodyOp Renderman-Rib-Write
 |*
    <h3>Overview</h3>
    This operator outputs all admitted bodies into a sequence of PhotoRealistic
@@ -28,7 +28,7 @@ BodyOp Rib-Write
         RIBFormat "RIB Format" "Binary (Compressed)"
         || ASCII or binary compressed RIBs
 
-        PathName "RIB Archive" "Unnamed.#.rib"
+        FileName "RIB Archive" "Unnamed.#.rib"
         || The name of the output RIB sequence.
 
         BodyNameList "Body Names" "*"
@@ -50,4 +50,4 @@ BodyOp Rib-Write
     Passthrough "b" "0"
 }
 
-Code "NBuddy-Prman NBuddy-3delight"
+Code "NBuddy-Prman"

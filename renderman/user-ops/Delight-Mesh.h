@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //
-// Renderman-Particle.h
+// Delight-Mesh.h
 //
 // Copyright (c) 2011 Exotic Matter AB.  All rights reserved.
 //
@@ -40,17 +40,17 @@
 // Naiad Graph API
 #include <NgBodyOp.h>
 
-#include "../common/Rib-Particle.h"
+#include "../common/Rib-Mesh.h"
 
-class Renderman_Particle : public Rib_Particle
+class Delight_Mesh : public Rib_Mesh
 {
 public:
-    Renderman_Particle(const Nb::String& name)
-        : Rib_Particle(name) {  }
+    Delight_Mesh(const Nb::String& name)
+        : Rib_Mesh(name) {  }
     
     virtual Nb::String
     typeName() const
-    { return "Renderman-Particle"; }
+    { return "Delight-Mesh"; }
 };
 
 // ----------------------------------------------------------------------------

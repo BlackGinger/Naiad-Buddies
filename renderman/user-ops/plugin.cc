@@ -30,7 +30,11 @@
 
 #include "Renderman-Particle.h"
 #include "Renderman-Mesh.h"
-#include "Rib-Write.h"
+#include "Renderman-Rib-Write.h"
+
+#include "Delight-Particle.h"
+#include "Delight-Mesh.h"
+#include "Delight-Rib-Write.h"
 
 extern "C" {
 
@@ -62,8 +66,16 @@ NiUserOpAlloc(const NtCString type, const NtCString name)
         return new Renderman_Particle(name);
     if(typeName == "renderman-mesh")
         return new Renderman_Mesh(name);
-    if(typeName == "rib-write")
-        return new Rib_Write(name);
+    if(typeName == "renderman-rib-write")
+        return new Renderman_Rib_Write(name);
+
+    if(typeName == "delight-particle")
+        return new Delight_Particle(name);
+    if(typeName == "delight-mesh")
+        return new Delight_Mesh(name);
+    if(typeName == "delight-rib-write")
+        return new Delight_Rib_Write(name);
+
     NB_ERROR("NOT plugin: Don't know how to make user op: " << type);
     return 0;
 }

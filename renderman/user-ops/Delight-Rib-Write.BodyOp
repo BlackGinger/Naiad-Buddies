@@ -1,0 +1,53 @@
+BodyOp Delight-Rib-Write
+|*
+   <h3>Overview</h3>
+   This operator outputs all admitted bodies into a sequence of PhotoRealistic
+   RenderMan RIB archive files.  The bodies must have been tagged previously
+   in the graph so that this op knows how to export them.  For example, Mesh
+   bodies should have been tagged using the Renderman-Mesh op.
+
+   <h3>RIB Archive Output</h3>
+   For each frame (and time-step), all admitted bodies will be embedded into a
+   RIB archive corresponding to the current frame and time-step.  
+   The name of the archive is given by the "RIB Archive" parameter, where # is 
+   the current frame, with the appropriate zero-padding applied using the
+   "Frame Padding" parameter.
+*|
+{    
+    Category "File"
+    Category "Renderman"
+
+    EnumGroup RIBFormat
+    {
+        "Binary (Compressed)"
+        "ASCII"
+    }
+
+    ParamSection "File Output" 
+    {
+        RIBFormat "RIB Format" "Binary (Compressed)"
+        || ASCII or binary compressed RIBs
+
+        FileName "RIB Archive" "Unnamed.#.rib"
+        || The name of the output RIB sequence.
+
+        BodyNameList "Body Names" "*"
+        || The list of body names to include in the write.
+
+        Toggle "Output Timesteps" "Off" 
+        || Writes per timestep RIBs in addition to per frame RIBs.
+
+        Int "Frame Padding" "4" 
+        || Amount of zero-padding to apply to each frame number
+    }
+
+    Group(Body) Input b ""
+    |* All render-tagged bodies admitted and output to disk. *|
+
+    Group(Body) Output 0 ""
+    || All bodies encountered in input b are passed out through this output.
+
+    Passthrough "b" "0"
+}
+
+Code "NBuddy-3delight"
