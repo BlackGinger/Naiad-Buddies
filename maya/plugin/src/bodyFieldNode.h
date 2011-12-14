@@ -37,7 +37,7 @@
 #ifndef _NBuddyBodyFieldNode
 #define _NBuddyBodyFieldNode
 
-#include <Nb/NbBody.h>
+#include <NbBody.h>
 
 #include <maya/MPxFieldNode.h>
 

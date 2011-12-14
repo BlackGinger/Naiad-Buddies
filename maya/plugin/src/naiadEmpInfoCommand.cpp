@@ -36,8 +36,8 @@
 
 #include "naiadEmpInfoCommand.h"
 
-#include <Nb/NbEmpReader.h>
-#include <Nb/NbBody.h>
+#include <NbEmpReader.h>
+#include <NbBody.h>
 
 #include <maya/MArgDatabase.h>
 #include <maya/MSyntax.h>

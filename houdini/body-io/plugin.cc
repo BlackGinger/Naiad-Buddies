@@ -36,7 +36,7 @@ extern "C" {
 // -----------------------------------------------------------------------------
     
 NB_EXPORT bool
-BodyIoBeginPlugin(Nb::ForeignFactory* factory)
+BeginPlugin(Nb::ForeignFactory* factory)
 {
     Nb::setForeignFactory(factory);
     return true;
@@ -45,7 +45,7 @@ BodyIoBeginPlugin(Nb::ForeignFactory* factory)
 // -----------------------------------------------------------------------------
    
 NB_EXPORT bool
-BodyIoEndPlugin()
+EndPlugin()
 {
     return true;
 }

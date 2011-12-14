@@ -38,7 +38,7 @@
 #define _naiadToMayaUtils
 
 #include <maya/MObject.h>
-#include <Nb/NbBody.h>
+#include <NbBody.h>
 
 MObject naiadBodyToMayaMesh( Nb::BodyCowPtr & body , MObject & parent );
 MObject naiadBodyToMayaMeshVelocityInterpolate( Nb::BodyCowPtr & body , MObject & parent, float loadTime, float currentTime , float blurStrength);

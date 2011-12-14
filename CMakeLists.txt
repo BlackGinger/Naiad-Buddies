@@ -45,6 +45,62 @@ include_directories   (.
 
 link_directories      ($ENV{NAIAD_PATH}/server/lib)
 
+# LINUX
+
+if (LINUX)
+add_definitions(-DLINUX -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -DLINUX -DUNIX -DLINUX_64)
+endif (LINUX)
+
+# OSX
+
+if (APPLE)
+add_definitions(-DOSX -DAPPLE)
+endif (APPLE)
+
+# WINDOWS
+
+if (WIN32)
+add_definitions(-DWINDOWS)
+if(CMAKE_BUILD_TYPE MATCHES "DEBUG")
+set(EM_D "d")
+set(CMAKE_DEBUG_POSTFIX "d")
+else()
+set(EM_D "")
+set(CMAKE_DEBUG_POSTFIX "")
+endif()
+MESSAGE("postfix is " ${CMAKE_DEBUG_POSTFIX})
+endif (WIN32)
+
+# gcc flags
+if ("$ENV{EM_COMPILER}" STREQUAL "gcc")
+add_definitions(-fopenmp -fexceptions -Wall -fPIC -pipe -fno-common -DOMP_ENABLED)
+set (DEBUG_COMP_FLAGS "${COMP_FLAGS} -g3 -O0 -DDEBUG")
+set (RELEASE_COMP_FLAGS "${COMP_FLAGS} -O3 -DRELEASE -DNDEBUG -fomit-frame-pointer")
+endif ("$ENV{EM_COMPILER}" STREQUAL "gcc")
+
+# Intel compiler flags
+if ("$ENV{EM_COMPILER}" STREQUAL "intel")
+add_definitions(-static-intel -ansi-alias -parallel -DOMP_ENABLED -fexceptions -Wall -fPIC -pipe -fno-common -openmp -openmp-report2 -no-ipo -diag-disable 981,383,1572,869,1418,193 -gcc-version=430 -gxx-name=g++-4.3 -gcc-name=gcc-4.3)
+set (DEBUG_COMP_FLAGS "${COMP_FLAGS} -DDEBUG -g3 -O0 -inline-level=1")
+set (RELEASE_COMP_FLAGS "${COMP_FLAGS} -DRELEASE -DNDEBUG -O3 -fomit-frame-pointer")
+include_directories($ENV{INTEL_PATH}/include)
+endif ("$ENV{EM_COMPILER}" STREQUAL "intel")
+
+# MSVC compiler flags
+if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+add_definitions(/wd4820 /wd4626 /MP /EHa /DOMP_ENABLED /openmp)
+set (DEBUG_COMP_FLAGS "/DDEBUG /MDd /Zi")
+set (RELEASE_COMP_FLAGS "/DRELEASE /DNDEBUG /MD /O2 -DQT_NO_DEBUG_OUTPUT ")
+endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+
+# Set the C/C++ compiler flags
+
+set(CMAKE_C_FLAGS_DEBUG ${DEBUG_COMP_FLAGS})
+set(CMAKE_CXX_FLAGS_DEBUG ${DEBUG_COMP_FLAGS})
+
+set(CMAKE_C_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
+set(CMAKE_CXX_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
+
 if (WIN32)
 subdirs (houdini maya krakatoa renderman)
 else()

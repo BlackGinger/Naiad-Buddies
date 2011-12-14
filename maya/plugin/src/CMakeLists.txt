@@ -50,14 +50,14 @@ set_target_properties( naiadBuddyForMaya${MAYA_VERSION} PROPERTIES PREFIX "" )
 
 if ($ENV{EM_COMPILER} STREQUAL "intel")
 target_link_libraries(naiadBuddyForMaya${MAYA_VERSION} -Bsymbolic)
-set(EMLIBS Nb)
+set(EMLIBS Nb${EM_D})
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
 
 # special gcc link flags
 
 if ($ENV{EM_COMPILER} STREQUAL "gcc")
 target_link_libraries(naiadBuddyForMaya${MAYA_VERSION} -symbolic)
-set(EMLIBS Nb)
+set(EMLIBS Nb${EM_D})
 endif ($ENV{EM_COMPILER} STREQUAL "gcc")
 
 # special MSVC link flags
@@ -65,7 +65,7 @@ endif ($ENV{EM_COMPILER} STREQUAL "gcc")
 if ($ENV{EM_COMPILER} STREQUAL "MSVC")
 set_target_properties(naiadBuddyForMaya${MAYA_VERSION} PROPERTIES SUFFIX ".mll")
 target_link_libraries(naiadBuddyForMaya${MAYA_VERSION} -symbolic)
-set(EMLIBS Nb)
+set(EMLIBS Nb${EM_D})
 endif ($ENV{EM_COMPILER} STREQUAL "MSVC")
 
 # libraries used...

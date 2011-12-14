@@ -35,7 +35,7 @@
 // -----------------------------------------------------------------------------
 
 #include <maya/MPxLocatorNode.h> 
-#include <Nb/NbBody.h>
+#include <NbBody.h>
 
 class NBuddyBodyDisplayLocator : public MPxLocatorNode
 {

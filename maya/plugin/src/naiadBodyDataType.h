@@ -47,7 +47,7 @@
 #include <maya/MFnPluginData.h>
 
 //Naiad include
-#include <Nb/NbBody.h>
+#include <NbBody.h>
 
 // naiadBodyData
 // -------

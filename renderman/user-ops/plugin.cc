@@ -41,7 +41,7 @@ extern "C" {
 // -----------------------------------------------------------------------------
     
 NI_EXPORT bool
-NiBeginPlugin(NtForeignFactory* factory)
+BeginPlugin(NtForeignFactory* factory)
 {
     NiSetForeignFactory(factory);
     return true;
@@ -50,7 +50,7 @@ NiBeginPlugin(NtForeignFactory* factory)
 // -----------------------------------------------------------------------------
    
 NI_EXPORT bool
-NiEndPlugin()
+EndPlugin()
 {
     return true;
 }
@@ -58,7 +58,7 @@ NiEndPlugin()
 // -----------------------------------------------------------------------------
 
 NI_EXPORT Nb::Object*
-NiUserOpAlloc(const NtCString type, const NtCString name)
+UserOpAlloc(const NtCString type, const NtCString name)
 {
     // IMPORTANT: typenames are case insensitive!
     const NtString typeName = NtString(type).toLower();

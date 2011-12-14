@@ -99,7 +99,7 @@ private:
 extern "C" {
 
 NI_EXPORT bool
-NiBeginPlugin(NtForeignFactory* factory)
+BeginPlugin(NtForeignFactory* factory)
 {
     NiSetForeignFactory(factory);
     return true;
@@ -108,7 +108,7 @@ NiBeginPlugin(NtForeignFactory* factory)
 // -----------------------------------------------------------------------------
    
 NI_EXPORT bool
-NiEndPlugin(NtForeignFactory* factory)
+EndPlugin(NtForeignFactory* factory)
 {
     return true;
 }
@@ -116,7 +116,7 @@ NiEndPlugin(NtForeignFactory* factory)
 // -----------------------------------------------------------------------------
 
 NI_EXPORT Nb::Object*
-NiUserOpAlloc(const NtCString type, const NtCString name)
+UserOpAlloc(const NtCString type, const NtCString name)
 {
     return new Arnold_Render(name);
 }

@@ -49,8 +49,8 @@
 #include <maya/MFnDoubleArrayData.h>
 #include <maya/MFnDagNode.h>
 
-#include <Nb/NbFieldChannel1f.h>
-#include <Nb/NbFieldChannel3f.h>
+#include <NbFieldChannel1f.h>
+#include <NbFieldChannel3f.h>
 
 MObject NBuddyBodyFieldNode::sampleInterpolation;
 MObject NBuddyBodyFieldNode::sampleType;

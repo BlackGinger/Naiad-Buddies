@@ -55,7 +55,7 @@
 #include <maya/MIOStream.h>
 #include <maya/MTime.h>
 
-#include <Nb/NbEmpWriter.h>
+#include <NbEmpWriter.h>
 
 // Unique Node TypeId
 MTypeId     NBuddyEMPSaverNode::id( NAIAD_EMP_SAVER_NODEID );

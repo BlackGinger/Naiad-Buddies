@@ -40,8 +40,8 @@
 #include <maya/MFnMesh.h>
 #include <maya/MMatrix.h>
 
-#include <Nb/NbBody.h>
-#include <Nb/NbFactory.h>
+#include <NbBody.h>
+#include <NbFactory.h>
 
 Nb::BodyCowPtr mayaMeshToNaiadBody( MObject & conversionMesh, std::string bodyName, bool localSpace, const MMatrix & worldMatrix );
 
