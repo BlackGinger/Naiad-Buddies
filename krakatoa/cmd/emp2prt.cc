@@ -46,7 +46,7 @@
 #include <NbBody.h>
 #include <NbEmpReader.h>
 
-#include <em/em_mat44.h>
+#include <em_mat44.h>
 
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
 #  include <fcntl.h>

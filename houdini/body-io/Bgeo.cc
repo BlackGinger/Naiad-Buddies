@@ -9,7 +9,7 @@ Bgeo::Bgeo(const char* filename) :
 				, mFile(filename, ios::in|ios::binary)
 {
     if(!mFile.good())
-        NB_THROW("Cannot read input mFile: '" << filename << "'");
+        NB_THROW("Cannot read bgeo: '" << filename << "'");
 
     //Read One char "V" and 10 32-bit uints
     const int bufferSize = sizeof(char) + 10*sizeof(uint32_t);
@@ -66,7 +66,7 @@ Bgeo::Bgeo(const char* filename,uint32_t * headerParameters) :
 				, mFile(filename, ios::out|ios::binary)
 {
     if(!mFile.good())
-        NB_THROW("Cannot create output mFile: '" << filename << "'");
+        NB_THROW("Cannot create bgeo: '" << filename << "'");
 
     //Set constants right away
 	setConstants();

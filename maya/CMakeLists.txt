@@ -41,18 +41,20 @@ set(CMAKE_VERBOSE_MAKEFILE 1)
 
 project(NAIAD_BUDDY_FOR_MAYA)
 
-include_directories   (.
-                       ..
-                       ${MAYA_INSTALL_PATH}/include)
+include_directories   (.. ${MAYA_INSTALL_PATH}/include)
 
 link_directories      (${MAYA_INSTALL_PATH}/lib)
 
-#add_definitions (-m64 -fexceptions -fno-gnu-keywords -ftemplate-depth-25 -fno-common -fPIC -pipe -pthread -Wall -Wno-multichar -Wno-comment -Wno-sign-compare -funsigned-char -Wno-reorder -Wno-deprecated)
-add_definitions(-DBits64_ -D_BOOL -DFUNCPROTO -DREQUIRE_IOSTREAM -DMAYA_VERSION=${MAYA_VERSION})
 
 if (UNIX)
 add_definitions(-D_GNU_SOURCE)
 endif (UNIX)
+
+add_definitions(-DBits64_ -D_BOOL -DFUNCPROTO -DREQUIRE_IOSTREAM -DMAYA_VERSION=${MAYA_VERSION})
+
+if ("$ENV{EM_COMPILER}" STREQUAL "gcc")
+add_definitions (-m64 -fexceptions -fno-gnu-keywords -ftemplate-depth-25 -fno-common -fPIC -pipe -pthread -Wall -Wno-multichar -Wno-comment -Wno-sign-compare -funsigned-char -Wno-reorder -Wno-deprecated)
+endif ("$ENV{EM_COMPILER}" STREQUAL "gcc")
 
 # The source directories we are building
 

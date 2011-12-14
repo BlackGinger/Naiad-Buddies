@@ -367,6 +367,6 @@ private:
     int64_t    _particleCount;
 };
 
-#endif RIB_WRITE
+#endif // RIB_WRITE
 
 // ----------------------------------------------------------------------------

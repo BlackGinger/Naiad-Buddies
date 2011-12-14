@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# all plugins linking to 2011 versions
+cd $DEV_ROOT_NBUDDIES/stage-$EM_PLAT-$EM_ARCH/debug2011
+make install -j8
+
+# all plugins linking to 2012 versions
+cd $DEV_ROOT_NBUDDIES/stage-$EM_PLAT-$EM_ARCH/debug2012
+make install -j8
+
+# do Houdini cmd-line tools
+cd $DEV_ROOT_NBUDDIES/houdini/cmd
+make -j8
+make install

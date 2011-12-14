@@ -45,32 +45,6 @@ include_directories   (.
 
 link_directories      ($ENV{NAIAD_PATH}/server/lib)
 
-# LINUX
-
-if (LINUX)
-add_definitions(-DLINUX -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -DLINUX -DUNIX -DLINUX_64)
-endif (LINUX)
-
-# OSX
-
-if (APPLE)
-add_definitions(-DOSX -DAPPLE)
-endif (APPLE)
-
-# WINDOWS
-
-if (WIN32)
-add_definitions(-DWINDOWS)
-if(CMAKE_BUILD_TYPE MATCHES "DEBUG")
-set(EM_D "d")
-set(CMAKE_DEBUG_POSTFIX "d")
-else()
-set(EM_D "")
-set(CMAKE_DEBUG_POSTFIX "")
-endif()
-MESSAGE("postfix is " ${CMAKE_DEBUG_POSTFIX})
-endif (WIN32)
-
 # gcc flags
 if ("$ENV{EM_COMPILER}" STREQUAL "gcc")
 add_definitions(-fopenmp -fexceptions -Wall -fPIC -pipe -fno-common -DOMP_ENABLED)
@@ -100,6 +74,34 @@ set(CMAKE_CXX_FLAGS_DEBUG ${DEBUG_COMP_FLAGS})
 
 set(CMAKE_C_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
 set(CMAKE_CXX_FLAGS_RELEASE ${RELEASE_COMP_FLAGS})
+
+
+# LINUX
+
+if (UNIX)
+add_definitions(-DLINUX -DUNIX -DLINUX_64 -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64)
+endif (UNIX)
+
+# OSX
+
+if (APPLE)
+add_definitions(-DOSX -DAPPLE)
+endif (APPLE)
+
+# WINDOWS
+
+if (WIN32)
+add_definitions(-DWINDOWS)
+if(CMAKE_BUILD_TYPE MATCHES "DEBUG")
+set(EM_D "d")
+set(CMAKE_DEBUG_POSTFIX "d")
+else()
+set(EM_D "")
+set(CMAKE_DEBUG_POSTFIX "")
+endif()
+MESSAGE("postfix is " ${CMAKE_DEBUG_POSTFIX})
+endif (WIN32)
+
 
 if (WIN32)
 subdirs (houdini maya krakatoa renderman)
