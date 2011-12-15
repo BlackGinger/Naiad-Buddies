@@ -82,7 +82,7 @@ shader_evaluate
        const double time = sg->time;
 
        const Nb::Vec3f dx=time*dt*Nb::Vec3f(ux,vx,wx);
-
+       
        sg->out.FLT = level + 
            Nb::sampleFieldQuadratic1f(x+dx,body->constLayout(),*fldDistance);
    }

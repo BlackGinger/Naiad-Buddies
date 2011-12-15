@@ -88,7 +88,7 @@ private:
                     Ng::projectPath(),
                     s,
                     tb.frame,
-                    tb.timestep,
+                    tb.frameStep ? -1 : tb.timestep,                    
                     param1i("Frame Padding")->eval(tb)
                 );
     };
