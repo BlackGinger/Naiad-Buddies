@@ -36,13 +36,20 @@ project               (NBUDDY_ARNOLD_USER_OPS_ARNOLD_PARTICLE)
 add_library           (Arnold-Particle SHARED 
                        Arnold-Particle)
 
-# on intel compiler, use static libraries...
-
+# Intel compiler
 if ($ENV{EM_COMPILER} STREQUAL "intel")
 target_link_libraries (Arnold-Particle Ni ai -static-intel)
-else ($ENV{EM_COMPILER} STREQUAL "intel")
-target_link_libraries (Arnold-Particle Ni ai)
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# GCC compiler
+if ($ENV{EM_COMPILER} STREQUAL "gcc")
+target_link_libraries (Arnold-Particle Ni ai)
+endif ($ENV{EM_COMPILER} STREQUAL "gcc")
+
+# MSVC compiler
+if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+target_link_libraries (Arnold-Particle Ni${EM_D} ai.dll)
+endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
 
 # destination location for user op
 

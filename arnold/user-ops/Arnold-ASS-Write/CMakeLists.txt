@@ -36,15 +36,23 @@ project               (NBUDDY_ARNOLD_USER_OPS_ARNOLD_ASS_WRITE)
 # user op is a dynamic shared library
 
 add_library           (Arnold-ASS-Write SHARED 
-		       		   Arnold-ASS-Write)
+ 		       Arnold-ASS-Write)
 
-# on intel compiler, use static libraries...
 
+# Intel compiler
 if ($ENV{EM_COMPILER} STREQUAL "intel")
 target_link_libraries (Arnold-ASS-Write Ni ai -static-intel)
-else ($ENV{EM_COMPILER} STREQUAL "intel")
-target_link_libraries (Arnold-ASS-Write Ni ai)
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# GCC compiler
+if ($ENV{EM_COMPILER} STREQUAL "gcc")
+target_link_libraries (Arnold-ASS-Write Ni ai)
+endif ($ENV{EM_COMPILER} STREQUAL "gcc")
+
+# MSVC compiler
+if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+target_link_libraries (Arnold-ASS-Write Ni${EM_D} ai.dll)
+endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
 
 # destination location for user op
 

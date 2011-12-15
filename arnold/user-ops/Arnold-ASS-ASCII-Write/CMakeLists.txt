@@ -36,15 +36,22 @@ project               (NBUDDY_ARNOLD_USER_OPS_ARNOLD_ASS_ASCII_WRITE)
 # user op is a dynamic shared library
 
 add_library           (Arnold-ASS-ASCII-Write SHARED 
-		       		   Arnold-ASS-ASCII-Write)
+       		       Arnold-ASS-ASCII-Write)
 
-# on intel compiler, use static libraries...
-
+# Intel compiler
 if ($ENV{EM_COMPILER} STREQUAL "intel")
 target_link_libraries (Arnold-ASS-ASCII-Write Ni ai -static-intel)
-else ($ENV{EM_COMPILER} STREQUAL "intel")
-target_link_libraries (Arnold-ASS-ASCII-Write Ni ai)
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# GCC compiler
+if ($ENV{EM_COMPILER} STREQUAL "gcc")
+target_link_libraries (Arnold-ASS-ASCII-Write Ni ai)
+endif ($ENV{EM_COMPILER} STREQUAL "gcc")
+
+# MSVC compiler
+if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+target_link_libraries (Arnold-ASS-ASCII-Write Ni${EM_D} ai.dll)
+endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
 
 # destination location for user op
 

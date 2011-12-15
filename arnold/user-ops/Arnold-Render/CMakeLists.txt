@@ -36,13 +36,21 @@ project               (NBUDDY_ARNOLD_USER_OPS_ARNOLD_RENDER)
 add_library           (Arnold-Render SHARED 
 		       Arnold-Render)
 
-# on intel compiler, use static libraries...
 
+# Intel compiler
 if ($ENV{EM_COMPILER} STREQUAL "intel")
 target_link_libraries (Arnold-Render Ni ai -static-intel)
-else ($ENV{EM_COMPILER} STREQUAL "intel")
-target_link_libraries (Arnold-Render Ni ai)
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# GCC compiler
+if ($ENV{EM_COMPILER} STREQUAL "gcc")
+target_link_libraries (Arnold-Render Ni ai)
+endif ($ENV{EM_COMPILER} STREQUAL "gcc")
+
+# MSVC compiler
+if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+target_link_libraries (Arnold-Render Ni${EM_D} ai.dll)
+endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
 
 # destination location for user op
 
