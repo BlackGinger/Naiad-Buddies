@@ -104,7 +104,9 @@ public:
             //Set Camera parameters
             AiNodeSetFlt(cam,"near_clip",camera->prop1f("Near Clip")->eval(tb));
             AiNodeSetFlt(cam,"far_clip", camera->prop1f("Far Clip")->eval(tb));
-            AiNodeSetFlt(cam, "fov", camera->prop1f("Angle Of View")->eval(tb));
+            const float focalLengthInMM = camera->prop1f("Focal Length")->eval(tb);
+            const float vApertureInMM = 25.4f*camera->prop1f("Vertical Aperture")->eval(tb);
+            AiNodeSetFlt(cam, "fov", 180/3.14*2*atan(vApertureInMM/2*focalLengthInMM));
 
             //Set Motion blur in camera
             AiNodeSetFlt(cam,"shutter_end", p.getMotionBlur());

@@ -31,18 +31,25 @@
 #    ANY  WAY OUT OF THE USE OF  THIS SOFTWARE,  EVEN IF ADVISED OF  THE
 #    POSSIBILITY OF SUCH DAMAGE.
 #
+
 project               (NBUDDY_ARNOLD_USER_OPS_ARNOLD_MESH)
 
-add_library           (Arnold-Mesh SHARED 
-		       		   Arnold-Mesh)
+add_library           (Arnold-Mesh SHARED Arnold-Mesh)
 
-# on intel compiler, use static libraries...
-
+# Intel compiler
 if ($ENV{EM_COMPILER} STREQUAL "intel")
 target_link_libraries (Arnold-Mesh Ni ai -static-intel)
-else ($ENV{EM_COMPILER} STREQUAL "intel")
-target_link_libraries (Arnold-Mesh Ni ai)
 endif ($ENV{EM_COMPILER} STREQUAL "intel")
+
+# GCC compiler
+if ($ENV{EM_COMPILER} STREQUAL "gcc")
+target_link_libraries (Arnold-Mesh Ni ai)
+endif ($ENV{EM_COMPILER} STREQUAL "gcc")
+
+# MSVC compiler
+if ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
+target_link_libraries (Arnold-Mesh Ni${EM_D} ai.dll)
+endif ("$ENV{EM_COMPILER}" STREQUAL "MSVC")
 
 # destination location for user op
 

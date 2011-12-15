@@ -39,6 +39,6 @@ project (NBUDDY_ARNOLD)
 include_directories   ($ENV{ARNOLD_ROOT}/include
                        common)
 
-link_directories      ($ENV{ARNOLD_ROOT}/bin)
+link_directories      ($ENV{ARNOLD_ROOT}/bin $ENV{ARNOLD_ROOT}/lib)
 
-subdirs (demos plug-ins user-ops)
+subdirs (plug-ins user-ops)
