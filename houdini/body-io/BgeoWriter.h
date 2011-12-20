@@ -57,7 +57,15 @@ public:
             //WRITE MESH BGEO
             const Nb::PointShape& point =  body->constPointShape();
             const uint32_t nPoints = point.channel(0)->size();
-            const uint32_t nPointAtr = point.channelCount() - 1; // position doesn't count
+            uint32_t nPointAtr = point.channelCount() - 1; // position doesn't count
+
+            // update nPointAtr count for all unlisted channels
+            for(int index = 1; index < point.channelCount(); ++index) {
+                Nb::String name = point.channel(index)->name();
+                Nb::String qualName = Nb::String("Point.") + name;
+                if(!qualName.listed_in_channel_list(channels))
+                    --nPointAtr;
+            }
 
             const Nb::TriangleShape& triangle = body->constTriangleShape();
             const uint32_t nPrims= triangle.channel(0)->size();
@@ -65,6 +73,9 @@ public:
             int totalTriangleAtr = triangle.channelCount() - 1; //index doesn't count
             for(int i=0; i<triangle.channelCount(); ++i) {
                 const Nb::String triAtrStr = triangle.channel(i)->name();
+                Nb::String qualName = Nb::String("Triangle.") + triAtrStr;
+                if(!qualName.listed_in_channel_list(channels))
+                    continue;
                 if (triAtrStr.find("$v") != string::npos) {
                     if ((triAtrStr.find("$v1") != string::npos) || (triAtrStr.find("$v2") != string::npos))
                         --totalTriangleAtr;
@@ -90,6 +101,11 @@ public:
             pointData[0] = (char*) point.constBuffer3f(0).data;
 
             for(int i=1; i<=nPointAtr; ++i) {
+                Nb::String qualName = Nb::String("Point.") + 
+                    point.channel(i)->name();
+                // skip unlisted channels
+                if(!qualName.listed_in_channel_list(channels))
+                    continue;
                 switch(point.channel(i)->type()) {
                     case Nb::ValueBase::FloatType: {
                         b.addPointAttribute(i - 1, point.channel(i)->name().c_str(), 1, 0,
@@ -143,6 +159,9 @@ public:
             //Dont try to do this whole step in different threads.
             for (int i = 1; i < triangle.channelCount(); ++i){
                 Nb::String name = triangle.channel(i)->name();
+                Nb::String qualName = Nb::String("Triangle.") + name;
+                if(!qualName.listed_in_channel_list(channels))
+                    continue;                
                 char * def = (char *) &(triangle.channel(i)->defaultValue()[0]);
                 size_t posV = name.find("$v");
                 if (posV != string::npos){
@@ -231,6 +250,15 @@ public:
                 expFromHoudini = true;
                 --nPointAtrTmp;
             }
+
+            // update pointattr count for all unlisted channels
+            for(int index = 1; index < particle.channelCount(); ++index) {
+                Nb::String name = particle.channel(index)->name();
+                Nb::String qualName = Nb::String("Particle.") + name;
+                if(!qualName.listed_in_channel_list(channels))
+                    --nPointAtrTmp;
+            }
+
             const uint32_t nPointAtr = nPointAtrTmp;
 
             //for (int i = 0; i < particle.channelCount(); ++i)
@@ -259,7 +287,6 @@ public:
             pointData[0] = new char[sizeof3f * nPoints];
             pointData_start[0] = pointData[0];
 
-
             const Nb::BlockArray3f& blocksPos=particle.constBlocks3f(0);
             const int bcountPos=blocksPos.block_count();
             for(int b=0; b<bcountPos; ++b) {
@@ -273,6 +300,10 @@ public:
             int i = 1;
             for (int index = 1; index < particle.channelCount(); ++index){
                 Nb::String name = particle.channel(index)->name();
+                Nb::String qualName = Nb::String("Particle.") + name;
+                // skip unlisted channels
+                if(!qualName.listed_in_channel_list(channels))
+                    continue;
                 char * def = (char *) &(particle.channel(index)->defaultValue()[0]);
                 switch(particle.channel(index)->type()) {
                     case Nb::ValueBase::FloatType:{

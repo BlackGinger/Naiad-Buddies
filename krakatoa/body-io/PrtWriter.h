@@ -141,6 +141,11 @@ public:
         for(int ch=0; ch<particle.channelCount(); ++ch) {
             const Nb::ParticleChannelBase& channel = 
                 particle.constChannelBase(ch);
+            // skip unlisted channels
+            const Nb::String qualName = Nb::String("Particle.") + 
+                channel.name();
+            if(!qualName.listed_in_channel_list(channels))
+                continue;
             try {
                 // Create PRT channel (may throw) and add to list of
                 // known channels if successful.
