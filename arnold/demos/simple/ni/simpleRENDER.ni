@@ -158,16 +158,16 @@ SetParam "Camera.Vertical Aperture" "@'Camera-Scope.Vertical Aperture'" 0
 SetParam "Camera-Scope.Priority" "0" 0
 SetParam "Camera-Scope.Enabled" "1" 0
 SetParam "Camera-Scope.Camera Body" "" 0
-SetParam "Camera-Scope.Translate" "-9.37112" 0
-SetParam "Camera-Scope.Translate" "3.59324" 1
-SetParam "Camera-Scope.Translate" "-0.771446" 2
-SetParam "Camera-Scope.Rotate" "158.929" 0
-SetParam "Camera-Scope.Rotate" "-69.1802" 1
-SetParam "Camera-Scope.Rotate" "-180" 2
+SetParam "Camera-Scope.Translate" "5" 0
+SetParam "Camera-Scope.Translate" "5" 1
+SetParam "Camera-Scope.Translate" "5" 2
+SetParam "Camera-Scope.Rotate" "-45" 0
+SetParam "Camera-Scope.Rotate" "45" 1
+SetParam "Camera-Scope.Rotate" "0" 2
 SetParam "Camera-Scope.Scale" "1" 0
 SetParam "Camera-Scope.Scale" "1" 1
 SetParam "Camera-Scope.Scale" "1" 2
-SetParam "Camera-Scope.Orbit Radius" "10.457" 0
+SetParam "Camera-Scope.Orbit Radius" "8.7" 0
 SetParam "Camera-Scope.Show Pivot" "Off" 0
 SetParam "Camera-Scope.Pivot Size" "0.1" 0
 SetParam "Camera-Scope.Near Clip" "0.1" 0
@@ -431,7 +431,6 @@ Feed "Arnold-Mesh:a" "Translate-Points:0"
 Feed "Arnold-Particle:a" "Translate-Particles:0"
 Feed "Arnold-Render:a" "Camera:0"
 Feed "Arnold-Render:b" "Join:0"
-Feed "Camera-Scope:b" "Camera:0"
 Feed "Iso-Scope:b" "Arnold-Render:b"
 Feed "Isolate:b" "Liquid-Emit-Distance:0"
 Feed "Join:b" "Join-1:0"
@@ -475,15 +474,16 @@ SetMeta "Camera.Far Clip" "Mode" "evaluation"
 SetMeta "Camera.Focal Length" "Mode" "evaluation"
 SetMeta "Camera.Horizontal Aperture" "Mode" "evaluation"
 SetMeta "Camera.Vertical Aperture" "Mode" "evaluation"
-SetMeta "Camera" "Pos" "-1529.6,2975.64"
+SetMeta "Camera" "Pos" "-1521.31,2793.13"
 SetMeta "Camera" "Selected" "False"
 SetMeta "Camera" "Visible in 3D" "On"
 
 SetMeta "Camera-Scope.Focal Length" "Slider Maximum" "3500"
 SetMeta "Camera-Scope.Focal Length" "Slider Minimum" "2.5"
-SetMeta "Camera-Scope" "Pos" "-1222.29,3066.46"
+SetMeta "Camera-Scope:b" "Selected" "False"
+SetMeta "Camera-Scope" "Pos" "-1298.3,2938.82"
 SetMeta "Camera-Scope" "Selected" "False"
-SetMeta "Camera-Scope" "Visible in 3D" "On"
+SetMeta "Camera-Scope" "Visible in 3D" "Off"
 
 SetMeta "Field-Distance-Sphere.Voxel Scale" "Slider Maximum" "10"
 SetMeta "Field-Distance-Sphere.Voxel Scale" "Slider Minimum" "0.1"
