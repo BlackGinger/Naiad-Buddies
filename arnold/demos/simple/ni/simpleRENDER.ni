@@ -31,7 +31,7 @@ SetGroupPlug "Camera:0" FALSE
 
 Create CAMERA_SCOPE Camera-Scope "Camera-Scope"
 SetOpState "Camera-Scope" ACTIVE
-SetGroupPlug "Camera-Scope:a" TRUE
+SetGroupPlug "Camera-Scope:b" TRUE
 
 Create FIELD_OP Field-Distance-Sphere "Field-Distance-Sphere"
 SetOpState "Field-Distance-Sphere" INACTIVE
@@ -39,7 +39,7 @@ SetOpState "Field-Distance-Sphere" INACTIVE
 
 Create BODY_SCOPE Iso-Scope "Iso-Scope"
 SetOpState "Iso-Scope" ACTIVE
-SetGroupPlug "Iso-Scope:a" TRUE
+SetGroupPlug "Iso-Scope:b" TRUE
 
 Create BODY_OP Isolate "Isolate"
 SetOpState "Isolate" INACTIVE
@@ -66,7 +66,7 @@ SetGroupPlug "Liquid-Emit-Distance:0" TRUE
 
 Create BODY_SCOPE Mesh-Scope "Mesh-Scope"
 SetOpState "Mesh-Scope" ACTIVE
-SetGroupPlug "Mesh-Scope:a" TRUE
+SetGroupPlug "Mesh-Scope:b" TRUE
 
 Create BODY_OP Particle-Liquid "Particle-Liquid"
 SetOpState "Particle-Liquid" ACTIVE
@@ -79,7 +79,7 @@ SetGroupPlug "Particle-Mesh3:0" TRUE
 
 Create BODY_SCOPE Particle-Scope "Particle-Scope"
 SetOpState "Particle-Scope" ACTIVE
-SetGroupPlug "Particle-Scope:a" TRUE
+SetGroupPlug "Particle-Scope:b" TRUE
 
 Create BODY_OP Particle-Nel-Channel "Translate-Particles"
 SetOpState "Translate-Particles" INACTIVE
@@ -158,16 +158,16 @@ SetParam "Camera.Vertical Aperture" "@'Camera-Scope.Vertical Aperture'" 0
 SetParam "Camera-Scope.Priority" "0" 0
 SetParam "Camera-Scope.Enabled" "1" 0
 SetParam "Camera-Scope.Camera Body" "" 0
-SetParam "Camera-Scope.Translate" "-2.14271" 0
-SetParam "Camera-Scope.Translate" "10.2026" 1
-SetParam "Camera-Scope.Translate" "2.09535" 2
-SetParam "Camera-Scope.Rotate" "100.709" 0
-SetParam "Camera-Scope.Rotate" "-66.6109" 1
+SetParam "Camera-Scope.Translate" "-9.37112" 0
+SetParam "Camera-Scope.Translate" "3.59324" 1
+SetParam "Camera-Scope.Translate" "-0.771446" 2
+SetParam "Camera-Scope.Rotate" "158.929" 0
+SetParam "Camera-Scope.Rotate" "-69.1802" 1
 SetParam "Camera-Scope.Rotate" "-180" 2
 SetParam "Camera-Scope.Scale" "1" 0
 SetParam "Camera-Scope.Scale" "1" 1
 SetParam "Camera-Scope.Scale" "1" 2
-SetParam "Camera-Scope.Orbit Radius" "10.4762" 0
+SetParam "Camera-Scope.Orbit Radius" "10.457" 0
 SetParam "Camera-Scope.Show Pivot" "Off" 0
 SetParam "Camera-Scope.Pivot Size" "0.1" 0
 SetParam "Camera-Scope.Near Clip" "0.1" 0
@@ -251,8 +251,8 @@ SetParam "Iso-Scope.Rotate" "0" 2
 SetParam "Iso-Scope.Scale" "3" 0
 SetParam "Iso-Scope.Scale" "3" 1
 SetParam "Iso-Scope.Scale" "3" 2
-SetParam "Iso-Scope.Display Cell Shadow" "Off" 0
-SetParam "Iso-Scope.Shadow Cell Size" "Master" 0
+SetParam "Iso-Scope.Display Voxel Shadow" "Off" 0
+SetParam "Iso-Scope.Shadow Voxel Size" "Master" 0
 
 SetParam "Isolate.Priority" "0" 0
 SetParam "Isolate.Enabled" "1" 0
@@ -275,7 +275,7 @@ SetParam "Liquid-Emit-Distance.Emitter ID" "1000" 0
 SetParam "Mesh-Scope.Priority" "0" 0
 SetParam "Mesh-Scope.Enabled" "1" 0
 SetParam "Mesh-Scope.Show Bodies" "*" 0
-SetParam "Mesh-Scope.Display Mode" "Smooth Shaded + Wireframe" 0
+SetParam "Mesh-Scope.Display Mode" "Smooth Shaded" 0
 SetParam "Mesh-Scope.Front Ambient" "0.2" 0
 SetParam "Mesh-Scope.Front Ambient" "0.2" 1
 SetParam "Mesh-Scope.Front Ambient" "0.2" 2
@@ -316,8 +316,8 @@ SetParam "Mesh-Scope.Velocity" "Off" 0
 SetParam "Mesh-Scope.Velocity Display Scale" "1" 0
 SetParam "Mesh-Scope.Vertex Normals" "Off" 0
 SetParam "Mesh-Scope.Normal Display Scale" "0.5" 0
-SetParam "Mesh-Scope.Display Cell Shadow" "Off" 0
-SetParam "Mesh-Scope.Shadow Cell Size" "Master" 0
+SetParam "Mesh-Scope.Display Voxel Shadow" "Off" 0
+SetParam "Mesh-Scope.Shadow Voxel Size" "Master" 0
 
 SetParam "Particle-Liquid.Priority" "0" 0
 SetParam "Particle-Liquid.Enabled" "1" 0
@@ -405,8 +405,8 @@ SetParam "Particle-Scope.Channel Type" "Scalar" 0
 SetParam "Particle-Scope.Min Visible Magnitude" "-99999" 0
 SetParam "Particle-Scope.Max Visible Magnitude" "99999" 0
 SetParam "Particle-Scope.Normalized Range" "Off" 0
-SetParam "Particle-Scope.Display Cell Shadow" "Off" 0
-SetParam "Particle-Scope.Shadow Cell Size" "Body" 0
+SetParam "Particle-Scope.Display Voxel Shadow" "Off" 0
+SetParam "Particle-Scope.Shadow Voxel Size" "Body" 0
 
 SetParam "Translate-Particles.Priority" "0" 0
 SetParam "Translate-Particles.Enabled" "1" 0
@@ -431,7 +431,8 @@ Feed "Arnold-Mesh:a" "Translate-Points:0"
 Feed "Arnold-Particle:a" "Translate-Particles:0"
 Feed "Arnold-Render:a" "Camera:0"
 Feed "Arnold-Render:b" "Join:0"
-Feed "Iso-Scope:a" "Arnold-Render:b"
+Feed "Camera-Scope:b" "Camera:0"
+Feed "Iso-Scope:b" "Arnold-Render:b"
 Feed "Isolate:b" "Liquid-Emit-Distance:0"
 Feed "Join:b" "Join-1:0"
 Feed "Join:c" "Arnold-Mesh:0"
@@ -439,9 +440,9 @@ Feed "Join-1:b" "Arnold-Implicit:0"
 Feed "Join-1:c" "Arnold-Particle:0"
 Feed "Liquid-Emit-Distance:b" "Particle-Liquid:0"
 Feed "Liquid-Emit-Distance:d" "Field-Distance-Sphere:0"
-Feed "Mesh-Scope:a" "Arnold-Render:b"
+Feed "Mesh-Scope:b" "Arnold-Render:b"
 Feed "Particle-Mesh3:b" "Translate-Particles:0"
-Feed "Particle-Scope:a" "Arnold-Render:b"
+Feed "Particle-Scope:b" "Arnold-Render:b"
 Feed "Translate-Particles:b" "Isolate:1"
 Feed "Translate-Points:b" "Particle-Mesh3:0"
 
@@ -474,14 +475,13 @@ SetMeta "Camera.Far Clip" "Mode" "evaluation"
 SetMeta "Camera.Focal Length" "Mode" "evaluation"
 SetMeta "Camera.Horizontal Aperture" "Mode" "evaluation"
 SetMeta "Camera.Vertical Aperture" "Mode" "evaluation"
-SetMeta "Camera" "Pos" "-1257.91,3042.01"
+SetMeta "Camera" "Pos" "-1529.6,2975.64"
 SetMeta "Camera" "Selected" "False"
 SetMeta "Camera" "Visible in 3D" "On"
 
 SetMeta "Camera-Scope.Focal Length" "Slider Maximum" "3500"
 SetMeta "Camera-Scope.Focal Length" "Slider Minimum" "2.5"
-SetMeta "Camera-Scope:a" "Selected" "False"
-SetMeta "Camera-Scope" "Pos" "-1220.22,2033.62"
+SetMeta "Camera-Scope" "Pos" "-1222.29,3066.46"
 SetMeta "Camera-Scope" "Selected" "False"
 SetMeta "Camera-Scope" "Visible in 3D" "On"
 
@@ -529,7 +529,6 @@ SetMeta "Global" "Pos" "-1215.57,2148.07"
 SetMeta "Global" "Selected" "False"
 SetMeta "Global" "VisibleIn3D" "true"
 
-SetMeta "Iso-Scope:a" "Selected" "False"
 SetMeta "Iso-Scope" "Pos" "-608.528,3131.07"
 SetMeta "Iso-Scope" "Selected" "False"
 SetMeta "Iso-Scope" "Visible in 3D" "Off"
@@ -555,8 +554,7 @@ SetMeta "Liquid-Emit-Distance:m" "Selected" "False"
 SetMeta "Liquid-Emit-Distance" "Pos" "-1066.27,1846.07"
 SetMeta "Liquid-Emit-Distance" "Selected" "False"
 
-SetMeta "Mesh-Scope:a" "Selected" "False"
-SetMeta "Mesh-Scope" "Pos" "-624.08,2931.56"
+SetMeta "Mesh-Scope" "Pos" "-634.151,2916.45"
 SetMeta "Mesh-Scope" "Selected" "False"
 
 SetMeta "Particle-Liquid.Voxel Scale" "Slider Maximum" "10"
@@ -587,7 +585,6 @@ SetMeta "Particle-Mesh3:m" "Selected" "False"
 SetMeta "Particle-Mesh3" "Pos" "-789.265,2489.06"
 SetMeta "Particle-Mesh3" "Selected" "False"
 
-SetMeta "Particle-Scope:a" "Selected" "False"
 SetMeta "Particle-Scope" "Pos" "-627.365,3034.44"
 SetMeta "Particle-Scope" "Selected" "False"
 SetMeta "Particle-Scope" "Visible in 3D" "Off"
