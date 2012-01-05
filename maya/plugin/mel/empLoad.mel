@@ -29,14 +29,14 @@ global proc NBuddy_findFileSequenceRange( string $file , int $range[] )
 	string $filespec = `substitute "\\.[-0-9]+\\." $fileName ".*."`;
 	string $sequenceFiles[] = `getFileList -folder $folderName -filespec $filespec`;
 
-	int $start = 9999999999; //Rather unlikely we will be outside these for the framerange ;)
-	int $end =  -9999999999;
+	int $start = 99999999; //Rather unlikely we will be outside these for the framerange ;)
+	int $end =  -99999999;
 
 	for ($i=0; $i < `size $sequenceFiles`; $i++ )
 	{
 		string $dotNr = `match "\\.[-0-9]+" $sequenceFiles[$i]`;
 		int $nr = (int)`substitute "\\." $dotNr ""`;
-		print("Checking : " +$dotNr+" : "+$nr+"\n");
+		//print("Checking : " +$dotNr+" : "+$nr+"\n");
 	
 		if ($nr < $start)
 			$start = $nr;
@@ -368,8 +368,8 @@ global proc NBuddy_EmpBodyLoad( string $launchFunction )
 			string $label = `checkBox -q -label "empMeshLoaderWindowUseRangeCheckBox"`;
 			int $subStart = size("UseFrameRange:")+1;
 			int $subEnd = size($label);
-			string $rangeStr = `substring $label $subStart $subEnd`;
-			string $tokens[] = stringToStringArray( $rangeStr, " >> ");
+            string $rangeStr = `substring $label $subStart $subEnd`;
+            string $tokens[] = stringToStringArray( $rangeStr, " >> ");
 			$startFrame = $tokens[0];
 			$endFrame = $tokens[1];
 		}

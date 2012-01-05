@@ -39,11 +39,11 @@ global proc string NBuddy_CreateNaiadBodyDisplay()
 global proc string NBuddy_CreateNaiadParticleEmissionSystem( string $empLoaderBodyPlug )
 {
 	string $particleEmitter = `createNode NBuddyParticleEmitter -name "nBuddyEmitter"`;
-	string $particleNode[] = `particle -name "nBuddyParticles"` ;
-	
+	string $particleNode[] = `particle` ;
+
 	setAttr ($particleNode[1]+".conserve") 1;
-	setAttr ($particleNode[1]+".lifespanMode") 1;
-	setAttr ($particleNode[1]+".lifespan") 0.0001;
+    setAttr ($particleNode[1]+".lifespanMode") 1;
+    setAttr ($particleNode[1]+".lifespan") 0.0001;
 	
 	connectDynamic -em $particleEmitter $particleNode[0];
 	
