@@ -18,6 +18,18 @@ BodyOp Delight-Mesh
         "Field.velocity"
     }
 
+    EnumGroup SubdivisionMesh
+    {
+        "Off"
+        "Catmull-Clark"
+    }
+
+    ParamSection "Surface"
+    {
+        SubdivisionMesh "Subdivision Mesh" "Off"
+        || Output mesh as a Catmull-Clark subdivision mesh (or not).
+    }
+
     ParamSection "Motion Blur"
     {
         Toggle "Motion Blur" "Off"
@@ -39,6 +51,115 @@ BodyOp Delight-Mesh
            the current frame, such that 0 = frame begin and 1 = frame end. 
            Any number of motion samples are acceptable.  For example, specifying
            three motion samples <code>0.1 0.5 0.9</code> is perfectly OK. *|
+    }
+
+    ParamSection "Constant Primvar Output"
+    {   
+	String "Constant Primvar Names" ""
+        |* A space-separated list of primitive variables to output as 
+	   <b>constant</b> primvars.
+        *|
+
+	String "Constant Primvar Types" ""
+        |* For each primvar name listed in the parameter above, 
+	   this parameter needs to list the corresponding primvar type.
+	   For example, if "Constant Primvar Names" contains 
+	   <code>Cs Bleh</code>, and this parameter contains 
+	   <code>color float</code>, then:
+	   <ul>
+	     <li>Primvar <code>Cs</code> would be of type 
+	       <code>constant color</code></li>
+	     <li>Primar <code>Bleh</code> would be of type
+	       <code>constant float</code></li>
+	   </ul>
+        *|	   
+
+	String "Constant Values" ""
+        |* For each primvar name listed in the "Constant Primvar Names" 
+	   parameter, this parameter needs to list the constant primvars' 
+	   values.  NEL expressions are allowed as long as they
+	   do <i>not</i> contain any spaces!  All vector-valued primvars (e.g.
+	   colors, points, vectors etc.) need to be given using the NEL vector
+	   construct <code>vec(X,Y,Z)</code>.  For example, if 
+	   "Constant Primvar Names" contains 
+	   <code>Cs Bleh</code>, and this parameter contains 
+	   <code>vec(1,0,0) frame*frame</code>, then:
+	   <ul>
+	     <li>Primvar <code>Cs</code> would have a constant value of
+	       <code>1 0 0</code> (e.g. the red color)</li>
+	     <li>Primar <code>Bleh</code> would have a constant value of
+	       <code>frame*frame</code> (e.g. the square of the current 
+	       frame)</li>
+	   </ul>
+        *|
+    }
+
+    ParamSection "Uniform Primvar Output"
+    {
+	String "Uniform Primvar Names" ""
+        |* A space-separated list of primitive variables to output as 
+	   <b>uniform</b> primvars. *|
+
+	String "Uniform Primvar Types" ""
+        |* For each uniform primvar name listed in the parameter above, 
+	   this parameter needs to list the corresponding type.
+	   For example, if "Uniform Primvar Names" contains 
+	   <code>Cs Bleh</code>, and this parameter contains 
+	   <code>color float</code>, then:
+	   <ul>
+	     <li>Primvar <code>Cs</code> would be of type 
+	       <code>uniform color</code></li>
+	     <li>Primar <code>Bleh</code> would be of type
+	       <code>uniform float</code></li>
+	   </ul>
+        *|	   
+
+	ChannelNameList "Triangle Channel Names" ""
+        |* For each primvar name listed in the "Uniform Primvar Names" 
+	   parameter, this parameter needs to list the name of the 
+	   corresponding triangle channel containing the primvar's data.
+	   NOTE that wildcards are NOT allowed. Since uniform primvars 
+	   contain per-triangle data, only Naiad triangle channels are 
+	   allowed here. For example, if "Uniform Primvar Names" contains 
+	   <code>Cs Bleh</code>, and this parameter contains
+	   <code>Point.color Point.blah</code>, then the following mapping 
+	   would occur:
+	   <ul>
+	     <li>Naiad channel <code>Point.color</code> to 
+	       primvar <code>Cs</code></li>
+	     <li>Naiad channel <code>Point.blah</code> to 
+	       primvar <code>Bleh</code></li>
+	   </ul>
+        *|
+    }
+
+    ParamSection "Vertex Primvar Output"
+    {
+	String "Vertex Primvar Names" ""
+        |* A space-separated list of primitive variables to output as 
+	   <b>vertex</b> primvars. *|
+
+	String "Vertex Primvar Types" ""
+        |* For each uniform primvar name listed in the parameter above, 
+	   this parameter needs to list the corresponding type.
+	   For example, if "Vertex Primvar Names" contains 
+	   <code>Cs Bleh</code>, and this parameter contains 
+	   <code>color float</code>, then:
+	   <ul>
+	     <li>Primvar <code>Cs</code> would be of type 
+	       <code>vertex color</code></li>
+	     <li>Primar <code>Bleh</code> would be of type
+	       <code>vertex float</code></li>
+	   </ul>
+        *|
+
+	ChannelNameList "Point Channel Names" ""
+        |* For each primvar name listed in the "Vertex Primvar Names" 
+	   parameter, this parameter needs to list the name of the 
+	   corresponding point channel containing the primvar's data.
+	   NOTE that wildcards are NOT allowed. Since vertex primvars 
+	   contain per vertex data, only Naiad point channels are allowed
+	   here (since only point channels store per-vertex data in Naiad).*|  
     }
 
     Group(Mesh) Input b ""

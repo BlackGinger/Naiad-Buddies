@@ -58,6 +58,13 @@ public:
                      Ng::NelContext&       nelContext,
                      const Nb::TimeBundle& tb)
     {
+        // surface properties
+
+        body->guaranteeProp1s("Renderman", "Subdivision Mesh",
+                              param1e("Subdivision Mesh")->eval(tb));
+
+        // motion-blur properties
+
         body->guaranteeProp1s("Renderman", "Motion Blur",
                               param1e("Motion Blur")->eval(tb));
         
@@ -66,6 +73,40 @@ public:
 
         body->guaranteeProp1s("Renderman", "Velocity Source",
                               param1e("Velocity Source")->eval(tb));
+        
+
+        // constant primvars
+
+        body->guaranteeProp1s("Renderman", "Constant Primvar Names",
+                              param1s("Constant Primvar Names")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Constant Primvar Types",
+                              param1s("Constant Primvar Types")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Constant Values",
+                              param1s("Constant Values")->eval(tb));
+
+        // uniform primvars
+
+        body->guaranteeProp1s("Renderman", "Uniform Primvar Names",
+                              param1s("Uniform Primvar Names")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Uniform Primvar Types",
+                              param1s("Uniform Primvar Types")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Triangle Channel Names",
+                              param1s("Triangle Channel Names")->eval(tb));
+
+        // vertex primvars
+
+        body->guaranteeProp1s("Renderman", "Vertex Primvar Names",
+                              param1s("Vertex Primvar Names")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Vertex Primvar Types",
+                              param1s("Vertex Primvar Types")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Point Channel Names",
+                              param1s("Point Channel Names")->eval(tb));
     }
 };
 

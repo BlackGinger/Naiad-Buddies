@@ -58,6 +58,8 @@ public:
                      Ng::NelContext&       nelContext,
                      const Nb::TimeBundle& tb)
     {
+        // moblur
+
         body->guaranteeProp1s("Renderman", "Motion Blur",
                               param1e("Motion Blur")->eval(tb));
         
@@ -67,6 +69,8 @@ public:
         body->guaranteeProp1s("Renderman", "Velocity Source",
                               param1e("Velocity Source")->eval(tb));
 
+        // radius 
+
         body->guaranteeProp1s("Renderman", "Per-Particle Radius",
                               param1e("Per-Particle Radius")->eval(tb));
 
@@ -75,6 +79,33 @@ public:
 
         body->guaranteeProp1f("Renderman", "Constant Radius",
                               param1f("Constant Radius")->expr());
+
+        // render
+
+//        body->guaranteeProp1s("Renderman", "Particle Primitive",
+//                              param1e("Particle Primitive")->eval(tb));        
+
+        // constant primvars
+
+        body->guaranteeProp1s("Renderman", "Constant Primvar Names",
+                              param1s("Constant Primvar Names")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Constant Primvar Types",
+                              param1s("Constant Primvar Types")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Constant Values",
+                              param1s("Constant Values")->eval(tb));
+
+        // vertex primvars
+
+        body->guaranteeProp1s("Renderman", "Vertex Primvar Names",
+                              param1s("Vertex Primvar Names")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Vertex Primvar Types",
+                              param1s("Vertex Primvar Types")->eval(tb));
+
+        body->guaranteeProp1s("Renderman", "Particle Channel Names",
+                              param1s("Particle Channel Names")->eval(tb));
     }
 };
 
