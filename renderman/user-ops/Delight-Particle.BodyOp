@@ -32,6 +32,15 @@ BodyOp Delight-Particle
         "Field.velocity"
     }
 
+    EnumGroup ParticlePrimitive
+    {
+        "Points"
+        "Spheres"
+        "Blobby"
+        "Disk"
+        "Patch"
+    }
+
     ParamSection "Motion Blur"
     {
         Toggle "Motion Blur" "Off"
@@ -55,7 +64,7 @@ BodyOp Delight-Particle
            three motion samples <code>0.1 0.5 0.9</code> is perfectly OK. *|
     }
 
-    ParamSection "Particle Radius"
+    ParamSection "Radius"
     {
         Toggle "Per-Particle Radius" "Off"
         || Enables varying particle radii in the RIB.
@@ -66,6 +75,82 @@ BodyOp Delight-Particle
         Float "Constant Radius" "0.25 voxels"
         |* Specifies the worldspace radius of all particles, if 
           "Per-Particle Radius" is off. *|
+    }
+
+//    ParamSection "Render"
+//    {
+//	ParticlePrimitive "Particle Primitive" "Points"
+//	|| The primitive type used to render the particles.
+//    }
+
+    ParamSection "Constant Primvar Output"
+    {   
+	String "Constant Primvar Names" ""
+        |* A space-separated list of primitive variables to output as 
+	   <b>constant</b> primvars.
+        *|
+
+	String "Constant Primvar Types" ""
+        |* For each primvar name listed in the parameter above, 
+	   this parameter needs to list the corresponding primvar type.
+	   For example, if "Constant Primvar Names" contains 
+	   <code>Cs Bleh</code>, and this parameter contains 
+	   <code>color float</code>, then:
+	   <ul>
+	     <li>Primvar <code>Cs</code> would be of type 
+	       <code>constant color</code></li>
+	     <li>Primar <code>Bleh</code> would be of type
+	       <code>constant float</code></li>
+	   </ul>
+        *|	   
+
+	String "Constant Values" ""
+        |* For each primvar name listed in the "Constant Primvar Names" 
+	   parameter, this parameter needs to list the constant primvars' 
+	   values.  NEL expressions are allowed as long as they
+	   do <i>not</i> contain any spaces!  All vector-valued primvars (e.g.
+	   colors, points, vectors etc.) need to be given using the NEL vector
+	   construct <code>vec(X,Y,Z)</code>.  For example, if 
+	   "Constant Primvar Names" contains 
+	   <code>Cs Bleh</code>, and this parameter contains 
+	   <code>vec(1,0,0) frame*frame</code>, then:
+	   <ul>
+	     <li>Primvar <code>Cs</code> would have a constant value of
+	       <code>1 0 0</code> (e.g. the red color)</li>
+	     <li>Primar <code>Bleh</code> would have a constant value of
+	       <code>frame*frame</code> (e.g. the square of the current 
+	       frame)</li>
+	   </ul>
+        *|
+    }
+
+    ParamSection "Vertex Primvar Output"
+    {
+	String "Vertex Primvar Names" ""
+        |* A space-separated list of primitive variables to output as 
+	   <b>vertex</b> primvars. *|
+
+	String "Vertex Primvar Types" ""
+        |* For each uniform primvar name listed in the parameter above, 
+	   this parameter needs to list the corresponding type.
+	   For example, if "Vertex Primvar Names" contains 
+	   <code>Cs Bleh</code>, and this parameter contains 
+	   <code>color float</code>, then:
+	   <ul>
+	     <li>Primvar <code>Cs</code> would be of type 
+	       <code>vertex color</code></li>
+	     <li>Primar <code>Bleh</code> would be of type
+	       <code>vertex float</code></li>
+	   </ul>
+        *|
+
+	ChannelNameList "Particle Channel Names" ""
+        |* For each primvar name listed in the "Vertex Primvar Names" 
+	   parameter, this parameter needs to list the name of the 
+	   corresponding particle channel containing the primvar's data.
+	   NOTE that wildcards are NOT allowed. Since vertex primvars 
+	   contain per-particle data, only Naiad particle channels are allowed
+	   here.*|  
     }
 
     Group(Particle) Input b ""

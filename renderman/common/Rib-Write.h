@@ -37,13 +37,20 @@
 
 #include <NgBodyOp.h>
 #include <NgProjectPath.h>
+#include <NgNelContext.h>
 
 #include <NbBlock.h>
 #include <NbFilename.h>
 #include <NbFileIo.h>
 
+static const char* pointType = "uniform string type";
+static const char* sphere = "sphere";
+static const char* blobby = "blobby";
+static const char* disk = "disk";
+static const char* patch = "patch";
+
 class Rib_Write : public Ng::BodyOp
-{
+{    
 public:
     Rib_Write(const Nb::String& name)
         : Ng::BodyOp(name) {}
@@ -102,6 +109,7 @@ public:
         }
 
         _particleCount = 0;
+        _triangleCount = 0;
     }
 
     virtual void
@@ -132,9 +140,9 @@ public:
             field->queryConstField3f("velocity",2) : 0;
 
         if(body->matches("Mesh")) {
-            _outputMesh(body, u,v,w, layout, tb);
+            _outputMesh(body, u,v,w, layout, tb, nelContext);
         } else if(body->matches("Particle")) {
-            _outputParticles(body, u,v,w, layout, tb);
+            _outputParticles(body, u,v,w, layout, tb, nelContext);
         } else {
             NB_WARNING("Body '" << body->name() << 
                        "' not exported due to unsupported signature: " << 
@@ -145,10 +153,11 @@ public:
     virtual void
     postStep(const Nb::TimeBundle& tb) 
     {
-        RiEnd();
+        RiEnd();       
         
-        NB_INFO("Wrote " << _particleCount << " particles to '" << _fileName 
-                << "'");
+        NB_INFO("Wrote " << _particleCount << " particles and " <<
+                _triangleCount << " triangles to '" <<
+                _fileName << "'");
     }
 
 private:
@@ -177,7 +186,8 @@ private:
                      const Nb::Field1f*    v,
                      const Nb::Field1f*    w,
                      const Nb::TileLayout& layout,
-                     const Nb::TimeBundle& tb)
+                     const Nb::TimeBundle& tb,
+                     Ng::NelContext&       nelContext)
     {
         const Nb::ParticleShape& particle = 
             body->constParticleShape();
@@ -202,6 +212,117 @@ private:
                      body->prop1s("Per-Particle Radius Channel")->eval(tb) << 
                      "' not found");
 
+        // determine the number of constant primvars from the body
+        const std::vector<Nb::String> constPrimvarValues = 
+            body->prop1s("Constant Values")->eval(tb).to_vector();
+        const std::vector<Nb::String> constPrimvarNames = 
+            body->prop1s("Constant Primvar Names")->eval(tb).to_vector();
+        const std::vector<Nb::String> constPrimvarTypes = 
+            body->prop1s("Constant Primvar Types")->eval(tb).to_vector();
+        if(constPrimvarValues.size()!=constPrimvarNames.size())
+            NB_THROW("Primvar output lists mismatch");
+        if(constPrimvarValues.size()!=constPrimvarNames.size())
+            NB_THROW("Primvar output lists mismatch");
+
+        const std::vector<Nb::String> particleChannels = 
+            body->prop1s("Particle Channel Names")->eval(tb).to_vector();
+        const std::vector<Nb::String> vertexPrimvarNames = 
+            body->prop1s("Vertex Primvar Names")->eval(tb).to_vector();
+        const std::vector<Nb::String> vertexPrimvarTypes = 
+            body->prop1s("Vertex Primvar Types")->eval(tb).to_vector();
+        if(particleChannels.size()!=vertexPrimvarNames.size())
+            NB_THROW("Primvar output lists mismatch");
+        if(particleChannels.size()!=vertexPrimvarNames.size())
+            NB_THROW("Primvar output lists mismatch");
+        
+        // output to RIB
+
+        em::array1<RtToken>   tokens;
+        em::array1<RtPointer> data;
+
+        tokens.push_back((RtToken)"P");
+        data.push_back((RtPointer)0); // will be initialized later...
+
+        const char* width = ppRadius ? "width" : "constantwidth";        
+        tokens.push_back((RtToken)width);
+        data.push_back((RtPointer)0); // will be initialized later...
+        
+        // declare all primvars
+        em::array1f constValues;
+        constValues.reserve(constPrimvarNames.size()*3);
+        for(int i=0; i<constPrimvarNames.size(); ++i) {            
+            tokens.push_back((RtToken)constPrimvarNames[i].c_str());
+            if(constPrimvarTypes[i]=="float") {
+                Nb::Value1f v1f("1f",constPrimvarValues[i]);
+                v1f.bindNelContext(&nelContext);
+                float value = v1f.eval(tb);
+                constValues.push_back(value);
+                data.push_back((RtPointer)&constValues.back());
+            } else if(constPrimvarTypes[i]=="integer") {
+                Nb::Value1i v1i("1i",constPrimvarValues[i]);
+                v1i.bindNelContext(&nelContext);
+                float value = v1i.eval(tb);
+                constValues.push_back(value);
+                data.push_back((RtPointer)&constValues.back());
+            } else { // must be vector type
+                Nb::Value3f v3f("3f",constPrimvarValues[i]);
+                v3f.bindNelContext(&nelContext);
+                float value0 = v3f.compute(tb,0);
+                float value1 = v3f.compute(tb,1);
+                float value2 = v3f.compute(tb,2);
+                constValues.push_back(value0);
+                data.push_back((RtPointer)&constValues.back());
+                constValues.push_back(value1);
+                constValues.push_back(value2);
+            }           
+            const Nb::String type = 
+                Nb::String("constant ") + constPrimvarTypes[i];
+            RiDeclare(const_cast<char*>(constPrimvarNames[i].c_str()), 
+                      const_cast<char*>(type.c_str()));
+        }
+
+        const int vertexPrimvarsStart = tokens.size();
+        std::vector<const Nb::BlockArrayBase*> babs;
+        for(int i=0; i<vertexPrimvarNames.size(); ++i) {
+            tokens.push_back(
+                (RtToken)vertexPrimvarNames[i].c_str()
+                );           
+            data.push_back((RtPointer)0); // to be filled out in block loop
+            babs.push_back(particle.queryConstBlockBases(particleChannels[i]));
+            // only declare the non-standard primvars...
+            if(vertexPrimvarNames[i]!="Cs" &&
+               vertexPrimvarNames[i]!="Os" &&
+               vertexPrimvarNames[i]!="s"  &&
+               vertexPrimvarNames[i]!="t"  &&
+               vertexPrimvarNames[i]!="st" &&
+               vertexPrimvarNames[i]!="N") {
+                const Nb::String type =
+                    Nb::String("vertex ") + vertexPrimvarTypes[i];
+                RiDeclare(const_cast<char*>(vertexPrimvarNames[i].c_str()), 
+                          const_cast<char*>(type.c_str()));  
+            }
+        }
+
+        // handle 3delight special RiPoints point-primitive options
+        // TODO: find out why adding the "uniform string type" parameter
+        // to RiPointV crashes 3delight!
+/*
+        const Nb::String prim = body->prop1s("Particle Primitive")->eval(tb);
+
+        if(prim=="Spheres") {            
+            tokens.push_back((RtToken)pointType);
+            data.push_back((RtPointer)sphere);
+        } else if(prim=="Blobby") {
+            tokens.push_back((RtToken)pointType);
+            data.push_back((RtPointer)blobby);
+        } else if(prim=="Disk") {
+            tokens.push_back((RtToken)pointType);
+            data.push_back((RtPointer)disk);
+        } else if(prim=="Patch") {
+            tokens.push_back((RtToken)pointType);
+            data.push_back((RtPointer)patch);
+        }
+*/
         // velocity source
         const bool pvelSrc = 
             (body->prop1s("Velocity Source")->eval(tb) == "Particle.velocity");
@@ -216,11 +337,6 @@ private:
                 NB_THROW("Motion-blur setting requires Field.velocity");
         }
 
-        // output to RIB
-
-        const char* width = ppRadius ? "width" : "constantwidth";   
-        RtToken tokens[2] = { (RtToken)"P", (RtToken)width };
-
         // write points
         const int bcount=xBlocks.block_count();
         for(int b=0; b<bcount; ++b) {
@@ -228,12 +344,20 @@ private:
             const int pcount = xb.size();
             if(pcount==0) 
                 continue;
+
+            // fill in point radius
+            data[1] = ppRadius ? 
+                (RtPointer)(*rBlocks)(b).data() :
+                (RtPointer)&constantRadius;
+
+            // fill in vertex-primvars data ptrs
+            for(int i=0; i<babs.size(); ++i)
+                data[i+vertexPrimvarsStart]=
+                    (RtPointer)babs[i]->const_block_base(b)->dataPtr();
+
             if(!motionBlur) {
-                RtPointer data[2] = { (RtPointer)xb.data(), 
-                                      ppRadius ? 
-                                      (RtPointer)(*rBlocks)(b).data() :
-                                      (RtPointer)&constantRadius };
-                RiPointsV(pcount, 2, tokens, data);                
+                data[0] = (RtPointer)xb.data();
+                RiPointsV(pcount, tokens.size(), tokens.data, data.data);
             } else {
                 em::array1vec3f xt(pcount);
                 RiMotionBeginV(motionSamples.size(),
@@ -266,11 +390,8 @@ private:
                             xp += Nb::Vec3f(ux,vx,wx)*dt;
                         }                        
                     }
-                    RtPointer data[2] = { (RtPointer)xt.data, 
-                                          ppRadius ? 
-                                          (RtPointer)(*rBlocks)(b).data() :
-                                          (RtPointer)&constantRadius };
-                    RiPointsV(pcount, 2, tokens, data);                
+                    data[0] = (RtPointer)xt.data;                    
+                    RiPointsV(pcount, tokens.size(), tokens.data, data.data);
                 }
                 RiMotionEnd();
             }
@@ -285,13 +406,132 @@ private:
                 const Nb::Field1f*    v,
                 const Nb::Field1f*    w,
                 const Nb::TileLayout& layout,
-                const Nb::TimeBundle& tb)
+                const Nb::TimeBundle& tb,
+                Ng::NelContext&       nelContext)
     {        
+        // pick up all the basic shape/channel structs
         const Nb::TriangleShape& triangle = body->constTriangleShape();
         const Nb::PointShape& point = body->constPointShape();
         const Nb::Buffer3i& index = triangle.constBuffer3i("index");
         const Nb::Buffer3f& x = point.constBuffer3f("position");
         const Nb::Buffer3f* uBuf = point.queryConstBuffer3f("velocity");
+
+        // determine the number of constant primvars from the body
+        const std::vector<Nb::String> constPrimvarValues = 
+            body->prop1s("Constant Values")->eval(tb).to_vector();
+        const std::vector<Nb::String> constPrimvarNames = 
+            body->prop1s("Constant Primvar Names")->eval(tb).to_vector();
+        const std::vector<Nb::String> constPrimvarTypes = 
+            body->prop1s("Constant Primvar Types")->eval(tb).to_vector();
+        if(constPrimvarValues.size()!=constPrimvarNames.size())
+            NB_THROW("Primvar output lists mismatch");
+        if(constPrimvarValues.size()!=constPrimvarNames.size())
+            NB_THROW("Primvar output lists mismatch");
+
+        // determine the number of uniform primvars from the body
+        const std::vector<Nb::String> triChannels = 
+            body->prop1s("Triangle Channel Names")->eval(tb).to_vector();
+        const std::vector<Nb::String> uniformPrimvarNames = 
+            body->prop1s("Uniform Primvar Names")->eval(tb).to_vector();
+        const std::vector<Nb::String> uniformPrimvarTypes = 
+            body->prop1s("Uniform Primvar Types")->eval(tb).to_vector();
+        if(triChannels.size()!=uniformPrimvarNames.size())
+            NB_THROW("Primvar output lists mismatch");
+        if(triChannels.size()!=uniformPrimvarNames.size())
+            NB_THROW("Primvar output lists mismatch");
+
+        const std::vector<Nb::String> pointChannels = 
+            body->prop1s("Point Channel Names")->eval(tb).to_vector();
+        const std::vector<Nb::String> vertexPrimvarNames = 
+            body->prop1s("Vertex Primvar Names")->eval(tb).to_vector();
+        const std::vector<Nb::String> vertexPrimvarTypes = 
+            body->prop1s("Vertex Primvar Types")->eval(tb).to_vector();
+        if(pointChannels.size()!=vertexPrimvarNames.size())
+            NB_THROW("Primvar output lists mismatch");
+        if(pointChannels.size()!=vertexPrimvarNames.size())
+            NB_THROW("Primvar output lists mismatch");
+
+        em::array1<RtToken>   tokens;
+        em::array1<RtPointer> data;
+
+        tokens.push_back((RtToken)"P");
+        data.push_back((RtPointer)0); // will be initialized later...
+
+        // declare all primvars
+        em::array1f constValues;
+        constValues.reserve(constPrimvarNames.size()*3);
+        for(int i=0; i<constPrimvarNames.size(); ++i) {            
+            tokens.push_back((RtToken)constPrimvarNames[i].c_str());
+            if(constPrimvarTypes[i]=="float") {
+                Nb::Value1f v1f("1f",constPrimvarValues[i]);
+                v1f.bindNelContext(&nelContext);
+                float value = v1f.eval(tb);
+                constValues.push_back(value);
+                data.push_back((RtPointer)&constValues.back());
+            } else if(constPrimvarTypes[i]=="integer") {
+                Nb::Value1i v1i("1i",constPrimvarValues[i]);
+                v1i.bindNelContext(&nelContext);
+                float value = v1i.eval(tb);
+                constValues.push_back(value);
+                data.push_back((RtPointer)&constValues.back());
+            } else { // must be vector type
+                Nb::Value3f v3f("3f",constPrimvarValues[i]);
+                v3f.bindNelContext(&nelContext);
+                float value0 = v3f.eval(tb,0);
+                float value1 = v3f.eval(tb,1);
+                float value2 = v3f.eval(tb,2);
+                constValues.push_back(value0);
+                data.push_back((RtPointer)&constValues.back());
+                constValues.push_back(value1);
+                constValues.push_back(value2);
+            }           
+            const Nb::String type = 
+                Nb::String("constant ") + constPrimvarTypes[i];
+            RiDeclare(const_cast<char*>(constPrimvarNames[i].c_str()), 
+                      const_cast<char*>(type.c_str()));
+        }
+
+        for(int i=0; i<uniformPrimvarNames.size(); ++i) {
+            tokens.push_back(
+                (RtToken)uniformPrimvarNames[i].c_str()
+                );
+            data.push_back(
+                (RtPointer)triangle.constChannelBase(triChannels[i]).dataPtr()
+                );
+            const Nb::String type = 
+                Nb::String("uniform ") + uniformPrimvarTypes[i];
+            RiDeclare(const_cast<char*>(uniformPrimvarNames[i].c_str()), 
+                      const_cast<char*>(type.c_str()));
+        }
+
+        for(int i=0; i<vertexPrimvarNames.size(); ++i) {
+            tokens.push_back(
+                (RtToken)vertexPrimvarNames[i].c_str()
+                );           
+            if(vertexPrimvarTypes[i]=="float") {
+                const Nb::Buffer1f& buf = point.constBuffer1f(pointChannels[i]);
+                data.push_back((RtPointer)buf.data);
+            } else if(vertexPrimvarTypes[i]=="integer") {
+                const Nb::Buffer1i& buf = point.constBuffer1i(pointChannels[i]);
+                data.push_back((RtPointer)buf.data);
+            } else { // must be vector type
+                const Nb::Buffer3f& buf = point.constBuffer3f(pointChannels[i]);
+                data.push_back((RtPointer)buf.data);
+            }
+
+            // only declare the non-standard primvars...
+            if(vertexPrimvarNames[i]!="Cs" &&
+               vertexPrimvarNames[i]!="Os" &&
+               vertexPrimvarNames[i]!="s"  &&
+               vertexPrimvarNames[i]!="t"  &&
+               vertexPrimvarNames[i]!="st" &&
+               vertexPrimvarNames[i]!="N") {
+                const Nb::String type =
+                    Nb::String("vertex ") + vertexPrimvarTypes[i];
+                RiDeclare(const_cast<char*>(vertexPrimvarNames[i].c_str()), 
+                          const_cast<char*>(type.c_str()));  
+            }
+        }
 
         // velocity source
         const bool pvelSrc = 
@@ -309,14 +549,34 @@ private:
             if(!pvelSrc && (!u || !v || !w))
                 NB_THROW("Motion-blur setting requires Field.velocity");
         }
-        
-        if(!motionBlur) {            
-            RiPointsPolygons((RtInt)index.size(), 
-                             (RtInt*)nvertices.data, 
-                             (RtInt*)index.data, 
-                             RI_P,
-                             (RtPointer)x.data,
-                             RI_NULL);
+
+        // subdivision mesh or not...
+        const bool subdiv = 
+            (body->prop1s("Subdivision Mesh")->eval(tb) == "Catmull-Clark");
+            
+        if(!motionBlur) {
+            data[0]=(RtPointer)x.data;
+            if(subdiv) {
+                RiSubdivisionMeshV("catmull-clark",
+                                   (RtInt)index.size(),
+                                   (RtInt*)nvertices.data,
+                                   (RtInt*)index.data,
+                                   0, // ntags
+                                   0, // tags
+                                   0, // nargs
+                                   0, // intargs
+                                   0, // floatargs
+                                   tokens.size(),
+                                   tokens.data,
+                                   data.data);
+            } else {
+                RiPointsPolygonsV((RtInt)index.size(), 
+                                  (RtInt*)nvertices.data, 
+                                  (RtInt*)index.data, 
+                                  tokens.size(),
+                                  tokens.data,
+                                  data.data);
+            }                        
         } else {
             Nb::Buffer3f  xt(x);
             const int64_t pcount = x.size();
@@ -350,21 +610,40 @@ private:
                         xp += Nb::Vec3f(ux,vx,wx)*dt;
                     }                        
                 }
-                RiPointsPolygons((RtInt)index.size(), 
-                                 (RtInt*)nvertices.data, 
-                                 (RtInt*)index.data, 
-                                 RI_P,
-                                 (RtPointer)xt.data,
-                                 RI_NULL);
+                data[0]=(RtPointer)xt.data;
+                if(subdiv) {
+                    RiSubdivisionMeshV("catmull-clark",
+                                       (RtInt)index.size(),
+                                       (RtInt*)nvertices.data,
+                                       (RtInt*)index.data,
+                                       0, // ntags
+                                       0, // tags
+                                       0, // nargs
+                                       0, // intargs
+                                       0, // floatargs
+                                       tokens.size(),
+                                       tokens.data,
+                                       data.data);
+                } else {
+                    RiPointsPolygonsV((RtInt)index.size(), 
+                                      (RtInt*)nvertices.data, 
+                                      (RtInt*)index.data, 
+                                      tokens.size(),
+                                      tokens.data,
+                                      data.data);
+                }
             }
 
             RiMotionEnd();
        }
+
+        _triangleCount += index.size();
     }
 
 private:
     Nb::String _fileName;
     int64_t    _particleCount;
+    int64_t    _triangleCount;
 };
 
 #endif // RIB_WRITE
