@@ -136,6 +136,8 @@ protected:
 	//no need for points anymore
 	delete[] points;
 
+        body->computeCachedMinMaxAvg();
+
         return body;
     }
     
