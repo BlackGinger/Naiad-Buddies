@@ -42,8 +42,8 @@ global proc string NBuddy_CreateNaiadParticleEmissionSystem( string $empLoaderBo
 	string $particleNode[] = `particle` ;
 
 	setAttr ($particleNode[1]+".conserve") 1;
-    setAttr ($particleNode[1]+".lifespanMode") 1;
-    setAttr ($particleNode[1]+".lifespan") 0.0001;
+    	setAttr ($particleNode[1]+".lifespanMode") 1;
+        setAttr ($particleNode[1]+".lifespan") 1;
 	
 	connectDynamic -em $particleEmitter $particleNode[0];
 	
