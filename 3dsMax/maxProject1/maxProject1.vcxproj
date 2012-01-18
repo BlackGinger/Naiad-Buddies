@@ -51,8 +51,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>EmpImport</ProjectName>
-    <ProjectGuid>{2C9BACEF-3CE5-481E-9519-30C59EA71633}</ProjectGuid>
+    <ProjectName>Naiad3dsMaxBuddy</ProjectName>
+    <ProjectGuid>{6671F0BA-6FB8-4f35-8392-0676D05113A8}</ProjectGuid>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|Win32'" Label="Configuration">
@@ -109,7 +109,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v90</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Hybrid|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -183,7 +183,7 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\Debug\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\Autodesk\3ds Max 2012\plugins\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\x64\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">x64\$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
@@ -211,35 +211,35 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|x64'">x64\$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|x64'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|x64'">true</GenerateManifest>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxEmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.dli</TargetExt>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">EmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.dli</TargetExt>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Hybrid|Win32'">MaxEmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Hybrid|Win32'">.dli</TargetExt>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Hybrid|x64'">MaxEmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Hybrid|x64'">.dli</TargetExt>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">EmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.dli</TargetExt>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">EmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.dli</TargetExt>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='ReleaseUnicode|Win32'">MaxEmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='ReleaseUnicode|Win32'">.dli</TargetExt>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='ReleaseUnicode|x64'">MaxEmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='ReleaseUnicode|x64'">.dli</TargetExt>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='HybridUnicode|Win32'">MaxEmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='HybridUnicode|Win32'">.dli</TargetExt>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='HybridUnicode|x64'">MaxEmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='HybridUnicode|x64'">.dli</TargetExt>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|Win32'">MaxEmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|Win32'">.dli</TargetExt>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|x64'">MaxEmpImport</TargetName>
-    <TargetExt Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|x64'">.dli</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">maxProject1</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.dlu</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Naiad3dsMaxBuddy</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.dlu</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Hybrid|Win32'">maxProject1</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Hybrid|Win32'">.dlu</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Hybrid|x64'">maxProject1</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Hybrid|x64'">.dlu</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">maxProject1</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.dlu</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">maxProject1</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.dlu</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='ReleaseUnicode|Win32'">maxProject1</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='ReleaseUnicode|Win32'">.dlu</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='ReleaseUnicode|x64'">maxProject1</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='ReleaseUnicode|x64'">.dlu</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='HybridUnicode|Win32'">maxProject1</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='HybridUnicode|Win32'">.dlu</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='HybridUnicode|x64'">maxProject1</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='HybridUnicode|x64'">.dlu</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|Win32'">maxProject1</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|Win32'">.dlu</TargetExt>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|x64'">maxProject1</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|x64'">.dlu</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>.\midl\Win32\MaxEmpImport.tlb</TypeLibraryName>
+      <TypeLibraryName>.\midl\Win32\maxProject1.tlb</TypeLibraryName>
       <HeaderFileName>.\midl\Win32\%(Filename).h</HeaderFileName>
       <InterfaceIdentifierFileName>.\midl\Win32\%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>.\midl\Win32\%(Filename)_p.c</ProxyFileName>
@@ -276,14 +276,14 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions> /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib; core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; gup.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\MaxEmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\maxProject1.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -292,14 +292,14 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\Release\MaxEmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\Release\maxProject1.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
-      <TypeLibraryName>.\midl\x64\MaxEmpImport.tlb</TypeLibraryName>
+      <TypeLibraryName>.\midl\x64\maxProject1.tlb</TypeLibraryName>
       <HeaderFileName>.\midl\x64\%(Filename).h</HeaderFileName>
       <InterfaceIdentifierFileName>.\midl\x64\%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>.\midl\x64\%(Filename)_p.c</ProxyFileName>
@@ -313,7 +313,7 @@
       <OmitFramePointers>false</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.\midl\x64;$(ADSK_3DSMAX_SDK_2012)\maxsdk\include;$(NAIAD_PATH)\Server\include\Nb;$(NAIAD_PATH)\Server\include\em;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\midl\x64;$(ADSK_3DSMAX_SDK_2012)\maxsdk\include;$(NAIAD_PATH)\server\include\Nb;$(NAIAD_PATH)\server\include\em;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_SECURE_SCL=0;WIN32;NDEBUG;_WINDOWS;_USRDLL;WIN64;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_SCL_SECURE_NO_DEPRECATE;ISOLATION_AWARE_ENABLED=1;MODULE_NAME=$(TargetFileName);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -335,14 +335,14 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/opt:lbr /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib;geom.lib;gfx.lib;mesh.lib;maxutil.lib;maxscrpt.lib;paramblk2.lib;Nb.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(ADSK_3DSMAX_x64_2012)\plugins\EmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib;core.lib;geom.lib;gfx.lib;mesh.lib;maxutil.lib;maxscrpt.lib;gup.lib;paramblk2.lib;Nb.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(ADSK_3DSMAX_x64_2012)\plugins\Naiad3dsMaxBuddy.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(ADSK_3DSMAX_SDK_2012)\maxsdk\x64\lib;$(NAIAD_PATH)\Server\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\EmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\Naiad3dsMaxBuddy.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>.\x64\EmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>.\x64\Naiad3dsMaxBuddy.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -352,9 +352,8 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\x64\Release\EmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\x64\Release\Naiad3dsMaxBuddy.lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
-      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Hybrid|Win32'">
@@ -390,27 +389,27 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions> /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib; core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; gup.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\MaxEmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\maxProject1.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <BaseAddress>0x16860000</BaseAddress>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\Hybrid\MaxEmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\Hybrid\maxProject1.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Hybrid|x64'">
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
-      <TypeLibraryName>.\midl\x64\MaxEmpImport.tlb</TypeLibraryName>
+      <TypeLibraryName>.\midl\x64\maxProject1.tlb</TypeLibraryName>
       <HeaderFileName>.\midl\x64\%(Filename).h</HeaderFileName>
       <InterfaceIdentifierFileName>.\midl\x64\%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>.\midl\x64\%(Filename)_p.c</ProxyFileName>
@@ -439,21 +438,21 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions> /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>.\x64\MaxEmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib; core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; gup.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>.\x64\maxProject1.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\x64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\MaxEmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\maxProject1.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>.\x64\MaxEmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>.\x64\maxProject1.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <BaseAddress>
       </BaseAddress>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\x64\Hybrid\MaxEmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\x64\Hybrid\maxProject1.lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
@@ -490,27 +489,27 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions> /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\EmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib; core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; gup.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\EmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\maxProject1.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <BaseAddress>0x16860000</BaseAddress>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\Debug\EmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\Debug\maxProject1.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
-      <TypeLibraryName>.\midl\x64\MaxEmpImport.tlb</TypeLibraryName>
+      <TypeLibraryName>.\midl\x64\maxProject1.tlb</TypeLibraryName>
       <HeaderFileName>.\midl\x64\%(Filename).h</HeaderFileName>
       <InterfaceIdentifierFileName>.\midl\x64\%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>.\midl\x64\%(Filename)_p.c</ProxyFileName>
@@ -519,7 +518,7 @@
       <AdditionalOptions>/LD %40"C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\ProjectSettings\AdditionalCompilerOptions64.txt" %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>.\midl\x64;C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\include;C:\Users\thinks\ExoticMatter\Naiad-0.6\Server\include\Nb;C:\Users\thinks\ExoticMatter\Naiad-0.6\Server\include\em;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\midl\x64;C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;WIN64;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_SCL_SECURE_NO_DEPRECATE;ISOLATION_AWARE_ENABLED=1;MODULE_NAME=$(TargetFileName);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -539,28 +538,28 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions> /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib;geom.lib;gfx.lib;mesh.lib;maxutil.lib;maxscrpt.lib;paramblk2.lib;Nb.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib; core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; gup.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>.\x64\maxProject1.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\x64\lib;C:\Users\thinks\ExoticMatter\Naiad-0.6\Server\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\x64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\MaxEmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\maxProject1.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>.\x64\MaxEmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>.\x64\maxProject1.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <BaseAddress>
       </BaseAddress>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\x64\Debug\MaxEmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\x64\Debug\maxProject1.lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseUnicode|Win32'">
     <Midl>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>.\midl\Win32\MaxEmpImport.tlb</TypeLibraryName>
+      <TypeLibraryName>.\midl\Win32\maxProject1.tlb</TypeLibraryName>
       <HeaderFileName>.\midl\Win32\%(Filename).h</HeaderFileName>
       <InterfaceIdentifierFileName>.\midl\Win32\%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>.\midl\Win32\%(Filename)_p.c</ProxyFileName>
@@ -597,14 +596,14 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions> /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib; core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; gup.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\MaxEmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\maxProject1.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -613,14 +612,14 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\Release\MaxEmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\Release\maxProject1.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseUnicode|x64'">
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
-      <TypeLibraryName>.\midl\x64\MaxEmpImport.tlb</TypeLibraryName>
+      <TypeLibraryName>.\midl\x64\maxProject1.tlb</TypeLibraryName>
       <HeaderFileName>.\midl\x64\%(Filename).h</HeaderFileName>
       <InterfaceIdentifierFileName>.\midl\x64\%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>.\midl\x64\%(Filename)_p.c</ProxyFileName>
@@ -656,14 +655,14 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/opt:lbr /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>.\x64\MaxEmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib; core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; gup.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>.\x64\maxProject1.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\x64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\MaxEmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\maxProject1.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>.\x64\MaxEmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>.\x64\maxProject1.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -673,7 +672,7 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\x64\Release\MaxEmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\x64\Release\maxProject1.lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
@@ -710,27 +709,27 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions> /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib; core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; gup.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\MaxEmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\maxProject1.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <BaseAddress>0x16860000</BaseAddress>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\Hybrid\MaxEmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\Hybrid\maxProject1.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='HybridUnicode|x64'">
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
-      <TypeLibraryName>.\midl\x64\MaxEmpImport.tlb</TypeLibraryName>
+      <TypeLibraryName>.\midl\x64\maxProject1.tlb</TypeLibraryName>
       <HeaderFileName>.\midl\x64\%(Filename).h</HeaderFileName>
       <InterfaceIdentifierFileName>.\midl\x64\%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>.\midl\x64\%(Filename)_p.c</ProxyFileName>
@@ -759,21 +758,21 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions> /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>.\x64\MaxEmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib; core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; gup.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>.\x64\maxProject1.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\x64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\MaxEmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\maxProject1.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>.\x64\MaxEmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>.\x64\maxProject1.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <BaseAddress>
       </BaseAddress>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\x64\Hybrid\MaxEmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\x64\Hybrid\maxProject1.lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
@@ -810,27 +809,27 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions> /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib; core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; gup.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\MaxEmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\maxProject1.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\MaxEmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>C:\Program Files\Autodesk\3ds Max 2012\plugins\maxProject1.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <BaseAddress>0x16860000</BaseAddress>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\Debug\MaxEmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\Debug\maxProject1.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugUnicode|x64'">
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
-      <TypeLibraryName>.\midl\x64\MaxEmpImport.tlb</TypeLibraryName>
+      <TypeLibraryName>.\midl\x64\maxProject1.tlb</TypeLibraryName>
       <HeaderFileName>.\midl\x64\%(Filename).h</HeaderFileName>
       <InterfaceIdentifierFileName>.\midl\x64\%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>.\midl\x64\%(Filename)_p.c</ProxyFileName>
@@ -859,44 +858,45 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions> /ignore:4013 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>.\x64\MaxEmpImport.dli</OutputFile>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;comctl32.lib;bmm.lib; core.lib; geom.lib; gfx.lib; mesh.lib; maxutil.lib; maxscrpt.lib; gup.lib; paramblk2.lib;;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>.\x64\maxProject1.dlu</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Autodesk\3ds Max 2012\maxsdk\x64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcp.lib;libci.lib;msvcirt.lib;libcmt.lib;libcmtd.lib;msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
-      <ModuleDefinitionFile>.\MaxEmpImport.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>.\maxProject1.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>.\x64\MaxEmpImport.dli.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>.\x64\maxProject1.dlu.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <BaseAddress>
       </BaseAddress>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>.\x64\Debug\MaxEmpImport.lib</ImportLibrary>
+      <ImportLibrary>.\x64\Debug\maxProject1.lib</ImportLibrary>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="EmpImport.cpp" />
+    <ClCompile Include="Naiad3dsMaxBuddy.cpp" />
     <ClCompile Include="DllEntry.cpp" />
-    <ClCompile Include="EmpMeshObject.cpp" />
-    <ClCompile Include="EmpUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="EmpImport.def" />
+    <None Include="Naiad3dsMaxBuddy.def" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="3dsmaxsdk_preinclude.h" />
-    <ClInclude Include="EmpImport.h" />
-    <ClInclude Include="EmpMeshObject.h" />
-    <ClInclude Include="EmpUtils.h" />
+    <ClInclude Include="Naiad3dsMaxBuddy.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="EmpImport.rc" />
+    <ResourceCompile Include="Naiad3dsMaxBuddy.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="maxProject1.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>
