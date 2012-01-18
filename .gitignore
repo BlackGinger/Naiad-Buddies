@@ -12,6 +12,19 @@ core.*
 *.dpi.lock
 *.a
 
+# ignore Visual Studio extra stuff!
+
+*.sln.docstates.suo
+*.suo
+*.opensdf
+*.sdf
+*.vcxproj.user
+*.aps
+Debug/
+x64/
+ipch/
+
+
 # do not add binaries
 
 stage*
