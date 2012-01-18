@@ -82,158 +82,159 @@ MStatus NBuddyParticlesToBodyNode::compute( const MPlug& plug, MDataBlock& data 
         MDataHandle bodyNameHndl = data.inputValue( bodyName, &status );
         MString bodyName = bodyNameHndl.asString();
 
-        // Concsturct the naiad body
-        Nb::Body * particleNaiadBody = Nb::Factory::createBody(
-            "Particle", std::string( bodyName.asChar() ) 
-            );
-	
-        // Note from Marcus: the "quick and dirty" way of doing this is to just to make some small tile-layout, 
-        // add all particles into the first block, and then call "update" on the body so that it automatically 
-        // re-sorts them all into their appropriate blocks...
-        Nb::ParticleShape& psh( particleNaiadBody->mutableParticleShape());
-        Nb::TileLayout& layout(particleNaiadBody->mutableLayout());
-        // PLEASE NOTE: this should really be a box close to a particle, instead of (0,0,0)...(1,1,1) but I was in a hurry!
-        // so this will make some "dummy" tiles...
-        layout.worldBoxRefine(em::vec3f(0,0,0), em::vec3f(1,1,1),1,false);        
-        // this will add blocks where there are tiles... (we are synching the particle-shape's blocks to the tile-layout)
-        psh.sync(layout);
+        try {
 
-        // Getting the handle for the ArrayAttrsdata
-        MDataHandle inSurfaceHdl = data.inputValue( inParticles, &status );
+            // Construct the naiad body
+            Nb::Body * particleNaiadBody = Nb::Factory::createBody(
+                "Particle", std::string( bodyName.asChar() ) 
+                );
+            
+            Nb::ParticleShape& particle = particleNaiadBody->mutableParticleShape();
+            Nb::TileLayout& layout = particleNaiadBody->mutableLayout();
+            
+            // Getting the handle for the ArrayAttrsdata
+            MDataHandle inSurfaceHdl = data.inputValue( inParticles, &status );
+            
+            // This is slightly silly, but the checkArrayExists function requires a reference to the type???!
+            MFnArrayAttrsData::Type arrayType;
+            
+            //Construct the arrayAttrsData function set
+            MFnArrayAttrsData attrArray(inSurfaceHdl.data());
+            
+            //Get the list of attributes
+            MStringArray attrList = attrArray.list();
+            unsigned int numAttrs = attrList.length();
 
-        // This is slightly silly, but the checkArrayExists function requires a reference to the type???!
-        MFnArrayAttrsData::Type arrayType;
-
-        //Construct the arrayAttrsData function set
-        MFnArrayAttrsData attrArray(inSurfaceHdl.data());
-
-        //Get the list of attributes
-        MStringArray attrList = attrArray.list();
-        unsigned int numAttrs = attrList.length();
-        std::cout << "/tNumber of attributes: " << numAttrs << std::endl;
-
-        for( unsigned int i(0); i < numAttrs; ++i )
-        {
-            const MString & attributeName = attrList[i];
-            std::cout << "Converting attribute : " << attributeName << std::endl;
-            if ( !attrArray.checkArrayExist( attributeName, arrayType, &status) )
-                continue;
-
-            switch (arrayType)
-            {
-            case MFnArrayAttrsData::kVectorArray :
-                {
-                    MVectorArray array = attrArray.vectorArray( attributeName, &status );
-                    NM_CheckMStatus( status, "Failed get VectorData from MFnArrayAttrsData with name : " << attributeName );
-                    std::cout << "/t type was Vector " << " with " << array.length() << " entries " << std::endl;
-
-                    try
-                    {
-                        // Create the vector 3f channel
-                        if ( attributeName != MString("position") && attributeName != MString("velocity") ) //They are already part of the particle signature
-                            psh.createChannel3f( std::string(attributeName.asChar()) , em::vec3f(0.0f,0.0f,0.0f) );
-
-                        //Get the created channel data
-                        em::block3_array3f& vectorBlocks(psh.mutableBlocks3f(attributeName.asChar()));
-                        em::block3vec3f&    vectorData(vectorBlocks(0));
-
-                        // Transfer values
-                        vectorData.reserve( array.length() );
-                        for ( unsigned int j(0); j < array.length(); ++j )
-                        {
-                            vectorData.push_back( em::vec3f(array[j][0],array[j][1],array[j][2]) );
-                        }
-                    }
-                    catch ( std::exception & ex )
-                    {
-                        std::cerr << "exception NBuddyParticlesToBodyNode::compute transferVectorArray" << ex.what() << std::endl;
-                    }
+            // guarantee all channels we are going to export (this should be done BEFORE the channel blocking begins..)
+            
+            for( unsigned int i(0); i < numAttrs; ++i ) {
+                const MString & attributeName = attrList[i];
+                if(!attrArray.checkArrayExist( attributeName, arrayType, &status))
+                    continue;
+                switch(arrayType) {                   
+                    case MFnArrayAttrsData::kVectorArray:
+                        particle.guaranteeChannel3f(std::string(attributeName.asChar()));
+                        break;
+                        
+                    case MFnArrayAttrsData::kDoubleArray:
+                        particle.guaranteeChannel1f(std::string(attributeName.asChar()));
+                        break;
+                        
+                    case MFnArrayAttrsData::kIntArray:
+                        particle.guaranteeChannel1i(std::string(attributeName.asChar()));
+                        break;
                 }
-                break;
-            case MFnArrayAttrsData::kDoubleArray :
-                {
-                    MDoubleArray array = attrArray.doubleArray( attributeName, &status );
-                    NM_CheckMStatus( status, "Failed get DoubleData from MFnArrayAttrsData with name " << attributeName );
-                    std::cout << "/t type was Double" << std::endl;
-
-                    try
-                    {
-                        // Create the float channel
-                        psh.createChannel1f( std::string(attributeName.asChar()) , 0.0f );
-
-                        //Get the created channel data
-                        em::block3_array1f& doubleBlocks(psh.mutableBlocks1f(attributeName.asChar()));
-                        em::block3f&        doubleData(doubleBlocks(0));
-
-                        // Transfer values
-                        doubleData.reserve( array.length() );
-                        for ( unsigned int j(0); j < array.length(); ++j )
-                            doubleData.push_back( array[j] );
-
-                    }
-                    catch ( std::exception & ex )
-                    {
-                        std::cerr << "exception NBuddyParticlesToBodyNode::compute transferDoubleArray" << ex.what() << std::endl;
-                    }
-
-                }
-                break;
-            case MFnArrayAttrsData::kIntArray :
-                {
-                    MIntArray array = attrArray.intArray( attributeName, &status );
-                    NM_CheckMStatus( status, "Failed get IntData from MFnArrayAttrsData with name " << attributeName );
-                    std::cout << "/t type was Int" << std::endl;
-
-                    try
-                    {
-                        // Create the integer channel
-                        psh.createChannel1i( std::string(attributeName.asChar()) , 0 );
-
-                        //Get the created channel data
-                        em::block3_array1i& intBlocks(psh.mutableBlocks1i(attributeName.asChar()));
-                        em::block3i&        intData(intBlocks(0));
-
-                        // Transfer values
-                        intData.reserve( array.length() );
-                        for ( unsigned int j(0); j < array.length(); ++j )
-                            intData.push_back( array[j] );
-                    }
-                    catch ( std::exception & ex )
-                    {
-                        std::cerr << "exception NBuddyParticlesToBodyNode::compute transferDoubleArray" << ex.what() << std::endl;
-                    }
-                }
-                break;
-            case MFnArrayAttrsData::kStringArray :
-                {
-                    std::cout << "/t type was String" << std::endl;
-                }
-                break;
-            default :
-                    std::cout << "Unsupported data type" << std::endl;
             }
-        }
+            
+            //
+            // begin the Naiad particle blocking magic...
+            //
+            
+            particle.beginBlockChannelData(layout);
+            
+            // always block Particle.position channel first!
+            
+            for( unsigned int i(0); i < numAttrs; ++i ) {
+                const MString & attributeName = attrList[i];
+                if(!attrArray.checkArrayExist( attributeName, arrayType, &status))
+                    continue;
+                if(arrayType==MFnArrayAttrsData::kVectorArray && attributeName == MString("position")) {
+                    MVectorArray array = attrArray.vectorArray( attributeName, &status );
+                    em::array1vec3f v; v.resize(array.length());
+                    for(unsigned int j=0; j<array.length(); ++j) {
+                        v[j][0]=array[j][0];
+                        v[j][1]=array[j][1];
+                        v[j][2]=array[j][2];
+                    }
+                    particle.blockChannelData3f("position", v.data, v.size());                    
+                    break;
+                }
+            }
+            
+            // now block the rest of the attributes into Naiad channels...
+            
+            for( unsigned int i(0); i < numAttrs; ++i ) {
+                const MString & attributeName = attrList[i];
+                if(!attrArray.checkArrayExist( attributeName, arrayType, &status))
+                    continue;
+                if(attributeName == MString("position"))
+                    continue;
+                
+                switch (arrayType) {
+                    case MFnArrayAttrsData::kVectorArray:
+                    {
+                        MVectorArray array = attrArray.vectorArray( attributeName, &status );
+                        NM_CheckMStatus( status, "Failed get VectorData from MFnArrayAttrsData with name : " << attributeName );                        
+                        em::array1vec3f v; v.resize(array.length());
+                        for(unsigned int j=0; j<array.length(); ++j) {
+                            v[j][0]=array[j][0];
+                            v[j][1]=array[j][1];
+                            v[j][2]=array[j][2];
+                        }
+                        particle.blockChannelData3f(std::string(attributeName.asChar()), v.data, v.size());
+                    }                
+                    break;
+                    
+                    case MFnArrayAttrsData::kDoubleArray:
+                    {
+                        MDoubleArray array = attrArray.doubleArray( attributeName, &status );
+                        NM_CheckMStatus( status, "Failed get DoubleData from MFnArrayAttrsData with name " << attributeName );
+                        em::array1f floats; floats.resize(array.length());
+                        for(unsigned int j=0; j<array.length(); ++j)
+                            floats[j]=static_cast<float>(array[j]);
+                        particle.blockChannelData1f(std::string(attributeName.asChar()), floats.data, floats.size());                        
+                    }
+                    break;
+                
+                    case MFnArrayAttrsData::kIntArray:
+                    {
+                        MIntArray array = attrArray.intArray( attributeName, &status );
+                        NM_CheckMStatus( status, "Failed get IntData from MFnArrayAttrsData with name " << attributeName );
+                        em::array1i ints; ints.resize(array.length());
+                        for(unsigned int j=0; j<array.length(); ++j)
+                            ints[j]=array[j];
+                        particle.blockChannelData1i(std::string(attributeName.asChar()), ints.data, ints.size());
+                    }
+                    break;
+
+                    case MFnArrayAttrsData::kStringArray:
+                    {
+                        std::cout << "/t type was String" << std::endl;
+                    }
+                    break;
+
+                    default:
+                        std::cout << "Unsupported data type" << std::endl;
+                }
+            }
+
+            // done blocking all the foreign channel data...
+            particle.endBlockChannelData();
+            particleNaiadBody->update(Nb::ZeroTimeBundle);
        
-        //Create the MFnPluginData for the naiadBody
-        MFnPluginData dataFn;
-        dataFn.create( MTypeId( naiadBodyData::id ), &status);
-        NM_CheckMStatus( status, "Failed to create naiadBodyData in MFnPluginData");
-	
-        //Get a new naiadBodyData
-        naiadBodyData * newBodyData = (naiadBodyData*)dataFn.data( &status );
-        NM_CheckMStatus( status, "Failed to get naiadBodyData handle from MFnPluginData");
-
-        // update body and then finally add the body to the data holder
-        particleNaiadBody->update(Nb::ZeroTimeBundle);
-        newBodyData->nBody = Nb::BodyCowPtr(particleNaiadBody);
-
-        //Give the data to the output handle and set it clean
-        MDataHandle bodyDataHnd = data.outputValue( outBody, &status );
-        NM_CheckMStatus( status, "Failed to get outputData handle for outBody");
-        bodyDataHnd.set( newBodyData );
-        data.setClean( plug );
+            //Create the MFnPluginData for the naiadBody
+            MFnPluginData dataFn;
+            dataFn.create( MTypeId( naiadBodyData::id ), &status);
+            NM_CheckMStatus( status, "Failed to create naiadBodyData in MFnPluginData");
+            
+            //Get a new naiadBodyData
+            naiadBodyData * newBodyData = (naiadBodyData*)dataFn.data( &status );
+            NM_CheckMStatus( status, "Failed to get naiadBodyData handle from MFnPluginData");
+            
+            // update body and then finally add the body to the data holder
+            newBodyData->nBody = Nb::BodyCowPtr(particleNaiadBody);
+            
+            //Give the data to the output handle and set it clean
+            MDataHandle bodyDataHnd = data.outputValue( outBody, &status );
+            NM_CheckMStatus( status, "Failed to get outputData handle for outBody");
+            bodyDataHnd.set( newBodyData );
+            data.setClean( plug );
+        }
+        catch(std::exception & ex) {
+            std::cerr << "exception NBuddyParticlesToBodyNode::compute transferVectorArray" << ex.what() << std::endl;
+        }
     }
-
+    
     return status;
 }
 
