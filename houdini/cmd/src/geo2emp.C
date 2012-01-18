@@ -128,11 +128,6 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 {
 	Nb::EmpReader* empReader = NULL;	
 
-        // Initialize the Naiad Base library only (we don't need the full
-        // Naiad Interface here - besides, it could consume an expensive
-        // Naiad software license! :-)
-        Nb::begin();
-
 	unsigned int numBodies = 0;
 	try
 	{
@@ -158,7 +153,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 	Nb::Body::ConstShapeMapIter shapeIt;
 	for (int i = 0; i < numBodies; i++)
 	{
-		pBody = empReader->constBody(i);
+		pBody = empReader->cloneBody(i);
 		//std::cout << i << ":" << pBody->name() << std::endl;
 		//std::cout << "number of shapes: " << pBody->shape_count() << std::endl;
 		/*	
@@ -188,8 +183,6 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 	if ( empReader )
 		delete empReader;
 
-        Nb::end();
-
 	return EC_SUCCESS;
 }
 
@@ -207,6 +200,11 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 	LogDebug() << "framepadding: " << _framepadding << std::endl;
 
         bool error=false;
+
+  // Initialize the Naiad Base library only (we don't need the full
+  // Naiad Interface here - besides, it could consume an expensive
+  // Naiad software license! :-)
+  Nb::begin();
 
 	//Perform sequence conversion evaluation
 	if ( pystring::find( _inputFile, "#" ) != -1 || pystring::find( _outputFile, "#" ) != -1 )
@@ -289,6 +287,8 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmp()
 		//Do a straight conversion
 	}
 
+  Nb::end();
+
         if(error)
             return EC_GENERAL_ERROR;
 
@@ -312,6 +312,11 @@ Geo2Emp::ErrorCode Geo2Emp::saveGeo()
 	LogDebug() << "framepadding: " << _framepadding << std::endl;
 
         bool error=false;
+
+  // Initialize the Naiad Base library only (we don't need the full
+  // Naiad Interface here - besides, it could consume an expensive
+  // Naiad software license! :-)
+  Nb::begin();
 
 	//Perform sequence conversion evaluation
 	if ( pystring::find( _inputFile, "#" ) != -1 || pystring::find( _outputFile, "#" ) != -1 )
@@ -398,6 +403,8 @@ Geo2Emp::ErrorCode Geo2Emp::saveGeo()
 		//Do a straight conversion
 	}
 
+  Nb::end();
+
         if(error)
             return EC_GENERAL_ERROR;
 
@@ -413,11 +420,6 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 	LogDebug() << "particle count: " << _gdp->particleCount() << std::endl;
 	LogDebug() << "paste count: " << _gdp->pasteCount() << std::endl;
 	LogDebug() << "quadric count: " << _gdp->quadricCount() << std::endl;
-
-        // Initialize the Naiad Base library only (we don't need the full
-        // Naiad Interface here - besides, it could consume an expensive
-        // Naiad software license! :-)
-        Nb::begin();
 
 	std::cout << "creating EmpWriter..." << empfile << std::endl;
 
@@ -471,8 +473,6 @@ Geo2Emp::ErrorCode Geo2Emp::saveEmpBodies(std::string empfile, int frame, float 
 	//All done
 	empWriter.close();
 	
-        Nb::end();
-
 	if ( _typeMask & BT_FIELD )
 	{
 		LogInfo() << "Unsupported shape type!" << std::endl;	
