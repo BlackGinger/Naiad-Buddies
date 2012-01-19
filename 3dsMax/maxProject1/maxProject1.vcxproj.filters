@@ -18,13 +18,7 @@
     <ClCompile Include="DllEntry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EmpImport.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="EmpMeshObject.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="EmpUtils.cpp">
+    <ClCompile Include="Naiad3dsMaxBuddy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,24 +29,18 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EmpImport.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EmpMeshObject.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EmpUtils.h">
+    <ClInclude Include="Naiad3dsMaxBuddy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="EmpImport.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="EmpImport.def">
+    <None Include="Naiad3dsMaxBuddy.def">
       <Filter>Source Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Naiad3dsMaxBuddy.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

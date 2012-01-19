@@ -27,27 +27,15 @@
 //
 // -----------------------------------------------------------------------------
 
-#include "3dsmaxsdk_preinclude.h"
-#include "Max.h"
-#include "resource.h"
-#include "istdplug.h"
-#include "iparamb2.h"
-#include "iparamm2.h"
-//SIMPLE TYPE
+#include "Naiad3dsMaxBuddy.h"
 
-#include <direct.h>
-#include <commdlg.h>
-
-#include "EmpImport.h"
-#include "EmpMeshObject.h"
 #include <Nb.h>
 #include <NbLog.h>
 #include <em_log.h>
 
 //------------------------------------------------------------------------------
 
-//extern ClassDesc2* GetEmpImportDesc();
-//extern ClassDesc2* GetEmpMeshObjectDesc();
+extern ClassDesc2* GetNaiadBuddyDesc();
 
 HINSTANCE hInstance;
 int controlsInit = FALSE;
@@ -62,9 +50,8 @@ int controlsInit = FALSE;
 BOOL WINAPI 
 DllMain(HINSTANCE hinstDLL, ULONG fdwReason, LPVOID /*lpvReserved*/)
 {
-    if( fdwReason == DLL_PROCESS_ATTACH ) {
+    if (fdwReason == DLL_PROCESS_ATTACH) {
         // Hang on to this DLL's instance handle.
-
         hInstance = hinstDLL;
         DisableThreadLibraryCalls(hInstance);
     }
@@ -77,7 +64,7 @@ DllMain(HINSTANCE hinstDLL, ULONG fdwReason, LPVOID /*lpvReserved*/)
 __declspec(dllexport) const TCHAR* 
 LibDescription()
 {
-    return _T("Exotic Matter's EMP importer for 3ds Max 2012 x64 (release)");
+    return GetString(IDS_LIBDESCRIPTION);
 }
 
 
@@ -85,18 +72,15 @@ LibDescription()
 //! TODO: Must change this number when adding a new class
 __declspec(dllexport) int 
 LibNumberClasses()
-{
-    return 2;
-}
+{ return 1; }
 
 
 //! Return descriptions of plug-in classes in DLL.
 __declspec(dllexport) ClassDesc* 
 LibClassDesc(int i)
 {
-    switch(i) {
-    case  0: return GetEmpImportDesc();
-    case  1: return GetEmpMeshObjectDesc();
+    switch (i) {
+    case  0: return GetNaiadBuddyDesc();
     default: return 0;
     }
 }
@@ -107,9 +91,7 @@ LibClassDesc(int i)
 //! to catch obsolete DLLs.
 __declspec(dllexport) ULONG 
 LibVersion()
-{
-    return VERSION_3DSMAX;
-}
+{ return VERSION_3DSMAX; }
 
 
 //! This function is called once, right after your plugin has been loaded by 
@@ -122,7 +104,7 @@ LibInitialize(void)
 {
     try {
         const std::string naiadPath = std::getenv("NAIAD_PATH");
-        em::open_log(naiadPath + "/EmpImportLog.txt"); // May throw.
+        em::open_log(naiadPath + "/Naiad3dsMaxBuddyLog.txt"); // May throw.
     }
     catch (...) { // Pokemon: Gotta catch 'em all...
         return FALSE;   
@@ -143,35 +125,35 @@ LibInitialize(void)
         NB_ERROR("unknown exception");
         return FALSE;   // Failure.
     }
+
+    return TRUE; // TODO: Perform initialization here.
 }
 
 
 //! This function is called once, just before the plugin is unloaded. 
-//! Perform one-time plugin un-initialization in this method."
+//! Perform one-time plugin un-initialization in this method.
 //! The system doesn't pay attention to a return value.
 __declspec(dllexport) int 
 LibShutdown(void)
 {
-    try {
-        // Perform un-initialization here.	
-
+    try {         // Perform un-initialization here.	
         Nb::end();
         em::close_log();
     }
-    catch (...) {
+    catch (...) { // Pokemon: Gotta catch 'em all!
     }
-
     return TRUE;    // Ignored.
 }
 
 //------------------------------------------------------------------------------
 
-//TCHAR*
-//GetString(int id)
-//{
-//    static TCHAR buf[256];
-//    if (hInstance) {
-//        return LoadString(hInstance, id, buf, sizeof(buf)) ? buf : NULL;
-//    }
-//    return NULL;
-//}
+//! DOCS
+TCHAR*
+GetString(int id)
+{
+    static TCHAR buf[256];
+    if (hInstance) {
+        return LoadString(hInstance, id, buf, sizeof(buf)) ? buf : NULL;
+    }
+    return NULL;
+}
