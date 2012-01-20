@@ -36,6 +36,7 @@
 //------------------------------------------------------------------------------
 
 extern ClassDesc2* GetNaiadBuddyDesc();
+extern ClassDesc2* GetEmpMeshObjectDesc();
 
 HINSTANCE hInstance;
 int controlsInit = FALSE;
@@ -72,7 +73,7 @@ LibDescription()
 //! TODO: Must change this number when adding a new class
 __declspec(dllexport) int 
 LibNumberClasses()
-{ return 1; }
+{ return 2; }
 
 
 //! Return descriptions of plug-in classes in DLL.
@@ -81,6 +82,7 @@ LibClassDesc(int i)
 {
     switch (i) {
     case  0: return GetNaiadBuddyDesc();
+    case  1: return GetEmpMeshObjectDesc();
     default: return 0;
     }
 }
@@ -157,3 +159,5 @@ GetString(int id)
     }
     return NULL;
 }
+
+//------------------------------------------------------------------------------
