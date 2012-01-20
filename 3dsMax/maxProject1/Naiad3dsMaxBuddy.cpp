@@ -33,11 +33,14 @@
 #include <NbFilename.h>
 #include <NbFactory.h>
 #include <NbBodyReader.h>
+#include <NbBodyWriter.h>
+#include <NbEmpWriter.h>
 #include <NbEmpReader.h>
 #include <NbSequenceReader.h>
 #include <NbBody.h>
 #include <NbString.h>
 #include <em_log.h>
+#include <sstream>
 
 // -----------------------------------------------------------------------------
 
@@ -110,10 +113,9 @@ public:
     setBodyName(const Nb::String &bodyName)
     { _bodyName = bodyName; }
 
-    //! NB: Doesn't update the mesh. Need to call BuildMesh() to do that.
     void
-    setFrameOffset(const int frameOffset)
-    { _frameOffset = frameOffset; }
+    setFlipYZ(const bool flipYZ)
+    { _flipYZ = flipYZ; }
 
 private:
 
@@ -135,7 +137,7 @@ private:    // Member variables.
 
     Nb::SequenceReader _seqReader; 
     Nb::String         _bodyName;  //!< The name of the body this object tracks.
-    int                _frameOffset;
+    bool               _flipYZ;
     int                _meshFrame; 
     BOOL               _validMesh;
 };
@@ -199,7 +201,7 @@ GetEmpMeshObjectDesc()
 EmpMeshObject::EmpMeshObject() 
     : SimpleObject2()
     , _bodyName("")
-    , _frameOffset(0)
+    , _flipYZ(true)
     , _meshFrame(TIME_NegInfinity/GetTicksPerFrame())
     , _validMesh(FALSE)
 {
@@ -215,16 +217,15 @@ EmpMeshObject::EmpMeshObject()
 void 
 EmpMeshObject::BuildMesh(TimeValue t)
 {
-    const int frame = t/GetTicksPerFrame() + _frameOffset;
-
+    const int frame = t/GetTicksPerFrame();
     if (frame != _meshFrame) {
         // Current time, t, is different from the time that the current mesh
         // was built at. First, we clear the current mesh, since it is no
         // longer valid. Thereafter we try to build a new mesh for the
         // current time.
 
-        NB_INFO("EmpMeshObject::BuildMesh - frame: " << frame << 
-                " (offset: " << _frameOffset << ")");
+        NB_INFO("EmpMeshObject::BuildMesh - frame: " << frame /*<< 
+                "TODO (offset: " << _seqReader.frameOffset() << ")"*/);
         _clearMesh();
         _rebuildMesh(frame);
         _meshFrame = frame;
@@ -265,7 +266,7 @@ EmpMeshObject::_rebuildMesh(const int frame)
                 _validMesh = TRUE;
             }
             else {
-                NB_WARNING("Signature '" << body->sig() << 
+                NB_WARNING("EmpMeshObject: Signature '" << body->sig() << 
                             "' not supported");
             }
         }
@@ -312,7 +313,9 @@ EmpMeshObject::_buildMesh(const Nb::PointShape    &point,
     this->mesh.setNumVerts(numVerts);
     for (int i = 0; i < numVerts; ++i) {
         const em::vec3f pos = position[i];
-        this->mesh.setVert(i, Point3(pos[0], pos[1], pos[2]));
+        _flipYZ ?
+            this->mesh.setVert(i, Point3(pos[0], pos[2], pos[1])) :
+            this->mesh.setVert(i, Point3(pos[0], pos[1], pos[2]));
     }
 
     // Mesh faces.
@@ -514,6 +517,8 @@ public:
     virtual void
     Export();
 
+    virtual void
+    ExportNode(INode *node, int frame, bool flipYZ, Nb::EmpWriter &emp);
 
 public:     // Member variables (!?)
 
@@ -546,15 +551,18 @@ private:
 
         ISpinnerControl *frameOffsetSpinner;
         int              frameOffset;
+        bool             flipYZ;
 
         ICustButton     *importButton;
+        //ICustStatusEdit *importStatusEdit;
+        ICustStatus     *importStatus;
     };
 
     struct _Export
     {
-        ICustEdit   *sequenceNameEdit;
-        Nb::String   sequenceName;
-        ICustButton *browseButton;
+        ICustEdit       *sequenceNameEdit;
+        Nb::String       sequenceName;
+        ICustButton     *browseButton;
 
         ISpinnerControl *paddingSpinner;
         int              padding;
@@ -562,7 +570,11 @@ private:
         ISpinnerControl *firstFrameSpinner;
         ISpinnerControl *lastFrameSpinner;
 
-        ICustButton *exportButton;
+        bool             flipYZ;
+
+        ICustButton     *exportButton;
+        //ICustStatusEdit *exportStatusEdit;
+        ICustStatus     *exportStatus;
     };
 
 private:
@@ -647,12 +659,14 @@ NaiadBuddy::NaiadBuddy()
 
     _imp.sequenceName    = Nb::String("");
     _imp.sequence        = true;
-    _imp.signatureFilter = Nb::String("Body");
+    _imp.signatureFilter = Nb::String("Mesh");
     _imp.bodyNameFilter  = Nb::String("*");
     _imp.frameOffset     = 0;
+    _imp.flipYZ          = true;
 
     _exp.sequenceName    = Nb::String("");
     _exp.padding         = 4;
+    _exp.flipYZ          = true;
 }
 
 
@@ -703,36 +717,49 @@ NaiadBuddy::Init(HWND hWnd)
 
     // Import.
 
-    _imp.sequenceNameEdit = GetICustEdit(GetDlgItem(hWnd, IDC_IMPORT_EDIT));
+    _imp.sequenceNameEdit = 
+        GetICustEdit(GetDlgItem(hWnd, IDC_IMP_EMP_SEQUENCE_EDIT));
     _imp.sequenceNameEdit->SetText(_imp.sequenceName.c_str());
 
     _imp.browseButton = 
-        GetICustButton(GetDlgItem(hWnd, IDC_IMPORT_BROWSE_BUTTON));
+        GetICustButton(GetDlgItem(hWnd, IDC_IMP_BROWSE_BUTTON));
 
     CheckDlgButton(
         hWnd, 
-        IDC_SEQUENCE_CHECK, 
+        IDC_IMP_SEQUENCE_CHECK, 
         _imp.sequence ? BST_CHECKED : BST_UNCHECKED);
 
     _imp.signatureFilterEdit = 
-        GetICustEdit(GetDlgItem(hWnd, IDC_SIGNATURE_FILTER_EDIT));
+        GetICustEdit(GetDlgItem(hWnd, IDC_IMP_SIGNATURE_FILTER_EDIT));
     _imp.signatureFilterEdit->SetText(_imp.signatureFilter.c_str());
 
     _imp.bodyNameFilterEdit = 
-        GetICustEdit(GetDlgItem(hWnd, IDC_BODY_NAME_FILTER_EDIT));
+        GetICustEdit(GetDlgItem(hWnd, IDC_IMP_BODY_NAME_FILTER_EDIT));
     _imp.bodyNameFilterEdit->SetText(_imp.bodyNameFilter.c_str());
 
     _imp.frameOffsetSpinner = 
         SetupIntSpinner(
-            hWnd,                       // Window handle.
-            IDC_FRAME_OFFSET_SPINNER,   // Spinner Id.
-            IDC_FRAME_OFFSET_EDIT,      // Edit Id.
-            TIME_NegInfinity,           // Min.
-            TIME_PosInfinity,           // Max.
-            _imp.frameOffset);          // Value.
+            hWnd,                           // Window handle.
+            IDC_IMP_FRAME_OFFSET_SPINNER,   // Spinner Id.
+            IDC_IMP_FRAME_OFFSET_EDIT,      // Edit Id.
+            TIME_NegInfinity,               // Min.
+            TIME_PosInfinity,               // Max.
+            _imp.frameOffset);              // Value.
 
-    _imp.importButton = GetICustButton(GetDlgItem(hWnd, IDC_IMPORT_BUTTON));
+    CheckDlgButton(
+        hWnd, 
+        IDC_IMP_FLIP_YZ_CHECK, 
+        _imp.flipYZ ? BST_CHECKED : BST_UNCHECKED);
 
+    _imp.importButton = 
+        GetICustButton(GetDlgItem(hWnd, IDC_IMP_IMPORT_BUTTON));
+
+    //_imp.importStatusEdit = 
+    //    GetICustStatusEdit(GetDlgItem(hWnd, IDC_IMP_STATUS_EDIT));
+    //_imp.importStatusEdit->SetText("Ready");
+    _imp.importStatus = 
+        GetICustStatus(GetDlgItem(hWnd, IDC_IMP_STATUS_EDIT));
+    _imp.importStatus->SetText("Ready");
 
     // Export.
 
@@ -767,7 +794,16 @@ NaiadBuddy::Init(HWND hWnd)
             TIME_PosInfinity,           // Max.
             ip->GetAnimRange().End()/GetTicksPerFrame());  // Value.
 
+    CheckDlgButton(
+        hWnd, 
+        IDC_EXP_FLIP_YZ_CHECK, 
+        _exp.flipYZ ? BST_CHECKED : BST_UNCHECKED);
+
     _exp.exportButton = GetICustButton(GetDlgItem(hWnd, IDC_EXPORT_BUTTON));
+
+    _exp.exportStatus = 
+        GetICustStatus(GetDlgItem(hWnd, IDC_EXP_STATUS_EDIT));
+    _exp.exportStatus->SetText("Ready");
 }
 
 
@@ -788,6 +824,7 @@ void NaiadBuddy::Destroy(HWND hWnd)
     ReleaseICustEdit(_imp.bodyNameFilterEdit);
     ReleaseISpinner(_imp.frameOffsetSpinner);
     ReleaseICustButton(_imp.importButton);
+    ReleaseICustStatus(_imp.importStatus);
 
 
     // Export.
@@ -798,6 +835,7 @@ void NaiadBuddy::Destroy(HWND hWnd)
     ReleaseISpinner(_exp.firstFrameSpinner);
     ReleaseISpinner(_exp.lastFrameSpinner);
     ReleaseICustButton(_exp.exportButton);
+    ReleaseICustStatus(_exp.exportStatus);
 }
 
 
@@ -805,7 +843,6 @@ void NaiadBuddy::Destroy(HWND hWnd)
 void
 NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
-
     // Useful standard dialogs in Max.
     // Interface8::DoMaxSaveAsDialog()
     // Interface8::DoMaxOpenDialog()
@@ -835,7 +872,7 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         }
         break;
     // Import stuff.
-    case IDC_IMPORT_BROWSE_BUTTON:
+    case IDC_IMP_BROWSE_BUTTON:
         {
         TSTR filename;
         TSTR initialDir(_gen.projectPath.c_str());
@@ -852,7 +889,9 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
                 extensionList)) {
             // Check if we should convert the chosen filename into a sequence.
 
-            if (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_SEQUENCE_CHECK)) {
+            const bool sequence = 
+                (BST_CHECKED==IsDlgButtonChecked(hWnd, IDC_IMP_SEQUENCE_CHECK));
+            if (sequence) {
                 _imp.sequenceName = Nb::hashifyFilename(filename.data());
             }
             else {
@@ -862,27 +901,32 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         }
         }
         break;
-    case IDC_SIGNATURE_FILTER_EDIT:
+    case IDC_IMP_SIGNATURE_FILTER_EDIT:
         {
         MSTR signatureFilter;
         _imp.signatureFilterEdit->GetText(signatureFilter);
         _imp.signatureFilter = Nb::String(signatureFilter.data());
         }
         break;
-    case IDC_BODY_NAME_FILTER_EDIT:
+    case IDC_IMP_BODY_NAME_FILTER_EDIT:
         {
         MSTR bodyNameFilter;
         _imp.bodyNameFilterEdit->GetText(bodyNameFilter);
         _imp.bodyNameFilter = Nb::String(bodyNameFilter.data());
         }
         break;
-    case IDC_FRAME_OFFSET_SPINNER:
-    case IDC_FRAME_OFFSET_EDIT:
+    case IDC_IMP_FRAME_OFFSET_SPINNER:
+    case IDC_IMP_FRAME_OFFSET_EDIT:
         {
         _imp.frameOffset = _imp.frameOffsetSpinner->GetIVal();
         }
         break;
-    case IDC_IMPORT_BUTTON:
+    //case IDC_IMP_FLIP_YZ:
+    //    {
+    //    _imp.flipYZ = ... ;
+    //    }
+    //    break;
+    case IDC_IMP_IMPORT_BUTTON:
         Import(); // The import button was pressed, do the import...
         break;
     // Export stuff.
@@ -934,16 +978,11 @@ NaiadBuddy::Import()
         MSTR sequenceName;
         _imp.sequenceNameEdit->GetText(sequenceName);
         if (sequenceName.isNull()) {
+            _imp.importStatus->SetText("ERROR!");
+            _imp.importStatus->SetTooltip(true, "Empty sequence name.");
+            NB_ERROR("import: Empty sequence name.");
             return; // Early exit, no sequenceName provided.
         }
-
-        Nb::SequenceReader seqReader;
-        seqReader.setFormat(Nb::extractExt(sequenceName.data()));
-        seqReader.setSequenceName(sequenceName.data());
-        seqReader.setSigFilter("Body"); // Read as bodies...
-        seqReader.setFrame(
-            ip->GetTime()/GetTicksPerFrame() + 
-            _imp.frameOffsetSpinner->GetIVal());
 
         MSTR bodyNameFilter;
         _imp.bodyNameFilterEdit->GetText(bodyNameFilter);
@@ -954,19 +993,45 @@ NaiadBuddy::Import()
         MSTR signatureFilter;
         _imp.signatureFilterEdit->GetText(signatureFilter);
         if (signatureFilter.isNull()) {
-            signatureFilter = "Body";
+            signatureFilter = "Mesh";
         }
 
-        while (seqReader.bodyReader()->bodyCount() > 0) {
-            // Get an Nb::Body from the EMP archive. We get ownership of
-            // the retrieved Nb::Body. 
+        const int frameOffset = _imp.frameOffsetSpinner->GetIVal();
+        const bool flipYZ = 
+            (BST_CHECKED == IsDlgButtonChecked(hPanel, IDC_IMP_FLIP_YZ_CHECK));
 
-            std::auto_ptr<Nb::Body> body(seqReader.bodyReader()->popBody());
+        // Create our sequence reader.
 
-            if (body->name().listed_in(Nb::String(bodyNameFilter)) && 
-                body->matches(Nb::String(signatureFilter))) {
-                if ("Mesh" == body->sig()) {
-                    // Create an EmpObject for each body. We own this object 
+        Nb::SequenceReader seqReader;
+        seqReader.setSigFilter("Body"); // HACK! Read as bodies...
+        seqReader.setProjectPath("<non-empty>");  // HACK!
+        seqReader.setSequenceName(sequenceName.data());
+        seqReader.setFormat(Nb::extractExt(sequenceName.data()));
+        seqReader.setFrameOffset(frameOffset);
+        //seqReader.refresh();
+        //seqReader.setFrame(
+        //    ip->GetTime()/GetTicksPerFrame()); // May throw.
+
+        std::vector<Nb::String> bodyNames;
+        std::vector<Nb::String> bodySignatures;
+        seqReader.allBodyInfo(bodyNames, bodySignatures);
+        if (bodyNames.size() != bodySignatures.size()) {
+            _imp.importStatus->SetText("ERROR!");
+            _imp.importStatus->SetTooltip(true, "Invalid body info.");
+            NB_ERROR("import: Invalid body info.");
+            return; // Early exit, invalid body info.
+        }
+
+        int numCreatedNodes = 0;
+        for (unsigned int b = 0; b < bodyNames.size(); ++b) {
+            const Nb::String &bodyName = bodyNames[b];
+            const Nb::String &bodySig = bodySignatures[b];
+            const bool nameMatch = bodyName.listed_in(bodyNameFilter.data());
+            const bool sigMatch = bodySig.listed_in(signatureFilter.data());
+
+            if (nameMatch && sigMatch) {
+                if ("Mesh" == bodySig) {
+                    // Create an EmpMeshObject for each body. We own this object 
                     // until it is attached to a node and added to the scene. 
                     // If it can't be added we must delete it below.
 
@@ -978,15 +1043,17 @@ NaiadBuddy::Import()
                     // Set information required by the object's 
                     // internal sequence reader.
 
-                    empMeshObj->setBodyName(body->name());
-                    empMeshObj->setFrameOffset(
-                        _imp.frameOffsetSpinner->GetIVal());
+                    empMeshObj->setBodyName(bodyName);
+                    empMeshObj->setFlipYZ(flipYZ);
 
                     Nb::SequenceReader &sr = empMeshObj->sequenceReader();
-                    sr.setFormat(seqReader.format());
-                    sr.setSigFilter("Body"); // TODO: seqReader.sigFilter() ??
+                    sr.setSigFilter("Body"); // HACK!
+                    sr.setProjectPath(seqReader.projectPath());
                     sr.setSequenceName(seqReader.sequenceName());
-                    
+                    sr.setFormat(seqReader.format());
+                    sr.setFrameOffset(frameOffset/*TODO seqReader.frameOffset()*/);
+                    sr.setPadding(seqReader.padding());
+
                     INode *node = ip->CreateObjectNode(empMeshObj);
                     if (NULL != node) {
                         Matrix3 tm; // TMP! Hard-coded transform and time-value. 
@@ -996,10 +1063,11 @@ NaiadBuddy::Import()
                         MSTR nodeName = _M(empMeshObj->bodyName().c_str());
                         ip->MakeNameUnique(nodeName);
                         node->SetName(nodeName);
+                        ++numCreatedNodes;
                     }
                     else {
                         // For some reason the node could not be added to the 
-                        // scene. Simply delete the EmpObject and move on, 
+                        // scene. Simply delete the EmpMeshObject and move on, 
                         // hoping for better luck with the rest of the 
                         // Nb::Body objects.
 
@@ -1013,82 +1081,23 @@ NaiadBuddy::Import()
             }
         }
 
+        std::stringstream ss;
+        ss << "Created " << numCreatedNodes << " nodes";
+        _imp.importStatus->SetText(ss.str().c_str());
+        // TODO: Set tooltip with more specific info...
+        NB_INFO("Created " << numCreatedNodes << " nodes");
+
         ip->RedrawViews(ip->GetTime());
         //seqReader.close();    // TODO??
-
-        /*
-        Nb::EmpReader empReader(
-            Nb::String(filename.data()), 
-            Nb::String(bodyNameFilter.data()), 
-            "Body"); // May throw.
-        NB_INFO("EMP time: " << empReader.time());
-        NB_INFO("EMP revision: " << empReader.revision());
-        NB_INFO("EMP body count: " << empReader.bodyCount());
-        int frame = 0;
-        int timestep = 0;
-        Nb::extractFrameAndTimestep(filename.data(), frame, timestep);
-        NB_INFO("Frame: " << frame);
-        NB_INFO("Timestep: " << timestep);
-        const Nb::String sequenceName = Nb::hashifyFilename(filename.data());
-        NB_INFO("Sequence name: '" << sequenceName << "'\n");
-
-        // Scrub to the frame in the EMP file name.
-
-        ip->SetTime(frame*GetTicksPerFrame(), FALSE);
-
-        while (empReader.bodyCount() > 0) {
-            // Get an Nb::Body from the EMP archive. We get ownership of
-            // the retrieved Nb::Body. 
-
-            std::auto_ptr<Nb::Body> body(empReader.popBody());
-
-            // Create an EmpObject for each body. We own this object 
-            // until it is attached to a node and added to the scene. If it 
-            // can't be added we must delete it below.
-
-            EmpMeshObject *empMeshObject = 
-                static_cast<EmpMeshObject*>(
-                    ip->CreateInstance(
-                        GEOMOBJECT_CLASS_ID, EmpMeshObject_CLASS_ID));
-
-            // Set information required by the object's 
-            // internal sequence reader.
-
-            empMeshObject->setBodyName(body->name());
-            empMeshObject->setSequenceName(sequenceName);
-            //empObject->BuildMesh(i->GetTime());
-
-            INode *node = ip->CreateObjectNode(empMeshObject);
-            if (NULL != node) {
-                Matrix3 tm; // TMP! Hard-coded transform and time-value. 
-                tm.IdentityMatrix();   // Body data already in world-space.
-                const TimeValue t = 0; // No time-varying XForm.
-                node->SetNodeTM(t, tm);
-                //node->Reference(empMeshObject);
-                MSTR nodeName = _M(empMeshObject->bodyName().c_str());
-                ip->MakeNameUnique(nodeName);
-                node->SetName(nodeName);
-                //ii->AddNodeToScene(impNode);
-            }
-            else {
-                // For some reason the node could not be added to the scene.
-                // Simply delete the EmpObject and move on, hoping
-                // for better luck with the rest of the Nb::Body objects.
-
-                delete empMeshObject;
-            }
-        }
-
-        ip->RedrawViews(ip->GetTime());
-        //ii->RedrawViews();
-        empReader.close();
-        //return TRUE;   // Success.
-        */
     }
     catch (std::exception &ex) {
+        _imp.importStatus->SetText("ERROR!");
+        _imp.importStatus->SetTooltip(true, ex.what());
         NB_ERROR("exception: " << ex.what());
     }
     catch (...) {
+        _imp.importStatus->SetText("ERROR!");
+        _imp.importStatus->SetTooltip(true, "unknown exception");
         NB_ERROR("unknown exception");
     }
 }
@@ -1098,7 +1107,166 @@ NaiadBuddy::Import()
 void
 NaiadBuddy::Export()
 {
-    // TODO!        
+    MSTR sequenceName;
+    _exp.sequenceNameEdit->GetText(sequenceName);
+    if (sequenceName.isNull()) {
+        _exp.exportStatus->SetText("ERROR!");
+        _exp.exportStatus->SetTooltip(true, "Empty sequence name.");
+        NB_ERROR("export: Empty sequence name.");
+        return; // Early exit, no sequenceName provided.
+    }
+
+    const int firstFrame = _exp.firstFrameSpinner->GetIVal();
+    const int lastFrame = _exp.lastFrameSpinner->GetIVal();
+
+    NB_INFO("export: First Frame: " << firstFrame);
+    NB_INFO("export: Last Frame: " << lastFrame);
+
+    if (firstFrame > lastFrame) {
+        _exp.exportStatus->SetText("ERROR!");
+        _exp.exportStatus->SetTooltip(true, "Invalid frame range");
+        NB_ERROR("export: Invalid frame range");
+        return; // Early exit, invalid frame range.
+    }
+
+    const int padding = _exp.paddingSpinner->GetIVal();
+    const bool flipYZ = 
+        (BST_CHECKED == IsDlgButtonChecked(hPanel, IDC_EXP_FLIP_YZ_CHECK));
+    
+    for (int frame = firstFrame; frame <lastFrame; ++frame) {
+        NB_INFO("export: Frame: " << frame);
+
+        try {
+            Nb::EmpWriter emp(
+                sequenceName.data(),
+                frame, 
+                -1, 
+                padding); // TODO: Max seconds!
+            // TODO: set time!!
+
+            // Recursively export nodes in scene, starting at the scene root.
+
+            INode *root = ip->GetRootNode();
+            for (int i = 0; i < root->NumberOfChildren(); ++i) {
+                ExportNode(root->GetChildNode(i), frame, flipYZ, emp);
+            }
+
+            emp.close();
+        }
+        catch (std::exception &ex) {
+            NB_ERROR("exception: " << ex.what());
+        }
+        catch (...) {
+            NB_ERROR("unknown exception");
+        }
+    }
+}
+
+
+//! DOCS
+void
+NaiadBuddy::ExportNode(INode         *node, 
+                       const int      frame, 
+                       const bool     flipYZ, 
+                       Nb::EmpWriter &emp)
+{
+    const ObjectState &os = node->EvalWorldState(frame*GetTicksPerFrame());
+    Object *obj = os.obj;
+    if (obj != NULL) {
+        switch (obj->SuperClassID()) {
+        case GEOMOBJECT_CLASS_ID:
+            // We have a geometric object. Now look for triangles...
+
+            if (obj->CanConvertToType(Class_ID(TRIOBJ_CLASS_ID, 0))) {
+                MSTR className;
+                obj->GetClassName(className);
+                NB_INFO("export: Node: " << node->GetName() << 
+                        ", Class: " << className);
+
+                TriObject *tri = 
+                    static_cast<TriObject*>(
+                        obj->ConvertToType(
+                            frame*GetTicksPerFrame(), 
+                            Class_ID(TRIOBJ_CLASS_ID, 0)));
+
+                // Matrix3 is actually a 4x3 matrix. Order of 
+                // multiplication with vertex is irrelevant (?!).
+
+                const Matrix3 tm = 
+                    //node->GetNodeTM(frame*GetTicksPerFrame());
+                    node->GetObjTMAfterWSM(frame*GetTicksPerFrame());
+
+                try {
+                    std::auto_ptr<Nb::Body> body(
+                        Nb::Factory::createBody(
+                            "Mesh", Nb::String(node->GetName())));
+                    //body->guaranteeChannel3f(Nb::String("Point.position"));
+                    //body->guaranteeChannel3i(Nb::String("Triangle.index"));
+
+                    Nb::PointShape    &points    = body->mutablePointShape();
+                    Nb::TriangleShape &triangles = body->mutableTriangleShape();
+                    Nb::Buffer3f &positions = 
+                        points.mutableBuffer3f("position");
+                    Nb::Buffer3i &indices = 
+                        triangles.mutableBuffer3i("index");
+
+                    const int numVerts = tri->mesh.getNumVerts();
+                    NB_INFO("Vertex Count: " << numVerts);
+                    positions.resize(numVerts);
+                    for (int i = 0; i < numVerts; ++i) {
+                        const Point3 v = tm*tri->mesh.verts[i];
+                        if (flipYZ) {
+                            positions[i][0] = v.x;
+                            positions[i][1] = v.z;
+                            positions[i][2] = v.y;
+                        }
+                        else {
+                            positions[i][0] = v.x;
+                            positions[i][1] = v.y;
+                            positions[i][2] = v.z;
+                        }
+                    }
+                    
+                    const int numFaces = tri->mesh.getNumFaces();
+                    NB_INFO("Face Count: " << numFaces);
+                    indices.resize(numFaces);
+                    for (int i = 0; i < numFaces; ++i) {
+                        indices[i][0] = tri->mesh.faces[i].v[0];
+                        indices[i][1] = tri->mesh.faces[i].v[1];
+                        indices[i][2] = tri->mesh.faces[i].v[2];
+                    }
+
+                    NB_INFO("export: Writing '" << emp.fileName() << "'");
+                    emp.write(body.get(), "*.*");
+                }
+                catch (std::exception &ex) {
+                    NB_ERROR("exception: " << ex.what());
+                }
+                catch (...) {
+                    NB_ERROR("unknown exception");
+                }
+
+                // NB: 3ds Max magic...
+                // Note that the TriObject should only be deleted
+                // if the pointer to it is not equal to the object
+                // pointer that called ConvertToType().
+
+                if (obj != tri) {
+                    delete tri;
+                }
+            }
+        //case CAMERA_CLASS_ID:
+        //    break;
+        default:
+            break;
+        }
+    }
+
+    // Process node's children recursively.
+
+    for (int i = 0; i < node->NumberOfChildren(); ++i) {
+        ExportNode(node->GetChildNode(i), frame, flipYZ, emp); // Recursive.
+    }
 }
 
 
