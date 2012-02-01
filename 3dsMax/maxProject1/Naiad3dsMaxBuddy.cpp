@@ -41,6 +41,8 @@
 #include <NbString.h>
 #include <em_log.h>
 #include <sstream>
+#include <map>
+#include <Windows.h>
 
 // -----------------------------------------------------------------------------
 
@@ -130,8 +132,27 @@ private:
     void
     _buildMesh(const Nb::PointShape &point, const Nb::TriangleShape &triangle);
 
-    void
-    _addMap3f(MeshMap &map, const Nb::Buffer3f &buf, const Nb::Buffer3i &index);
+    static void
+    _buildMapVerts1i(MeshMap            &map, 
+                     const Nb::Buffer1i &buf,
+                     const int           mask[3]);
+
+    static void
+    _buildMapVerts1f(MeshMap            &map, 
+                     const Nb::Buffer1f &buf,
+                     const int           mask[3]);
+
+    static void
+    _buildMapVerts3f(MeshMap            &map, 
+                     const Nb::Buffer3f &buf,
+                     const int           mask[3]);
+
+    static void
+    _buildMapFaces(MeshMap            &map, 
+                   const Nb::Buffer3i &index);
+
+    static bool
+    _hasUVW(const Nb::PointShape &point);
 
 private:    // Member variables.
 
@@ -183,7 +204,87 @@ public:
     //! Returns owning module handle.
     virtual HINSTANCE 
     HInstance() 					
-    { return hInstance; }					
+    { return hInstance; }	
+
+public:
+
+    //! DOCS
+    struct Mapping
+    {
+        int id;
+        int mask[3];    // TODO: bitmask.
+    };
+
+    //! CTOR.
+    EmpMeshObjectClassDesc()
+    {
+        // Channel 0 is reserved for vertex color. 
+        // Channel 1 is the default texture mapping.
+
+        typedef _ChannelMap::value_type value_type;
+        Mapping uvMapping;
+        uvMapping.id = 1;   // Default 3ds Max texture mapping channel.
+        uvMapping.mask[0] = 1;
+        uvMapping.mask[1] = 1;
+        uvMapping.mask[2] = 0;
+        _channelMapping.insert(value_type("uv", uvMapping));
+
+        Mapping uMapping;
+        uMapping.id = 1;    // Default 3ds Max texture mapping channel.
+        uMapping.mask[0] = 1;
+        uMapping.mask[1] = 0;
+        uMapping.mask[2] = 0;
+        _channelMapping.insert(value_type("u", uMapping));
+
+        Mapping vMapping;
+        vMapping.id = 1;    // Default 3ds Max texture mapping channel.
+        vMapping.mask[0] = 0;
+        vMapping.mask[1] = 1;
+        vMapping.mask[2] = 0;
+        _channelMapping.insert(value_type("v", vMapping));
+
+        Mapping velocityMapping;
+        velocityMapping.id = 2;
+        velocityMapping.mask[0] = 1;
+        velocityMapping.mask[1] = 1;
+        velocityMapping.mask[2] = 1;
+        _channelMapping.insert(value_type("velocity", velocityMapping));
+    }
+
+    //! Returns true if channelName is not "special". [static]
+    //! TODO: Support UVW!?
+    bool
+    isBlindChannel(const Nb::String &channelName) const
+    {
+        return (!(channelName == "position") && 
+                 _channelMapping.find(channelName) == _channelMapping.end());
+    }
+
+    //! Returns mapping id for the provided channel name. Id is -1 for blind
+    //! mapping channels.
+    Mapping
+    mapping(const Nb::String &channelName) const
+    {
+        Mapping m;
+        m.id      = -1;
+        m.mask[0] =  1;     // All sub-channels enabled by default  
+        m.mask[1] =  1;     // even for blind channels.
+        m.mask[2] =  1;
+        const _ChannelMap::const_iterator iter =
+            _channelMapping.find(channelName);
+        if (iter != _channelMapping.end()) {
+            m.id      = iter->second.id;
+            m.mask[0] = iter->second.mask[0];
+            m.mask[1] = iter->second.mask[1];
+            m.mask[2] = iter->second.mask[2];
+        }
+        return m;
+    }
+
+private:    // Member variables.
+
+    typedef std::map<Nb::String,Mapping> _ChannelMap;
+    _ChannelMap _channelMapping;
 };
 
 //------------------------------------------------------------------------------
@@ -253,7 +354,7 @@ EmpMeshObject::_rebuildMesh(const int frame)
         if (0 != body.get()) {
             // Body was found in sequence on disk.
 
-            NB_INFO("Importing body: '" << body->name() << 
+            NB_INFO("mesh: Importing body: '" << body->name() << 
                     "' (signature = '" << body->sig() << "')");
 
             if (body->matches(_signature)) { // "Mesh"
@@ -271,15 +372,15 @@ EmpMeshObject::_rebuildMesh(const int frame)
             }
         }
         else {
-            NB_WARNING("Body '" << _bodyName << 
+            NB_WARNING("EmpMeshObject: Body '" << _bodyName << 
                         "' not found in file '" << _seqReader.fileName());
         }
     }
     catch (std::exception &ex) {
-        NB_ERROR("exception: " << ex.what());
+        NB_ERROR("EmpMeshObject: exception: " << ex.what());
     }
     catch (...) {
-        NB_ERROR("unknown exception");
+        NB_ERROR("EmpMeshObject: unknown exception");
     }
 }
 
@@ -308,7 +409,7 @@ EmpMeshObject::_buildMesh(const Nb::PointShape    &point,
     const int numVerts = position.size();
     const int numFaces = index.size();
         
-    // Mesh vertices.
+    // Mesh vertices (positions) [required].
 
     this->mesh.setNumVerts(numVerts);
     for (int i = 0; i < numVerts; ++i) {
@@ -318,92 +419,123 @@ EmpMeshObject::_buildMesh(const Nb::PointShape    &point,
             this->mesh.setVert(i, Point3(pos[0], pos[1], pos[2]));
     }
 
-    // Mesh faces.
+    // Mesh faces [required].
 
     this->mesh.setNumFaces(numFaces);
-    for (int i = 0; i < numFaces; ++i) {
-        const int i0 = index[i][0];
-        const int i1 = index[i][1];
-        const int i2 = index[i][2];
-        Face &face = this->mesh.faces[i];
-        face.setVerts(i0, i1, i2);
+    for (int f = 0; f < numFaces; ++f) {
+        Face &face = this->mesh.faces[f];
         face.setEdgeVisFlags(1, 1, 1);
+        for (int i = 0; i < 3; ++i) {
+            face.v[i] = index[f][i];
+        }
     }
 
-    // Now create 
+    // Count number of blind channels.
 
+    EmpMeshObjectClassDesc *desc = 
+        static_cast<EmpMeshObjectClassDesc*>(GetEmpMeshObjectDesc());
+
+    int blindChannelCount = 0;
     const int pointChannelCount = point.channelCount();
-    for (int i = 0; i < pointChannelCount; ++i) {
-        NB_INFO("point.channel: '" << point.channel(i)->name() << 
-                "': type: '" << point.channel(i)->typeName() << "'");
-    }
-
-    const bool pointUV = point.hasChannels3f("uv");
-    const bool pointU = point.hasChannels1f("u");
-    const bool pointV = point.hasChannels1f("v");
-
-    if (pointUV) {
-        // Body has UV coordinates.
-
-        const Nb::Buffer3f &uvw = point.constBuffer3f("uv");
-
-        // Set UVs
-        // TODO: multiple map channels?
-        // Channel 0 is reserved for vertex color. 
-        // Channel 1 is the default texture mapping.
-
-        this->mesh.setNumMaps(2);
-        this->mesh.setMapSupport(1, TRUE);  // enable map channel
-        MeshMap &uvwMap = this->mesh.Map(1);
-        uvwMap.setNumVerts(numVerts);
-        for (int i = 0; i < numVerts; ++i) {
-            UVVert &uvwVert = uvwMap.tv[i];
-            uvwVert.x = uvw[i][0];
-            uvwVert.y = uvw[i][1];
-            uvwVert.z = uvw[i][2];
-        }
-
-        uvwMap.setNumFaces(numFaces);
-        for (int i = 0; i < numFaces; ++i) {
-            const int i0 = index[i][0];
-            const int i1 = index[i][1];
-            const int i2 = index[i][2];
-            TVFace &uvwFace = uvwMap.tf[i];
-            uvwFace.t[0] = i0;
-            uvwFace.t[1] = i1;
-            uvwFace.t[2] = i2;
+    for (int pc = 0; pc < pointChannelCount; ++pc) {
+        const Nb::Channel *chan = point.channel(pc)();
+        if (desc->isBlindChannel(chan->name())) {
+            ++blindChannelCount;
         }
     }
-    else if (pointU && pointV) {
-        // Body has UV coordinates.
 
-        const Nb::Buffer3f &uvw = point.constBuffer3f("uv");
+    if ((blindChannelCount + 2) > (MAX_MESHMAPS - 1)) {
+        // TODO: Warning!
+    }
+    
+    this->mesh.setNumMaps(3 + blindChannelCount);
 
-        // Set UVs
-        // TODO: multiple map channels?
-        // Channel 0 is reserved for vertex color. 
-        // Channel 1 is the default texture mapping.
+    // TODO: check if bc > 99
+    //MAX_MESHMAPS
 
-        this->mesh.setNumMaps(2);
-        this->mesh.setMapSupport(1, TRUE);  // enable map channel
-        MeshMap &uvwMap = this->mesh.Map(1);
-        uvwMap.setNumVerts(numVerts);
-        for (int i = 0; i < numVerts; ++i) {
-            UVVert &uvwVert = uvwMap.tv[i];
-            uvwVert.x = uvw[i][0];
-            uvwVert.y = uvw[i][1];
-            uvwVert.z = uvw[i][2];
-        }
+    int bc = 3;
+    //const int pointChannelCount = point.channelCount();
+    for (int pc = 0; pc < pointChannelCount; ++pc) {
+        const Nb::Channel *chan = point.channel(pc)();
+        if (!(chan->name() == "position")) {
+            // Ignore position channel, it is dealt with above...
 
-        uvwMap.setNumFaces(numFaces);
-        for (int i = 0; i < numFaces; ++i) {
-            const int i0 = index[i][0];
-            const int i1 = index[i][1];
-            const int i2 = index[i][2];
-            TVFace &uvwFace = uvwMap.tf[i];
-            uvwFace.t[0] = i0;
-            uvwFace.t[1] = i1;
-            uvwFace.t[2] = i2;
+            const EmpMeshObjectClassDesc::Mapping mapping = 
+                desc->mapping(chan->name());
+            
+            NB_INFO("mesh: point.channel: Name '" << chan->name() << 
+                    "', Type: '" << chan->typeName() << 
+                    "', Map Channel: " << mapping.id << 
+                    " , Mask: [" << 
+                    mapping.mask[0]<<mapping.mask[1]<<mapping.mask[2] << "]");
+
+            switch (chan->type()) {
+            case Nb::ValueBase::IntType:
+                {
+                const Nb::Buffer1i& buf1i = point.constBuffer1i(pc);
+                if (mapping.id < 0) {
+                    // Blind channel.
+
+                    this->mesh.setMapSupport(bc, TRUE);
+                    MeshMap &meshMap = this->mesh.Map(bc);
+                    _buildMapVerts1i(meshMap, buf1i, mapping.mask);
+                    _buildMapFaces(meshMap, index);
+                    ++bc;
+                }
+                else {
+                    this->mesh.setMapSupport(mapping.id, TRUE);
+                    MeshMap &meshMap = this->mesh.Map(mapping.id);
+                    _buildMapVerts1i(meshMap, buf1i, mapping.mask);
+                    _buildMapFaces(meshMap, index);
+                }
+                }
+                break;
+            case Nb::ValueBase::FloatType:
+                {
+                const Nb::Buffer1f& buf1f = point.constBuffer1f(pc);
+                if (mapping.id < 0) {
+                    // Blind channel.
+
+                    this->mesh.setMapSupport(bc, TRUE);
+                    MeshMap &meshMap = this->mesh.Map(bc);
+                    _buildMapVerts1f(meshMap, buf1f, mapping.mask);
+                    _buildMapFaces(meshMap, index);
+                    ++bc;
+                }
+                else {
+                    this->mesh.setMapSupport(mapping.id, TRUE);
+                    MeshMap &meshMap = this->mesh.Map(mapping.id);
+                    _buildMapVerts1f(meshMap, buf1f, mapping.mask);
+                    _buildMapFaces(meshMap, index);
+                }
+                }
+                break;
+            case Nb::ValueBase::Vec3fType:
+                {
+                const Nb::Buffer3f& buf3f = point.constBuffer3f(pc);
+                if (mapping.id < 0) {
+                    // Blind channel.
+
+                    this->mesh.setMapSupport(bc, TRUE);
+                    MeshMap &meshMap = this->mesh.Map(bc);
+                    _buildMapVerts3f(meshMap, buf3f, mapping.mask);
+                    _buildMapFaces(meshMap, index);
+                    ++bc;
+                }
+                else {
+                    this->mesh.setMapSupport(mapping.id, TRUE);
+                    MeshMap &meshMap = this->mesh.Map(mapping.id);
+                    _buildMapVerts3f(meshMap, buf3f, mapping.mask);
+                    _buildMapFaces(meshMap, index);
+                }
+                }
+                break;
+            default:
+                NB_WARNING(
+                    "mesh: Point channel type: '" << chan->typeName() << 
+                    "' not supported yet!");
+                break;
+            }
         }
     }
 
@@ -416,31 +548,84 @@ EmpMeshObject::_buildMesh(const Nb::PointShape    &point,
 
 //! DOCS
 void
-EmpMeshObject::_addMap3f(MeshMap            &map, 
-                         const Nb::Buffer3f &buf, 
-                         const Nb::Buffer3i &index)
+EmpMeshObject::_buildMapVerts1i(MeshMap            &map, 
+                                const Nb::Buffer1i &buf,
+                                const int           mask[3])
 {
-    // Set map vertices.
-
     const int numVerts = static_cast<int>(buf.size());
     map.setNumVerts(numVerts);
-    for (int i = 0; i < numVerts; ++i) {
-        UVVert &uvVert = map.tv[i];
-        uvVert.x = buf[i][0];
-        uvVert.y = buf[i][1];
-        uvVert.z = buf[i][2];
+    for (int v = 0; v < numVerts; ++v) { // Set map vertices.
+        UVVert &uvVert = map.tv[v];
+        for (int i = 0; i < 3; ++i) { // Check mask before setting.
+            if (mask[i] > 0) {
+                uvVert[i] = static_cast<float>(buf[v]);
+            }
+        }
     }
+}
 
-    // Set map faces.
 
+//! DOCS [static]
+void
+EmpMeshObject::_buildMapVerts1f(MeshMap            &map, 
+                                const Nb::Buffer1f &buf,
+                                const int           mask[3])
+{
+    const int numVerts = static_cast<int>(buf.size());
+    map.setNumVerts(numVerts);
+    for (int v = 0; v < numVerts; ++v) { // Set map vertices.
+        UVVert &uvVert = map.tv[v];
+        for (int i = 0; i < 3; ++i) { // Check mask before setting.
+            if (mask[i] > 0) {
+                uvVert[i] = buf[v];
+            }
+        }
+    }
+}
+
+
+//! DOCS [static]
+void
+EmpMeshObject::_buildMapVerts3f(MeshMap            &map, 
+                                const Nb::Buffer3f &buf,
+                                const int           mask[3])
+{
+    const int numVerts = static_cast<int>(buf.size());
+    map.setNumVerts(numVerts);
+    for (int v = 0; v < numVerts; ++v) { // Set map vertices.
+        UVVert &uvVert = map.tv[v];
+        for (int i = 0; i < 3; ++i) { // Check mask before setting.
+            if (mask[i] > 0) {
+                uvVert[i] = buf[v][i];
+            }
+        }
+    }
+}
+
+
+//! DOCS [static]
+void
+EmpMeshObject::_buildMapFaces(MeshMap            &map,
+                              const Nb::Buffer3i &index)
+{
     const int numFaces = static_cast<int>(index.size());
     map.setNumFaces(numFaces);
-    for (int i = 0; i < numFaces; ++i) {
-        TVFace &tvFace = map.tf[i];
-        tvFace.t[0] = index[i][0];
-        tvFace.t[1] = index[i][1];
-        tvFace.t[2] = index[i][1];
+    for (int f = 0; f < numFaces; ++f) { // Set map faces.
+        TVFace &tvFace = map.tf[f];
+        for (int i = 0; i < 3; ++i) {
+            tvFace.t[i] = index[f][i];
+        }
     }
+}
+
+
+//! Returns true if the point shape has texture coordinate channel(s). [static]
+bool
+EmpMeshObject::_hasUVW(const Nb::PointShape &point)
+{
+    return (point.hasChannels("uv") || 
+            point.hasChannels("u")  || 
+            point.hasChannels("v"));
 }
 
 
@@ -518,7 +703,11 @@ public:
     Export();
 
     virtual void
-    ExportNode(INode *node, int frame, bool flipYZ, Nb::EmpWriter &emp);
+    ExportNode(INode *node, int frame, 
+               bool flipYZ, bool selectedOnly, 
+               Nb::EmpWriter &emp,
+               int &numExportedNodes, int &numExportedMeshNodes,
+               int &numExportedParticleNodes, int &numExportedCameraNodes);
 
 public:     // Member variables (!?)
 
@@ -534,6 +723,8 @@ private:
         Nb::String   projectPath;
 
         ICustButton *projectPathBrowseButton;
+
+        ICustButton *showLogButton;
     };
 
     struct _Import
@@ -571,6 +762,7 @@ private:
         ISpinnerControl *lastFrameSpinner;
 
         bool             flipYZ;
+        bool             selection;
 
         ICustButton     *exportButton;
         //ICustStatusEdit *exportStatusEdit;
@@ -667,6 +859,7 @@ NaiadBuddy::NaiadBuddy()
     _exp.sequenceName    = Nb::String("");
     _exp.padding         = 4;
     _exp.flipYZ          = true;
+    _exp.selection       = false;
 }
 
 
@@ -713,6 +906,9 @@ NaiadBuddy::Init(HWND hWnd)
 
     _gen.projectPathBrowseButton =
         GetICustButton(GetDlgItem(hWnd, IDC_GEN_PROJECT_PATH_BROWSE_BUTTON));
+
+    _gen.showLogButton =
+        GetICustButton(GetDlgItem(hWnd, IDC_GEN_SHOW_LOG_BUTTON));
 
 
     // Import.
@@ -763,10 +959,11 @@ NaiadBuddy::Init(HWND hWnd)
 
     // Export.
 
-    _exp.sequenceNameEdit = GetICustEdit(GetDlgItem(hWnd, IDC_EXPORT_EDIT));
+    _exp.sequenceNameEdit = 
+        GetICustEdit(GetDlgItem(hWnd, IDC_EXP_EMP_SEQUENCE_EDIT));
 
     _exp.browseButton = 
-        GetICustButton(GetDlgItem(hWnd, IDC_EXPORT_BROWSE_BUTTON));
+        GetICustButton(GetDlgItem(hWnd, IDC_EXP_BROWSE_BUTTON));
 
     _exp.paddingSpinner = 
         SetupIntSpinner(
@@ -779,27 +976,32 @@ NaiadBuddy::Init(HWND hWnd)
     
     _exp.firstFrameSpinner = 
         SetupIntSpinner(
-            hWnd,                       // Window handle.
-            IDC_FIRST_FRAME_SPINNER,    // Spinner Id.
-            IDC_FIRST_FRAME_EDIT,       // Edit Id.
-            TIME_NegInfinity,           // Min.
-            TIME_PosInfinity,           // Max.
+            hWnd,                                           // Window handle.
+            IDC_EXP_FIRST_FRAME_SPINNER,                    // Spinner Id.
+            IDC_EXP_FIRST_FRAME_EDIT,                       // Edit Id.
+            TIME_NegInfinity/GetTicksPerFrame(),            // Min.
+            TIME_PosInfinity/GetTicksPerFrame(),            // Max.
             ip->GetAnimRange().Start()/GetTicksPerFrame()); // Value.
     _exp.lastFrameSpinner = 
         SetupIntSpinner(
-            hWnd,                       // Window handle.
-            IDC_LAST_FRAME_SPINNER,     // Spinner Id.
-            IDC_LAST_FRAME_EDIT,        // Edit Id.
-            TIME_NegInfinity,           // Min.
-            TIME_PosInfinity,           // Max.
-            ip->GetAnimRange().End()/GetTicksPerFrame());  // Value.
+            hWnd,                                           // Window handle.
+            IDC_EXP_LAST_FRAME_SPINNER,                     // Spinner Id.
+            IDC_EXP_LAST_FRAME_EDIT,                        // Edit Id.
+            TIME_NegInfinity/GetTicksPerFrame(),            // Min.
+            TIME_PosInfinity/GetTicksPerFrame(),            // Max.
+            ip->GetAnimRange().End()/GetTicksPerFrame());   // Value.
 
     CheckDlgButton(
         hWnd, 
         IDC_EXP_FLIP_YZ_CHECK, 
         _exp.flipYZ ? BST_CHECKED : BST_UNCHECKED);
 
-    _exp.exportButton = GetICustButton(GetDlgItem(hWnd, IDC_EXPORT_BUTTON));
+    CheckDlgButton(
+        hWnd, 
+        IDC_EXP_SELECTION_CHECK, 
+        _exp.selection ? BST_CHECKED : BST_UNCHECKED);
+
+    _exp.exportButton = GetICustButton(GetDlgItem(hWnd, IDC_EXP_EXPORT_BUTTON));
 
     _exp.exportStatus = 
         GetICustStatus(GetDlgItem(hWnd, IDC_EXP_STATUS_EDIT));
@@ -814,6 +1016,7 @@ void NaiadBuddy::Destroy(HWND hWnd)
 
     ReleaseICustEdit(_gen.projectPathEdit);
     ReleaseICustButton(_gen.projectPathBrowseButton);
+    ReleaseICustButton(_gen.showLogButton);
 
 
     // Import.
@@ -857,7 +1060,7 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             if (0 != i9 && 
                 i9->DoMaxBrowseForFolder(
                     hWnd, 
-                    "Choose Project Path...",
+                    _T("Choose Shot Path..."),
                     dir)) {
                 _gen.projectPath = Nb::String(dir.data());
                 _gen.projectPathEdit->SetText(_gen.projectPath.c_str());
@@ -871,19 +1074,89 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             _gen.projectPath = Nb::String(projectPath.data());
         }
         break;
+    case IDC_GEN_SHOW_LOG_BUTTON:
+        {
+            try {
+                em::close_log(); // Close to flush any contents to disk.
+
+                // Read log contents so that we can restore them later.
+
+                const std::string logFileName = GetLogFileName();
+                std::string logContents;
+                FILE *fptr(std::fopen(logFileName.c_str(), "r"));
+                if (0 != fptr) {
+                    std::fseek(fptr, 0, SEEK_END);
+                    const int length(std::ftell(fptr));
+                    logContents.resize(length + 1);
+                    std::fseek(fptr, 0, SEEK_SET);
+                    std::fread(&logContents[0], length, 1, fptr);
+                    std::fclose(fptr);
+                    logContents[length] = '\n';
+                }
+
+                // Some API initialization stuff...
+
+                STARTUPINFO si;
+                PROCESS_INFORMATION pi;
+                ZeroMemory(&si, sizeof(si));
+                si.cb = sizeof(si);
+                ZeroMemory(&pi, sizeof(pi));
+
+                // Create command line.
+
+                const std::string cmdline(
+                    "\"notepad.exe\" \"" + logFileName + "\"");
+                LPTSTR szCmdline = _tcsdup(TEXT(cmdline.c_str()));
+
+                // Start the child process. 
+
+                if (CreateProcess(
+                        NULL,      // No module name (use command line)
+                        szCmdline, // Command line
+                        NULL,      // Process handle not inheritable
+                        NULL,      // Thread handle not inheritable
+                        FALSE,     // Set handle inheritance to FALSE
+                        0,         // No creation flags
+                        NULL,      // Use parent's environment block
+                        NULL,      // Use parent's starting directory 
+                        &si,       // Pointer to STARTUPINFO structure
+                        &pi)) {    // Pointer to PROCESS_INFORMATION structure
+                    // Wait until child process exits.
+
+                    WaitForSingleObject(pi.hProcess, INFINITE);
+
+                    // Close process and thread handles. 
+
+                    CloseHandle(pi.hProcess);
+                    CloseHandle(pi.hThread);
+                }
+                else {
+                    std::stringstream ss;
+                    ss << "\nCreateProcess failed: " << GetLastError() << "\n";
+                    logContents += ss.str();
+                }
+
+                em::open_log(logFileName);   // Open Log again, may throw.
+                em::output_log(logContents); // Restore Log contents.
+            }
+            catch (...) {
+                // Something bad happened, but there is nowhere to report it!
+            }
+        }
+        break;
     // Import stuff.
     case IDC_IMP_BROWSE_BUTTON:
         {
         TSTR filename;
         TSTR initialDir(_gen.projectPath.c_str());
         FilterList extensionList;
-        extensionList.Append("EMP (*.emp)");
-        extensionList.Append("*.emp");
+        extensionList.Append(_T("EMP (*.emp)"));
+        extensionList.Append(_T("*.emp"));
         Interface8 *i8 = GetCOREInterface8();
         if (0 != i8 && 
             i8->DoMaxOpenDialog(
                 hWnd, 
-                "Import EMP Sequence...", 
+                _T("Import EMP Sequence..."), 
                 filename, 
                 initialDir, 
                 extensionList)) {
@@ -899,6 +1172,12 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             }
             _imp.sequenceNameEdit->SetText(_imp.sequenceName.c_str());
         }
+        }
+        break;
+    case IDC_IMP_SEQUENCE_CHECK:
+        {
+        _imp.sequence = 
+            (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_IMP_SEQUENCE_CHECK));
         }
         break;
     case IDC_IMP_SIGNATURE_FILTER_EDIT:
@@ -921,29 +1200,30 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         _imp.frameOffset = _imp.frameOffsetSpinner->GetIVal();
         }
         break;
-    //case IDC_IMP_FLIP_YZ:
-    //    {
-    //    _imp.flipYZ = ... ;
-    //    }
-    //    break;
+    case IDC_IMP_FLIP_YZ_CHECK:
+        {
+        _imp.flipYZ = 
+            (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_IMP_FLIP_YZ_CHECK));
+        }
+        break;
     case IDC_IMP_IMPORT_BUTTON:
         Import(); // The import button was pressed, do the import...
         break;
     // Export stuff.
-    case IDC_EXPORT_BROWSE_BUTTON:
+    case IDC_EXP_BROWSE_BUTTON:
         {
         TSTR filename;
         TSTR initialDir(_gen.projectPath.c_str());
         FilterList extensionList;
-        extensionList.Append("EMP (*.emp)");
-        extensionList.Append("*.emp");
-        extensionList.Append("All (*.*)");
-        extensionList.Append("*.*");
+        extensionList.Append(_T("EMP (*.emp)"));
+        extensionList.Append(_T("*.emp"));
+        //extensionList.Append("All (*.*)");
+        //extensionList.Append("*.*");
         Interface8 *i8 = GetCOREInterface8();
         if (0 != i8 && 
             i8->DoMaxSaveAsDialog(
                 hWnd, 
-                "Export EMP Sequence...",
+                _T("Export EMP Sequence..."),
                 filename,
                 initialDir,
                 extensionList)) {
@@ -952,7 +1232,19 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         }
         }
         break;
-    case IDC_EXPORT_BUTTON:
+    case IDC_EXP_FLIP_YZ_CHECK:
+        {
+        _exp.flipYZ = 
+            (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_EXP_FLIP_YZ_CHECK));
+        }
+        break;
+    case IDC_EXP_SELECTION_CHECK:
+        {
+        _exp.selection = 
+            (BST_CHECKED == IsDlgButtonChecked(hWnd, IDC_EXP_SELECTION_CHECK));
+        }
+        break;
+    case IDC_EXP_EXPORT_BUTTON:
         Export(); // The export button was pressed, do the export...        
         break;
     default:
@@ -965,21 +1257,14 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
 void
 NaiadBuddy::Import()
 {
-    // (1) - Open file.
-    // (2) - Discover list of bodies in file (with time-stamps?)
-    // (3) - Iterate over bodies, using body signatures to determine
-    //       which type of 3ds Max object to create, e.g. Mesh or Points.
-    //   (3a) - Add created objects to scene.
-    // (4) - Close file.
-
     try {
         // Information about the provided file...
 
         MSTR sequenceName;
         _imp.sequenceNameEdit->GetText(sequenceName);
         if (sequenceName.isNull()) {
-            _imp.importStatus->SetText("ERROR!");
-            _imp.importStatus->SetTooltip(true, "Empty sequence name.");
+            _imp.importStatus->SetText(_T("ERROR!"));
+            _imp.importStatus->SetTooltip(true, _T("Empty sequence name."));
             NB_ERROR("import: Empty sequence name.");
             return; // Early exit, no sequenceName provided.
         }
@@ -987,42 +1272,55 @@ NaiadBuddy::Import()
         MSTR bodyNameFilter;
         _imp.bodyNameFilterEdit->GetText(bodyNameFilter);
         if (bodyNameFilter.isNull()) {
-            bodyNameFilter = "*";
+            bodyNameFilter = _T("*");
         }
         
         MSTR signatureFilter;
         _imp.signatureFilterEdit->GetText(signatureFilter);
         if (signatureFilter.isNull()) {
-            signatureFilter = "Mesh";
+            signatureFilter = _T("Mesh");
         }
 
         const int frameOffset = _imp.frameOffsetSpinner->GetIVal();
         const bool flipYZ = 
             (BST_CHECKED == IsDlgButtonChecked(hPanel, IDC_IMP_FLIP_YZ_CHECK));
 
-        // Create our sequence reader.
-
         Nb::SequenceReader seqReader;
-        seqReader.setSigFilter("Body"); // HACK! Read as bodies...
-        seqReader.setProjectPath("<non-empty>");  // HACK!
-        seqReader.setSequenceName(sequenceName.data());
-        seqReader.setFormat(Nb::extractExt(sequenceName.data()));
-        seqReader.setFrameOffset(frameOffset);
-        //seqReader.refresh();
-        //seqReader.setFrame(
-        //    ip->GetTime()/GetTicksPerFrame()); // May throw.
+        try {
+            // Create our sequence reader.
+
+            NB_INFO("Nb::SequenceReader::setSigFilter");
+            seqReader.setSigFilter("Body");           // HACK! Read as bodies...
+            NB_INFO("Nb::SequenceReader::setProjectPath");
+            seqReader.setProjectPath("<non-empty>");  // HACK!
+            NB_INFO("Nb::SequenceReader::setSequenceName");
+            seqReader.setSequenceName(sequenceName.data());
+            NB_INFO("Nb::SequenceReader::setFormat");
+            seqReader.setFormat(Nb::extractExt(sequenceName.data()));
+            NB_INFO("Nb::SequenceReader::setFrameOffset");
+            seqReader.setFrameOffset(frameOffset);
+            //seqReader.setFrame(
+            //    ip->GetTime()/GetTicksPerFrame()); // May throw.
+            //seqReader.refresh();
+        }
+        catch (std::exception &ex) {
+            NB_WARNING("import: exception: " << ex.what());
+        }
 
         std::vector<Nb::String> bodyNames;
         std::vector<Nb::String> bodySignatures;
         seqReader.allBodyInfo(bodyNames, bodySignatures);
         if (bodyNames.size() != bodySignatures.size()) {
-            _imp.importStatus->SetText("ERROR!");
-            _imp.importStatus->SetTooltip(true, "Invalid body info.");
+            _imp.importStatus->SetText(_T("ERROR!"));
+            _imp.importStatus->SetTooltip(true, _T("Invalid body info."));
             NB_ERROR("import: Invalid body info.");
             return; // Early exit, invalid body info.
         }
 
         int numCreatedNodes = 0;
+        int numCreatedMeshNodes = 0;
+        int numCreatedParticleNodes = 0;
+        int numCreatedCameraNodes = 0;
         for (unsigned int b = 0; b < bodyNames.size(); ++b) {
             const Nb::String &bodyName = bodyNames[b];
             const Nb::String &bodySig = bodySignatures[b];
@@ -1063,6 +1361,7 @@ NaiadBuddy::Import()
                         MSTR nodeName = _M(empMeshObj->bodyName().c_str());
                         ip->MakeNameUnique(nodeName);
                         node->SetName(nodeName);
+                        ++numCreatedMeshNodes;
                         ++numCreatedNodes;
                     }
                     else {
@@ -1074,31 +1373,46 @@ NaiadBuddy::Import()
                         delete empMeshObj;
                     }
                 }
-                //else if ("Particle" == body->sig()) {
-                //}
-                //else if ("Camera" == body->sig()) {
-                //}
+                else if ("Particle" == bodySig) {
+                    NB_WARNING("import: Body signature: '" 
+                                << bodySig << "' not supported yet!");
+                    //++numCreatedParticleNodes;
+                    //++numCreatedNodes;
+                }
+                else if ("Camera" == bodySig) {
+                    NB_WARNING("import: Body signature: '" 
+                                << bodySig << "' not supported yet!");
+                    //++numCreatedCameraNodes;
+                    //++numCreatedNodes;
+                }
+                else {
+                    NB_WARNING("import: Unsupported body signature: " 
+                                << bodySig);
+                }
             }
         }
 
         std::stringstream ss;
-        ss << "Created " << numCreatedNodes << " nodes";
+        ss << "Created " << numCreatedNodes << " nodes\n";
         _imp.importStatus->SetText(ss.str().c_str());
-        // TODO: Set tooltip with more specific info...
-        NB_INFO("Created " << numCreatedNodes << " nodes");
+        ss << "Mesh: " << numCreatedMeshNodes << "\n"
+           << "Particle: " << numCreatedParticleNodes << "\n"
+           << "Camera: " << numCreatedCameraNodes << "\n";
+        _imp.importStatus->SetTooltip(true, _T(ss.str().c_str()));
+        NB_INFO(ss.str());
 
         ip->RedrawViews(ip->GetTime());
         //seqReader.close();    // TODO??
     }
     catch (std::exception &ex) {
-        _imp.importStatus->SetText("ERROR!");
+        _imp.importStatus->SetText(_T("ERROR!"));
         _imp.importStatus->SetTooltip(true, ex.what());
-        NB_ERROR("exception: " << ex.what());
+        NB_ERROR("import: exception: " << ex.what());
     }
     catch (...) {
-        _imp.importStatus->SetText("ERROR!");
-        _imp.importStatus->SetTooltip(true, "unknown exception");
-        NB_ERROR("unknown exception");
+        _imp.importStatus->SetText(_T("ERROR!"));
+        _imp.importStatus->SetTooltip(true, _T("unknown exception"));
+        NB_ERROR("import: unknown exception");
     }
 }
 
@@ -1110,33 +1424,44 @@ NaiadBuddy::Export()
     MSTR sequenceName;
     _exp.sequenceNameEdit->GetText(sequenceName);
     if (sequenceName.isNull()) {
-        _exp.exportStatus->SetText("ERROR!");
-        _exp.exportStatus->SetTooltip(true, "Empty sequence name.");
+        _exp.exportStatus->SetText(_T("ERROR!"));
+        _exp.exportStatus->SetTooltip(true, _T("Empty sequence name."));
         NB_ERROR("export: Empty sequence name.");
         return; // Early exit, no sequenceName provided.
     }
+    // TODO: warning if sequence name does not contain exactly one '#'?
+    //MessageBox(NULL,"I need to have one and only one object selected !",
+    //           "Warning", MB_OK);
+
 
     const int firstFrame = _exp.firstFrameSpinner->GetIVal();
     const int lastFrame = _exp.lastFrameSpinner->GetIVal();
 
-    NB_INFO("export: First Frame: " << firstFrame);
-    NB_INFO("export: Last Frame: " << lastFrame);
 
-    if (firstFrame > lastFrame) {
-        _exp.exportStatus->SetText("ERROR!");
-        _exp.exportStatus->SetTooltip(true, "Invalid frame range");
+    if (firstFrame >= lastFrame) {
+        _exp.exportStatus->SetText(_T("ERROR!"));
+        _exp.exportStatus->SetTooltip(true, _T("Invalid frame range"));
         NB_ERROR("export: Invalid frame range");
         return; // Early exit, invalid frame range.
     }
 
-    const int padding = _exp.paddingSpinner->GetIVal();
+    const int padding = 
+        _exp.paddingSpinner->GetIVal();
     const bool flipYZ = 
         (BST_CHECKED == IsDlgButtonChecked(hPanel, IDC_EXP_FLIP_YZ_CHECK));
-    
-    for (int frame = firstFrame; frame <lastFrame; ++frame) {
-        NB_INFO("export: Frame: " << frame);
+    const bool selectedOnly = 
+        (BST_CHECKED == IsDlgButtonChecked(hPanel, IDC_EXP_SELECTION_CHECK));
 
+    NB_INFO("export: ===== START EXPORT =====");
+    NB_INFO("export: First Frame: " << firstFrame);
+    NB_INFO("export: Last Frame: " << lastFrame);
+    NB_INFO("export: Flip YZ: " << (flipYZ ? "true" : "false"));
+    NB_INFO("export: Selected Only: " << (selectedOnly ? "true" : "false"));
+
+    int numExportedFrames = 0;
+    for (int frame = firstFrame; frame <= lastFrame; ++frame) {
         try {
+            NB_INFO("export: ===== START FRAME " << frame << " =====");
             Nb::EmpWriter emp(
                 sequenceName.data(),
                 frame, 
@@ -1145,21 +1470,45 @@ NaiadBuddy::Export()
             // TODO: set time!!
 
             // Recursively export nodes in scene, starting at the scene root.
+            // TODO: Use for selection only?!
+            //       int Interface::GetSelNodeCount();
+            //       INode* Interface::GetSelNode(int i);
 
+            int numExportedNodes = 0;
+            int numExportedMeshNodes = 0;
+            int numExportedParticleNodes = 0;
+            int numExportedCameraNodes = 0;
             INode *root = ip->GetRootNode();
             for (int i = 0; i < root->NumberOfChildren(); ++i) {
-                ExportNode(root->GetChildNode(i), frame, flipYZ, emp);
+                ExportNode(root->GetChildNode(i), frame, 
+                           flipYZ, selectedOnly, 
+                           emp,
+                           numExportedNodes, numExportedMeshNodes,
+                           numExportedParticleNodes, numExportedCameraNodes);
             }
 
             emp.close();
+            ++numExportedFrames;
+
+            NB_INFO("export: "<<numExportedNodes<<" node(s)");
+            NB_INFO("export: "<<numExportedMeshNodes<<" mesh node(s)");
+            NB_INFO("export: "<<numExportedParticleNodes<<" particle node(s)");
+            NB_INFO("export: "<<numExportedCameraNodes<<" camera node(s)");
+            NB_INFO("export: ===== END FRAME " << frame << " =====");
         }
         catch (std::exception &ex) {
-            NB_ERROR("exception: " << ex.what());
+            NB_ERROR("export: exception: " << ex.what());
         }
         catch (...) {
-            NB_ERROR("unknown exception");
+            NB_ERROR("export: unknown exception");
         }
     }
+
+    std::stringstream ss;
+    ss << "Exported " << numExportedFrames << " frame(s)";
+    NB_INFO("export: " << ss.str());
+    NB_INFO("export: ===== END EXPORT =====");
+    _exp.exportStatus->SetText(_T(ss.str().c_str()));
 }
 
 
@@ -1168,104 +1517,135 @@ void
 NaiadBuddy::ExportNode(INode         *node, 
                        const int      frame, 
                        const bool     flipYZ, 
-                       Nb::EmpWriter &emp)
+                       const bool     selectedOnly,
+                       Nb::EmpWriter &emp,
+                       int           &numExportedNodes,
+                       int           &numExportedMeshNodes,
+                       int           &numExportedParticleNodes,
+                       int           &numExportedCameraNodes)
 {
-    const ObjectState &os = node->EvalWorldState(frame*GetTicksPerFrame());
-    Object *obj = os.obj;
-    if (obj != NULL) {
-        switch (obj->SuperClassID()) {
-        case GEOMOBJECT_CLASS_ID:
-            // We have a geometric object. Now look for triangles...
+    if (!selectedOnly || (selectedOnly && 0 != node->Selected())) {
+        const ObjectState &os = node->EvalWorldState(frame*GetTicksPerFrame());
+        Object *obj = os.obj;
+        if (obj != NULL) {
+            switch (obj->SuperClassID()) {
+            case GEOMOBJECT_CLASS_ID:
+                {
+                // We have a geometric object. Now look for triangles...
 
-            if (obj->CanConvertToType(Class_ID(TRIOBJ_CLASS_ID, 0))) {
-                MSTR className;
-                obj->GetClassName(className);
-                NB_INFO("export: Node: " << node->GetName() << 
-                        ", Class: " << className);
+                if (obj->CanConvertToType(Class_ID(TRIOBJ_CLASS_ID, 0))) {
+                    TriObject *tri = 
+                        static_cast<TriObject*>(
+                            obj->ConvertToType(
+                                frame*GetTicksPerFrame(), 
+                                Class_ID(TRIOBJ_CLASS_ID, 0)));
 
-                TriObject *tri = 
-                    static_cast<TriObject*>(
-                        obj->ConvertToType(
-                            frame*GetTicksPerFrame(), 
-                            Class_ID(TRIOBJ_CLASS_ID, 0)));
-
-                // Matrix3 is actually a 4x3 matrix. Order of 
-                // multiplication with vertex is irrelevant (?!).
-
-                const Matrix3 tm = 
-                    //node->GetNodeTM(frame*GetTicksPerFrame());
-                    node->GetObjTMAfterWSM(frame*GetTicksPerFrame());
-
-                try {
-                    std::auto_ptr<Nb::Body> body(
-                        Nb::Factory::createBody(
-                            "Mesh", Nb::String(node->GetName())));
-                    //body->guaranteeChannel3f(Nb::String("Point.position"));
-                    //body->guaranteeChannel3i(Nb::String("Triangle.index"));
-
-                    Nb::PointShape    &points    = body->mutablePointShape();
-                    Nb::TriangleShape &triangles = body->mutableTriangleShape();
-                    Nb::Buffer3f &positions = 
-                        points.mutableBuffer3f("position");
-                    Nb::Buffer3i &indices = 
-                        triangles.mutableBuffer3i("index");
-
+                    MSTR className;
+                    obj->GetClassName(className);
                     const int numVerts = tri->mesh.getNumVerts();
-                    NB_INFO("Vertex Count: " << numVerts);
-                    positions.resize(numVerts);
-                    for (int i = 0; i < numVerts; ++i) {
-                        const Point3 v = tm*tri->mesh.verts[i];
-                        if (flipYZ) {
-                            positions[i][0] = v.x;
-                            positions[i][1] = v.z;
-                            positions[i][2] = v.y;
-                        }
-                        else {
-                            positions[i][0] = v.x;
-                            positions[i][1] = v.y;
-                            positions[i][2] = v.z;
-                        }
-                    }
-                    
                     const int numFaces = tri->mesh.getNumFaces();
-                    NB_INFO("Face Count: " << numFaces);
-                    indices.resize(numFaces);
-                    for (int i = 0; i < numFaces; ++i) {
-                        indices[i][0] = tri->mesh.faces[i].v[0];
-                        indices[i][1] = tri->mesh.faces[i].v[1];
-                        indices[i][2] = tri->mesh.faces[i].v[2];
+                    const int numVData = tri->mesh.getNumVData();
+                    const int numMaps = tri->mesh.getNumMaps();
+                    NB_INFO("export: Node: " << node->GetName() << 
+                            ", Class: " << className);
+                    NB_INFO("export: Vertex Count: " << numVerts << 
+                            ", Face Count: " << numFaces <<
+                            ", VData Count: " << numVData << 
+                            ", Map Count: " << numMaps);
+
+                    // Matrix3 is actually a 4x3 matrix. Order of 
+                    // multiplication with vertex is irrelevant (?!).
+
+                    const Matrix3 tm = 
+                        //node->GetNodeTM(frame*GetTicksPerFrame());
+                        node->GetObjTMAfterWSM(frame*GetTicksPerFrame());
+
+                    try {
+                        std::auto_ptr<Nb::Body> body(
+                            Nb::Factory::createBody(
+                                "Mesh", Nb::String(node->GetName())));
+                        //body->guaranteeChannel3f(Nb::String("Point.position"));
+                        //body->guaranteeChannel3i(Nb::String("Triangle.index"));
+
+                        Nb::PointShape &points = 
+                            body->mutablePointShape();
+                        Nb::TriangleShape &triangles = 
+                            body->mutableTriangleShape();
+                        Nb::Buffer3f &positions = 
+                            points.mutableBuffer3f("position");
+                        Nb::Buffer3i &indices = 
+                            triangles.mutableBuffer3i("index");
+
+                        positions.resize(numVerts);
+                        for (int v = 0; v < numVerts; ++v) {
+                            const Point3 vtx = tm*tri->mesh.verts[v];
+                            if (flipYZ) {
+                                positions[v][0] = vtx.x;
+                                positions[v][1] = vtx.z;
+                                positions[v][2] = vtx.y;
+                            }
+                            else {
+                                positions[v][0] = vtx.x;
+                                positions[v][1] = vtx.y;
+                                positions[v][2] = vtx.z;
+                            }
+                        }
+
+                        for (int m = 0; m < numMaps; ++m) {
+
+                        }
+
+                        indices.resize(numFaces);
+                        for (int f = 0; f < numFaces; ++f) {
+                            indices[f][0] = tri->mesh.faces[f].v[0];
+                            indices[f][1] = tri->mesh.faces[f].v[1];
+                            indices[f][2] = tri->mesh.faces[f].v[2];
+                        }
+
+                        NB_INFO("export: Writing body '" << body->name() << 
+                                "' to file '" << emp.fileName() << "'");
+
+                        emp.write(body.get(), "*.*"); // All shapes & channels.
+                        ++numExportedNodes;
+                        ++numExportedMeshNodes;
+                    }
+                    catch (std::exception &ex) {
+                        NB_ERROR("export: exception: " << ex.what());
+                    }
+                    catch (...) {
+                        NB_ERROR("export: unknown exception");
                     }
 
-                    NB_INFO("export: Writing '" << emp.fileName() << "'");
-                    emp.write(body.get(), "*.*");
-                }
-                catch (std::exception &ex) {
-                    NB_ERROR("exception: " << ex.what());
-                }
-                catch (...) {
-                    NB_ERROR("unknown exception");
-                }
+                    // NB: 3ds Max magic...
+                    // Note that the TriObject should only be deleted
+                    // if the pointer to it is not equal to the object
+                    // pointer that called ConvertToType().
 
-                // NB: 3ds Max magic...
-                // Note that the TriObject should only be deleted
-                // if the pointer to it is not equal to the object
-                // pointer that called ConvertToType().
-
-                if (obj != tri) {
-                    delete tri;
+                    if (obj != tri) {
+                        tri->DeleteMe();
+                        //delete tri;
+                    }
                 }
+                }
+                break;
+            //case CAMERA_CLASS_ID:
+            //    ++numExportedNodes;
+            //    ++numExportedMeshNodes;
+            //    break;
+            default:
+                break;
             }
-        //case CAMERA_CLASS_ID:
-        //    break;
-        default:
-            break;
         }
     }
 
     // Process node's children recursively.
 
     for (int i = 0; i < node->NumberOfChildren(); ++i) {
-        ExportNode(node->GetChildNode(i), frame, flipYZ, emp); // Recursive.
+        ExportNode(node->GetChildNode(i), frame, 
+                   flipYZ, selectedOnly, 
+                   emp,
+                   numExportedNodes, numExportedMeshNodes,
+                   numExportedParticleNodes, numExportedCameraNodes); 
     }
 }
 
@@ -1282,13 +1662,14 @@ NaiadBuddy::DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         NaiadBuddy::GetInstance()->Destroy(hWnd);
         break;
+    case BN_CLICKED:    // Check boxes.
     case CC_SPINNER_CHANGE:
     case WM_CUSTEDIT_ENTER: 
         // This message is sent when the user presses ENTER on
         // a custom edit control...
     case WM_COMMAND:
-        //#pragma message(TODO("React to the user interface commands.  
-        // A utility plug-in is controlled by the user from here."))
+        // React to the user interface commands.  
+        // A utility plug-in is controlled by the user from here.
         NaiadBuddy::GetInstance()->Command(hWnd, wParam, lParam);
         break;
     case WM_LBUTTONDOWN:

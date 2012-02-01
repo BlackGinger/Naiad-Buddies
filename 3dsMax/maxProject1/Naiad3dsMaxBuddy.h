@@ -35,11 +35,13 @@
 #include "istdplug.h"
 #include "iparamb2.h"
 #include "iparamm2.h"
+#include <string>
 //SIMPLE TYPE
 
 #include "utilapi.h"
 
 
 extern TCHAR *GetString(int id);
+extern std::string GetLogFileName();
 
 extern HINSTANCE hInstance;

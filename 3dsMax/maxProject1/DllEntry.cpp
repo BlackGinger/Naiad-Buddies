@@ -52,8 +52,7 @@ BOOL WINAPI
 DllMain(HINSTANCE hinstDLL, ULONG fdwReason, LPVOID /*lpvReserved*/)
 {
     if (fdwReason == DLL_PROCESS_ATTACH) {
-        // Hang on to this DLL's instance handle.
-        hInstance = hinstDLL;
+        hInstance = hinstDLL; // Hang on to this DLL's instance handle.
         DisableThreadLibraryCalls(hInstance);
     }
     return TRUE;
@@ -64,9 +63,7 @@ DllMain(HINSTANCE hinstDLL, ULONG fdwReason, LPVOID /*lpvReserved*/)
 //! could purchase the DLL if they don't have it.
 __declspec(dllexport) const TCHAR* 
 LibDescription()
-{
-    return GetString(IDS_LIBDESCRIPTION);
-}
+{ return GetString(IDS_LIBDESCRIPTION); }
 
 
 //! This function returns the number of plug-in classes this DLL contains.
@@ -105,8 +102,7 @@ __declspec(dllexport) int
 LibInitialize(void)
 {
     try {
-        const std::string naiadPath = std::getenv("NAIAD_PATH");
-        em::open_log(naiadPath + "/Naiad3dsMaxBuddyLog.txt"); // May throw.
+        em::open_log(GetLogFileName()); // May throw.
     }
     catch (...) { // Pokemon: Gotta catch 'em all...
         return FALSE;   
@@ -158,6 +154,18 @@ GetString(int id)
         return LoadString(hInstance, id, buf, sizeof(buf)) ? buf : NULL;
     }
     return NULL;
+}
+
+//------------------------------------------------------------------------------
+
+std::string
+GetLogFileName()
+{
+    const std::string naiadPath = 
+        std::getenv("NAIAD_PATH");
+    const std::string logFileName = 
+        std::string(naiadPath + "/" + GetString(IDS_NAIAD_BUDDY_LOG_FILE_NAME));
+    return logFileName;
 }
 
 //------------------------------------------------------------------------------
