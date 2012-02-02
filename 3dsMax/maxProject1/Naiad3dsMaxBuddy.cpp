@@ -41,6 +41,9 @@
 #include <NbString.h>
 #include <em_log.h>
 #include <sstream>
+#include <iostream>
+#include <iterator>
+#include <algorithm>
 #include <map>
 #include <Windows.h>
 
@@ -48,6 +51,20 @@
 
 #define NaiadBuddy_CLASS_ID	   Class_ID(0x59d78e7e, 0x9b2064f2)
 #define EmpMeshObject_CLASS_ID Class_ID(0x311e0e37, 0x10a162b1)
+
+//------------------------------------------------------------------------------
+
+template <typename T>
+T 
+lexical_cast(const std::string &s)
+{
+    std::stringstream ss(s);
+    T result;
+    if ((ss >> result).fail() || !(ss >> std::ws).eof()) {
+        throw std::bad_cast("bad lexical_cast");
+    }
+    return result;
+}
 
 //------------------------------------------------------------------------------
 
@@ -119,9 +136,32 @@ public:
     setFlipYZ(const bool flipYZ)
     { _flipYZ = flipYZ; }
 
+    void
+    setChannelMapping(const Nb::String &channelMapping)
+    {
+        _channelMappings.clear();
+        for (int i = 0; i < MAX_MESHMAPS; ++i) {
+            _blindIds.insert(i);
+        }
+        _parseChannelMapping(channelMapping);
+    }
+
 private:
 
     static const Nb::String _signature;
+
+    //! DOCS
+    struct _Mapping
+    {
+        int  id;
+        int  mask[3];    // TODO: bitmask.
+    };
+
+    void
+    _parseChannelMapping(const Nb::String &channelMapping);
+
+    _Mapping
+    _channelMapping(const Nb::String &channelName) const;
 
     void
     _rebuildMesh(const int frame);
@@ -152,7 +192,8 @@ private:
                    const Nb::Buffer3i &index);
 
     static bool
-    _hasUVW(const Nb::PointShape &point);
+    _isBlind(const _Mapping &mapping)
+    { return (mapping.id < 0); }
 
 private:    // Member variables.
 
@@ -161,6 +202,10 @@ private:    // Member variables.
     bool               _flipYZ;
     int                _meshFrame; 
     BOOL               _validMesh;
+
+    typedef std::map<Nb::String,_Mapping> _MappingsMap;
+    _MappingsMap _channelMappings;
+    std::set<int> _blindIds;
 };
 
 const Nb::String EmpMeshObject::_signature("Mesh");
@@ -205,86 +250,6 @@ public:
     virtual HINSTANCE 
     HInstance() 					
     { return hInstance; }	
-
-public:
-
-    //! DOCS
-    struct Mapping
-    {
-        int id;
-        int mask[3];    // TODO: bitmask.
-    };
-
-    //! CTOR.
-    EmpMeshObjectClassDesc()
-    {
-        // Channel 0 is reserved for vertex color. 
-        // Channel 1 is the default texture mapping.
-
-        typedef _ChannelMap::value_type value_type;
-        Mapping uvMapping;
-        uvMapping.id = 1;   // Default 3ds Max texture mapping channel.
-        uvMapping.mask[0] = 1;
-        uvMapping.mask[1] = 1;
-        uvMapping.mask[2] = 0;
-        _channelMapping.insert(value_type("uv", uvMapping));
-
-        Mapping uMapping;
-        uMapping.id = 1;    // Default 3ds Max texture mapping channel.
-        uMapping.mask[0] = 1;
-        uMapping.mask[1] = 0;
-        uMapping.mask[2] = 0;
-        _channelMapping.insert(value_type("u", uMapping));
-
-        Mapping vMapping;
-        vMapping.id = 1;    // Default 3ds Max texture mapping channel.
-        vMapping.mask[0] = 0;
-        vMapping.mask[1] = 1;
-        vMapping.mask[2] = 0;
-        _channelMapping.insert(value_type("v", vMapping));
-
-        Mapping velocityMapping;
-        velocityMapping.id = 2;
-        velocityMapping.mask[0] = 1;
-        velocityMapping.mask[1] = 1;
-        velocityMapping.mask[2] = 1;
-        _channelMapping.insert(value_type("velocity", velocityMapping));
-    }
-
-    //! Returns true if channelName is not "special". [static]
-    //! TODO: Support UVW!?
-    bool
-    isBlindChannel(const Nb::String &channelName) const
-    {
-        return (!(channelName == "position") && 
-                 _channelMapping.find(channelName) == _channelMapping.end());
-    }
-
-    //! Returns mapping id for the provided channel name. Id is -1 for blind
-    //! mapping channels.
-    Mapping
-    mapping(const Nb::String &channelName) const
-    {
-        Mapping m;
-        m.id      = -1;
-        m.mask[0] =  1;     // All sub-channels enabled by default  
-        m.mask[1] =  1;     // even for blind channels.
-        m.mask[2] =  1;
-        const _ChannelMap::const_iterator iter =
-            _channelMapping.find(channelName);
-        if (iter != _channelMapping.end()) {
-            m.id      = iter->second.id;
-            m.mask[0] = iter->second.mask[0];
-            m.mask[1] = iter->second.mask[1];
-            m.mask[2] = iter->second.mask[2];
-        }
-        return m;
-    }
-
-private:    // Member variables.
-
-    typedef std::map<Nb::String,Mapping> _ChannelMap;
-    _ChannelMap _channelMapping;
 };
 
 //------------------------------------------------------------------------------
@@ -345,6 +310,113 @@ EmpMeshObject::OKtoDisplay()
 
 //! DOCS
 void
+EmpMeshObject::_parseChannelMapping(const Nb::String &channelMapping)
+{
+    using std::string;
+    using std::vector;
+    using std::stringstream;
+    using std::istream_iterator;
+    using std::atoi;
+    using std::size_t;
+    using std::count;
+
+    stringstream ss(channelMapping.str()); // Create a stream from the string.
+
+    // Use stream iterators to copy the stream to the vector 
+    // as whitespace separated strings.
+
+    istream_iterator<string> iter(ss);
+    istream_iterator<string> iend;
+    vector<string> tokens(iter, iend);
+
+    typedef vector<string>::const_iterator TokenIterator;
+    for (TokenIterator token = tokens.begin(); token != tokens.end(); ++token) {
+        const size_t numColons = count(token->begin(), token->end(), ':');
+        if (numColons == 1) {
+            const Nb::String nbToken = *token;
+            const string pointChannel = nbToken.parent(":").str();
+            const string mapChannel = nbToken.child(":").str();
+            if (!pointChannel.empty() && !mapChannel.empty()) {
+                try {
+                    _Mapping mapping;
+                    mapping.id = 
+                        lexical_cast<int>(
+                            string(&mapChannel[0], 1)); // May throw.
+                    if (mapping.id >= 0) {
+                        const size_t mask0 = mapChannel.find_first_of('[');
+                        const size_t mask1 = mapChannel.find_last_of(']');
+                        if (mask0 < mask1 && (mask1 - mask0 - 1 == 3)) {
+                            for (size_t i = mask0 + 1, m = 0; 
+                                 i < mask1; 
+                                 ++i, ++m) {
+                                mapping.mask[m] = 
+                                    lexical_cast<int>(
+                                        string(&mapChannel[i], 1)); // May throw.
+                            }
+                        }
+                        else { // No valid mask provided, use default.
+                            mapping.mask[0] = 1;
+                            mapping.mask[1] = 1;
+                            mapping.mask[2] = 1;
+                        }
+
+                        _channelMappings.insert(
+                            std::make_pair(pointChannel, mapping));
+                        _blindIds.erase(mapping.id);
+                        NB_INFO(
+                            "EmpMeshObject: Point Channel '" << pointChannel << 
+                            "' mapped to Map Channel " << mapping.id << "[" << 
+                            mapping.mask[0] << mapping.mask[1] << 
+                            mapping.mask[2] << "]");
+                    }
+                    else {
+                        NB_WARNING("EmpMeshObject: Invalid Map Channel Id: " << 
+                                   mapping.id << " (must be >= 0)");
+                    }
+                }
+                catch (const std::exception &ex) {
+                    NB_WARNING("EmpMeshObject: Channel mapping parse error: " << 
+                               ex.what());
+                }
+            }
+            else {
+                NB_WARNING("EmpMeshObject: Empty channel token: " << 
+                           "Point Channel: '" << pointChannel << "'" << 
+                           "Map Channel: '" << mapChannel << "'");
+            }
+        }
+        else {
+            NB_WARNING("EmpMeshObject: Invalid token '" << *token 
+                       << "' ignored." << "Tokens must have exactly one ':'");
+        }
+    }
+}
+
+
+//! Returns a mapping for the provided channel name. Id is -1 for blind
+//! mapping channels.
+EmpMeshObject::_Mapping
+EmpMeshObject::_channelMapping(const Nb::String &channelName) const 
+{
+    _Mapping m;
+    m.id      = -1;
+    m.mask[0] =  1;     // All components enabled by default  
+    m.mask[1] =  1;     // even for blind channels.
+    m.mask[2] =  1;
+    const _MappingsMap::const_iterator iter =
+        _channelMappings.find(channelName);
+    if (iter != _channelMappings.end()) {
+        m.id      = iter->second.id;
+        m.mask[0] = iter->second.mask[0];
+        m.mask[1] = iter->second.mask[1];
+        m.mask[2] = iter->second.mask[2];
+    }
+    return m;
+}
+
+
+//! DOCS
+void
 EmpMeshObject::_rebuildMesh(const int frame)
 {
     try {
@@ -354,7 +426,7 @@ EmpMeshObject::_rebuildMesh(const int frame)
         if (0 != body.get()) {
             // Body was found in sequence on disk.
 
-            NB_INFO("mesh: Importing body: '" << body->name() << 
+            NB_INFO("EmpMeshObject: Importing body: '" << body->name() << 
                     "' (signature = '" << body->sig() << "')");
 
             if (body->matches(_signature)) { // "Mesh"
@@ -430,109 +502,63 @@ EmpMeshObject::_buildMesh(const Nb::PointShape    &point,
         }
     }
 
-    // Count number of blind channels.
-
-    EmpMeshObjectClassDesc *desc = 
-        static_cast<EmpMeshObjectClassDesc*>(GetEmpMeshObjectDesc());
-
-    int blindChannelCount = 0;
     const int pointChannelCount = point.channelCount();
-    for (int pc = 0; pc < pointChannelCount; ++pc) {
-        const Nb::Channel *chan = point.channel(pc)();
-        if (desc->isBlindChannel(chan->name())) {
-            ++blindChannelCount;
-        }
-    }
+    this->mesh.setNumMaps(pointChannelCount - 1); // position alread handled.
 
-    if ((blindChannelCount + 2) > (MAX_MESHMAPS - 1)) {
-        // TODO: Warning!
-    }
-    
-    this->mesh.setNumMaps(3 + blindChannelCount);
-
-    // TODO: check if bc > 99
-    //MAX_MESHMAPS
-
-    int bc = 3;
-    //const int pointChannelCount = point.channelCount();
+    std::set<int>::const_iterator blindIter = _blindIds.begin();
     for (int pc = 0; pc < pointChannelCount; ++pc) {
         const Nb::Channel *chan = point.channel(pc)();
         if (!(chan->name() == "position")) {
             // Ignore position channel, it is dealt with above...
 
-            const EmpMeshObjectClassDesc::Mapping mapping = 
-                desc->mapping(chan->name());
-            
-            NB_INFO("mesh: point.channel: Name '" << chan->name() << 
+            _Mapping mapping = _channelMapping(chan->name());
+            const bool blind = _isBlind(mapping);
+            if (blind) {
+                if (blindIter == _blindIds.end()) {
+                    NB_WARNING("EmpMeshObject: No more available Map Channels");
+                    break;
+                }
+                mapping.id = *blindIter;
+                ++blindIter;
+            }
+
+            NB_INFO("EmpMeshObject: point.channel: Name '" << chan->name() << 
                     "', Type: '" << chan->typeName() << 
                     "', Map Channel: " << mapping.id << 
-                    " , Mask: [" << 
+                    (blind ? " (blind)" : "") << ", Mask: [" << 
                     mapping.mask[0]<<mapping.mask[1]<<mapping.mask[2] << "]");
 
             switch (chan->type()) {
             case Nb::ValueBase::IntType:
                 {
                 const Nb::Buffer1i& buf1i = point.constBuffer1i(pc);
-                if (mapping.id < 0) {
-                    // Blind channel.
-
-                    this->mesh.setMapSupport(bc, TRUE);
-                    MeshMap &meshMap = this->mesh.Map(bc);
-                    _buildMapVerts1i(meshMap, buf1i, mapping.mask);
-                    _buildMapFaces(meshMap, index);
-                    ++bc;
-                }
-                else {
-                    this->mesh.setMapSupport(mapping.id, TRUE);
-                    MeshMap &meshMap = this->mesh.Map(mapping.id);
-                    _buildMapVerts1i(meshMap, buf1i, mapping.mask);
-                    _buildMapFaces(meshMap, index);
-                }
+                this->mesh.setMapSupport(mapping.id, TRUE);
+                MeshMap &meshMap = this->mesh.Map(mapping.id);
+                _buildMapVerts1i(meshMap, buf1i, mapping.mask);
+                _buildMapFaces(meshMap, index);
                 }
                 break;
             case Nb::ValueBase::FloatType:
                 {
                 const Nb::Buffer1f& buf1f = point.constBuffer1f(pc);
-                if (mapping.id < 0) {
-                    // Blind channel.
-
-                    this->mesh.setMapSupport(bc, TRUE);
-                    MeshMap &meshMap = this->mesh.Map(bc);
-                    _buildMapVerts1f(meshMap, buf1f, mapping.mask);
-                    _buildMapFaces(meshMap, index);
-                    ++bc;
-                }
-                else {
-                    this->mesh.setMapSupport(mapping.id, TRUE);
-                    MeshMap &meshMap = this->mesh.Map(mapping.id);
-                    _buildMapVerts1f(meshMap, buf1f, mapping.mask);
-                    _buildMapFaces(meshMap, index);
-                }
+                this->mesh.setMapSupport(mapping.id, TRUE);
+                MeshMap &meshMap = this->mesh.Map(mapping.id);
+                _buildMapVerts1f(meshMap, buf1f, mapping.mask);
+                _buildMapFaces(meshMap, index);
                 }
                 break;
             case Nb::ValueBase::Vec3fType:
                 {
                 const Nb::Buffer3f& buf3f = point.constBuffer3f(pc);
-                if (mapping.id < 0) {
-                    // Blind channel.
-
-                    this->mesh.setMapSupport(bc, TRUE);
-                    MeshMap &meshMap = this->mesh.Map(bc);
-                    _buildMapVerts3f(meshMap, buf3f, mapping.mask);
-                    _buildMapFaces(meshMap, index);
-                    ++bc;
-                }
-                else {
-                    this->mesh.setMapSupport(mapping.id, TRUE);
-                    MeshMap &meshMap = this->mesh.Map(mapping.id);
-                    _buildMapVerts3f(meshMap, buf3f, mapping.mask);
-                    _buildMapFaces(meshMap, index);
-                }
+                this->mesh.setMapSupport(mapping.id, TRUE);
+                MeshMap &meshMap = this->mesh.Map(mapping.id);
+                _buildMapVerts3f(meshMap, buf3f, mapping.mask);
+                _buildMapFaces(meshMap, index);
                 }
                 break;
             default:
                 NB_WARNING(
-                    "mesh: Point channel type: '" << chan->typeName() << 
+                    "EmpMeshObject: Point channel type: '"<< chan->typeName() << 
                     "' not supported yet!");
                 break;
             }
@@ -546,7 +572,7 @@ EmpMeshObject::_buildMesh(const Nb::PointShape    &point,
 }
 
 
-//! DOCS
+//! DOCS [static]
 void
 EmpMeshObject::_buildMapVerts1i(MeshMap            &map, 
                                 const Nb::Buffer1i &buf,
@@ -617,19 +643,6 @@ EmpMeshObject::_buildMapFaces(MeshMap            &map,
         }
     }
 }
-
-
-//! Returns true if the point shape has texture coordinate channel(s). [static]
-bool
-EmpMeshObject::_hasUVW(const Nb::PointShape &point)
-{
-    return (point.hasChannels("uv") || 
-            point.hasChannels("u")  || 
-            point.hasChannels("v"));
-}
-
-
-
 
 
 
@@ -739,6 +752,9 @@ private:
 
         ICustEdit       *bodyNameFilterEdit;
         Nb::String       bodyNameFilter;
+
+        ICustEdit       *channelMappingEdit;
+        Nb::String       channelMapping;
 
         ISpinnerControl *frameOffsetSpinner;
         int              frameOffset;
@@ -853,6 +869,11 @@ NaiadBuddy::NaiadBuddy()
     _imp.sequence        = true;
     _imp.signatureFilter = Nb::String("Mesh");
     _imp.bodyNameFilter  = Nb::String("*");
+    _imp.channelMapping  = Nb::String(
+        "rgb:0 "
+        "uv:1[110] "
+        "velocity:2"
+        );
     _imp.frameOffset     = 0;
     _imp.flipYZ          = true;
 
@@ -933,6 +954,10 @@ NaiadBuddy::Init(HWND hWnd)
         GetICustEdit(GetDlgItem(hWnd, IDC_IMP_BODY_NAME_FILTER_EDIT));
     _imp.bodyNameFilterEdit->SetText(_imp.bodyNameFilter.c_str());
 
+    _imp.channelMappingEdit = 
+        GetICustEdit(GetDlgItem(hWnd, IDC_IMP_CHANNEL_MAPPING_EDIT));
+    _imp.channelMappingEdit->SetText(_imp.channelMapping.c_str());
+
     _imp.frameOffsetSpinner = 
         SetupIntSpinner(
             hWnd,                           // Window handle.
@@ -961,6 +986,7 @@ NaiadBuddy::Init(HWND hWnd)
 
     _exp.sequenceNameEdit = 
         GetICustEdit(GetDlgItem(hWnd, IDC_EXP_EMP_SEQUENCE_EDIT));
+    _exp.sequenceNameEdit->SetText(_exp.sequenceName.c_str());
 
     _exp.browseButton = 
         GetICustButton(GetDlgItem(hWnd, IDC_EXP_BROWSE_BUTTON));
@@ -1025,6 +1051,7 @@ void NaiadBuddy::Destroy(HWND hWnd)
     ReleaseICustButton(_imp.browseButton);
     ReleaseICustEdit(_imp.signatureFilterEdit);
     ReleaseICustEdit(_imp.bodyNameFilterEdit);
+    ReleaseICustEdit(_imp.channelMappingEdit);
     ReleaseISpinner(_imp.frameOffsetSpinner);
     ReleaseICustButton(_imp.importButton);
     ReleaseICustStatus(_imp.importStatus);
@@ -1194,6 +1221,13 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         _imp.bodyNameFilter = Nb::String(bodyNameFilter.data());
         }
         break;
+    case IDC_IMP_CHANNEL_MAPPING_EDIT:
+        {
+        MSTR channelMapping;
+        _imp.channelMappingEdit->GetText(channelMapping);
+        _imp.channelMapping = Nb::String(channelMapping.data());
+        }
+        break;
     case IDC_IMP_FRAME_OFFSET_SPINNER:
     case IDC_IMP_FRAME_OFFSET_EDIT:
         {
@@ -1281,6 +1315,9 @@ NaiadBuddy::Import()
             signatureFilter = _T("Mesh");
         }
 
+        MSTR channelMapping;
+        _imp.channelMappingEdit->GetText(channelMapping);
+
         const int frameOffset = _imp.frameOffsetSpinner->GetIVal();
         const bool flipYZ = 
             (BST_CHECKED == IsDlgButtonChecked(hPanel, IDC_IMP_FLIP_YZ_CHECK));
@@ -1343,6 +1380,8 @@ NaiadBuddy::Import()
 
                     empMeshObj->setBodyName(bodyName);
                     empMeshObj->setFlipYZ(flipYZ);
+                    empMeshObj->setChannelMapping(
+                        Nb::String(channelMapping.data()));
 
                     Nb::SequenceReader &sr = empMeshObj->sequenceReader();
                     sr.setSigFilter("Body"); // HACK!
@@ -1550,7 +1589,7 @@ NaiadBuddy::ExportNode(INode         *node,
                             ", Class: " << className);
                     NB_INFO("export: Vertex Count: " << numVerts << 
                             ", Face Count: " << numFaces <<
-                            ", VData Count: " << numVData << 
+                            //", VData Count: " << numVData << 
                             ", Map Count: " << numMaps);
 
                     // Matrix3 is actually a 4x3 matrix. Order of 
@@ -1564,8 +1603,9 @@ NaiadBuddy::ExportNode(INode         *node,
                         std::auto_ptr<Nb::Body> body(
                             Nb::Factory::createBody(
                                 "Mesh", Nb::String(node->GetName())));
-                        //body->guaranteeChannel3f(Nb::String("Point.position"));
-                        //body->guaranteeChannel3i(Nb::String("Triangle.index"));
+
+                        // These shapes and channels are guaranteed by the
+                        // 'Mesh' signature.
 
                         Nb::PointShape &points = 
                             body->mutablePointShape();
@@ -1580,19 +1620,15 @@ NaiadBuddy::ExportNode(INode         *node,
                         for (int v = 0; v < numVerts; ++v) {
                             const Point3 vtx = tm*tri->mesh.verts[v];
                             if (flipYZ) {
-                                positions[v][0] = vtx.x;
-                                positions[v][1] = vtx.z;
-                                positions[v][2] = vtx.y;
+                                positions[v][0] = vtx[0];
+                                positions[v][1] = vtx[2];
+                                positions[v][2] = vtx[1];
                             }
                             else {
-                                positions[v][0] = vtx.x;
-                                positions[v][1] = vtx.y;
-                                positions[v][2] = vtx.z;
+                                positions[v][0] = vtx[0];
+                                positions[v][1] = vtx[1];
+                                positions[v][2] = vtx[2];
                             }
-                        }
-
-                        for (int m = 0; m < numMaps; ++m) {
-
                         }
 
                         indices.resize(numFaces);
@@ -1600,6 +1636,41 @@ NaiadBuddy::ExportNode(INode         *node,
                             indices[f][0] = tri->mesh.faces[f].v[0];
                             indices[f][1] = tri->mesh.faces[f].v[1];
                             indices[f][2] = tri->mesh.faces[f].v[2];
+                        }
+
+                        // Export map channels.
+
+                        for (int m = 0; m < numMaps; ++m) {
+                            if (tri->mesh.mapSupport(m)) {
+                                std::stringstream ss;
+                                ss << "Point.mapChannel" << m;
+                                const std::string channelName = ss.str();
+                                NB_INFO(
+                                   "export: Mesh Channel '" << m << ":map" << 
+                                   "' to Body Channel '" << channelName << "'");
+                                body->guaranteeChannel3f(channelName);
+                                MeshMap &meshMap = tri->mesh.Map(m);
+                                Nb::Buffer3f &buf = 
+                                    points.mutableBuffer3f(channelName);
+                                buf.resize(meshMap.getNumVerts());
+                                const int numFaces = meshMap.getNumFaces();
+                                for (int f = 0; f < numFaces; ++f) {
+                                    TVFace &face = meshMap.tf[f];
+                                    for (int i = 0; i < 3; ++i) {
+                                        UVVert &uv = meshMap.tv[face.t[i]];
+                                        if (flipYZ) {
+                                            buf[face.t[i]][0] = uv[0];
+                                            buf[face.t[i]][1] = uv[2];
+                                            buf[face.t[i]][2] = uv[1];
+                                        }
+                                        else {
+                                            buf[face.t[i]][0] = uv[0];
+                                            buf[face.t[i]][1] = uv[1];
+                                            buf[face.t[i]][2] = uv[2];
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         NB_INFO("export: Writing body '" << body->name() << 
