@@ -54,6 +54,7 @@
 
 //------------------------------------------------------------------------------
 
+//! DOCS
 template <typename T>
 T 
 lexical_cast(const std::string &s)
@@ -64,6 +65,341 @@ lexical_cast(const std::string &s)
         throw std::bad_cast("bad lexical_cast");
     }
     return result;
+}
+
+
+//! DOCS
+struct PointChannel
+{
+    Nb::String name;
+    int comp[3];
+    bool excluded;
+};
+
+
+//! Compare names only.
+bool
+operator<(const PointChannel &lhs, const PointChannel &rhs)
+{ return lhs.name < rhs.name; }
+
+
+//! Convenience
+std::ostream&
+operator<<(std::ostream &os, const PointChannel &pc)
+{
+    os << "'" << pc.name.str() << "'"
+       << " [" << pc.comp[0] << pc.comp[1] << pc.comp[2] << "]"
+       << " excluded: " << (pc.excluded ? "true" : "false");
+    return os;
+}
+
+
+//! DOCS
+struct MapChannel
+{
+    int id;
+    int comp[3];
+    bool excluded;
+};
+
+
+//! Compare Id's only.
+bool
+operator<(const MapChannel &lhs, const MapChannel &rhs)
+{ return lhs.id < rhs.id; }
+
+
+//! Convenience
+std::ostream&
+operator<<(std::ostream &os, const MapChannel &mc)
+{
+    os << mc.id
+       << "[" << mc.comp[0] << mc.comp[1] << mc.comp[2] << "]"
+       << " excluded: " << (mc.excluded ? "true" : "false");
+    return os;
+}
+
+
+//! DOCS
+void
+parseComponents(const std::string &expr, int comp[3])
+{
+    using std::size_t;
+    using std::min;
+
+    const size_t size = min<size_t>(expr.size(), 3);
+    for (size_t i = 0; i < expr.size(); ++i) { 
+        switch (expr[i]) {
+        case '-':
+            comp[i] = -1;   // Disable.
+            break;
+        case '0':
+        case 'r':
+        case 'u':
+        case 'x':
+            comp[i] = 0;
+            break;
+        case '1':
+        case 'g':
+        case 'v':
+        case 'y':
+            comp[i] = 1;
+            break;
+        case '2':
+        case 'b':
+        case 'w':
+        case 'z':
+            comp[i] = 2;
+            break;
+        default:
+            comp[i] = static_cast<int>(i);
+            break;
+        }
+    }
+}
+
+
+//! DOCS
+bool
+parsePointChannel(const std::string &expr, PointChannel &pc)
+{
+    using std::size_t;
+    using std::string;
+    using std::exception;
+
+    if (expr.empty()) {
+        return false; // Failure!
+    }
+
+    const size_t lb = expr.find_first_of('[');
+    const size_t rb = expr.find_last_of(']');
+    const string name = expr.substr(0, lb);
+    if (!name.empty()) {
+        pc.name = Nb::String(name);
+        pc.comp[0] = 0;
+        pc.comp[1] = 1;
+        pc.comp[2] = 2;
+        if (lb < rb) { // Bracket pair present in expression.
+            parseComponents(expr.substr(lb + 1, rb - lb - 1), pc.comp);
+        }
+        return true;    // Success!
+    }
+    else {
+        NB_WARNING("parse: Empty Point Channel name");
+        return false; // Failure!
+    }
+}
+
+
+//! DOCS
+bool
+parseMapChannel(const std::string &expr, MapChannel &mc)
+{
+    using std::size_t;
+    using std::string;
+    using std::exception;
+
+    if (expr.empty()) {
+        return false; // Failure!
+    }
+
+    const size_t lb = expr.find_first_of('[');
+    const size_t rb = expr.find_last_of(']');
+    const string id = expr.substr(0, lb);
+    if (0 < id.size() && id.size() <= 2) {
+        try {
+            mc.id = lexical_cast<int>(id); // May throw.
+        }
+        catch (const exception &ex) {
+            NB_WARNING("parse: Invalid Map Channel Id: '" << id << "':" <<
+                        ex.what());
+            return false; // Failure!
+        }
+
+        if (0 > mc.id || mc.id > (MAX_MESHMAPS - 1)) {
+            NB_WARNING(
+                "parse: Invalid Map Channel Id: " << 
+                mc.id << " (must be in the range [0, 100])");
+            return false; // Failure!
+        }
+
+        mc.comp[0] = 0;
+        mc.comp[1] = 1;
+        mc.comp[2] = 2;
+        if (lb < rb) { // Bracket pair present in expression.
+            parseComponents(expr.substr(lb + 1, rb - lb - 1), mc.comp);
+        }
+
+        return true;    // Success!
+    }
+    else {
+        NB_WARNING(
+            "parse: Invalid Map Channel Id string: '" << 
+            id << "' (must have size [1,2])");
+        return false; // Failure!
+    }
+}
+
+
+//! DOCS
+void
+parsePointToMap(const std::string                 &expr, 
+                std::map<PointChannel,MapChannel> &mapping)
+{
+    using std::string;
+    using std::stringstream;
+    using std::vector;
+    using std::map;
+    using std::istream_iterator;
+    using std::atoi;
+    using std::size_t;
+    using std::count;
+
+    typedef std::map<PointChannel,MapChannel> MappingType;
+
+    if (expr.empty()) {
+        return; // Early exit.
+    }
+
+    stringstream ss(expr); // Create a stream from the string.
+
+    // Use stream iterators to copy the stream to the vector 
+    // as whitespace separated strings.
+
+    istream_iterator<string> iter(ss);
+    istream_iterator<string> iend;
+    vector<string> tokens(iter, iend);
+
+    typedef vector<string>::const_iterator TokenIterator;
+    for (TokenIterator token = tokens.begin(); token != tokens.end(); ++token) {
+        const size_t numColons = count(token->begin(), token->end(), ':');
+        const size_t numCarets = count(token->begin(), token->end(), '^');
+        if (numColons == 1) {
+            const Nb::String nbToken = *token;
+            const string pointChannel = 
+                nbToken.parent(":").str(); // Left of ':'.
+            const string mapChannel = 
+                nbToken.child(":").str(); // Right of ':'.
+            if (!pointChannel.empty() && !mapChannel.empty()) {
+                PointChannel pc;
+                pc.excluded = false;
+                MapChannel mc;
+                mc.excluded = false;
+                if (parsePointChannel(pointChannel, pc) &&
+                    parseMapChannel(mapChannel, mc)) {
+                    NB_INFO("parse: Point Channel: " << pc << " --> " << 
+                            "Map Channel: " << mc);
+                    mapping.insert(MappingType::value_type(pc, mc));
+                }
+            }
+            else {
+                NB_WARNING("parse: Empty channel token: " << 
+                           "Point Channel: '" << pointChannel << "'" << 
+                           "Map Channel: '" << mapChannel << "'");
+            }
+        }
+        else if (numCarets == 1) {
+            const Nb::String nbToken = *token;
+            const string pointChannel = 
+                nbToken.child("^").str(); // Right of '^'.
+            if (!pointChannel.empty()) {
+                PointChannel pc;
+                pc.excluded = true;
+                MapChannel mc; // Uninitialized, shouldn't be used.
+                if (parsePointChannel(pointChannel, pc)) {
+                    NB_INFO("parse: Point Channel: " << pc);
+                    mapping.insert(MappingType::value_type(pc, mc));
+                }
+            }
+            else {
+                NB_WARNING("parse: Empty point channel token");
+            }
+        }
+        else {
+            NB_WARNING("parse: Invalid token '" << *token << "' ignored." << 
+                       "Tokens must contain exactly one ':' or one '^'");
+        }
+    }
+}
+
+
+//! DOCS
+void
+parseMapToPoint(const std::string                 &expr, 
+                std::map<MapChannel,PointChannel> &mapping)
+{
+    using std::string;
+    using std::stringstream;
+    using std::vector;
+    using std::map;
+    using std::istream_iterator;
+    using std::atoi;
+    using std::size_t;
+    using std::count;
+
+    typedef std::map<MapChannel,PointChannel> MappingType;
+
+    if (expr.empty()) {
+        return; // Early exit.
+    }
+
+    stringstream ss(expr); // Create a stream from the string.
+
+    // Use stream iterators to copy the stream to the vector 
+    // as whitespace separated strings.
+
+    istream_iterator<string> iter(ss);
+    istream_iterator<string> iend;
+    vector<string> tokens(iter, iend);
+
+    typedef vector<string>::const_iterator TokenIterator;
+    for (TokenIterator token = tokens.begin(); token != tokens.end(); ++token) {
+        const size_t numColons = count(token->begin(), token->end(), ':');
+        const size_t numCarets = count(token->begin(), token->end(), '^');
+        if (numColons == 1) {
+            const Nb::String nbToken = *token;
+            const string mapChannel = 
+                nbToken.parent(":").str(); // Left of ':'.
+            const string pointChannel = 
+                nbToken.child(":").str(); // Right of ':'.
+            if (!pointChannel.empty() && !mapChannel.empty()) {
+                MapChannel mc;
+                PointChannel pc;
+                if (parseMapChannel(pointChannel, mc) &&
+                    parsePointChannel(mapChannel, pc)) {
+                    NB_INFO("parse: Map Channel: " << mc << " --> " << 
+                            "Point Channel: " << pc);
+                    mapping.insert(MappingType::value_type(mc, pc));
+                }
+            }
+            else {
+                NB_WARNING("parse: Empty channel token: " << 
+                           "Map Channel: '" << mapChannel << "' " << 
+                           "Point Channel: '" << pointChannel << "'");
+            }
+        }
+        else if (numCarets == 1) {
+            const Nb::String nbToken = *token;
+            const string mapChannel = 
+                nbToken.child("^").str(); // Right of '^'.
+            if (!mapChannel.empty()) {
+                MapChannel mc;
+                mc.excluded = true;
+                PointChannel pc; // Uninitialized, shouldn't be used.
+                if (parseMapChannel(mapChannel, mc)) {
+                    NB_INFO("parse: Map Channel: " << mc);
+                    mapping.insert(MappingType::value_type(mc, pc));
+                }
+            }
+            else {
+                NB_WARNING("parse: Empty map channel token");
+            }
+        }
+        else {
+            NB_WARNING("parse: Invalid token '" << *token << "' ignored." << 
+                       "Tokens must contain exactly one ':' or one '^'");
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -137,31 +473,28 @@ public:
     { _flipYZ = flipYZ; }
 
     void
-    setChannelMapping(const Nb::String &channelMapping)
+    setChannelMapping(const Nb::String &expr)
     {
         _channelMappings.clear();
+        parsePointToMap(expr, _channelMappings);
+
         for (int i = 0; i < MAX_MESHMAPS; ++i) {
             _blindIds.insert(i);
         }
-        _parseChannelMapping(channelMapping);
+
+        _MappingType::const_iterator iter = _channelMappings.begin();
+        const _MappingType::const_iterator iend = _channelMappings.end();
+        for (; iter != iend; ++iter) {
+            _blindIds.erase(iter->second.id);
+        }
     }
 
 private:
 
     static const Nb::String _signature;
 
-    //! DOCS
-    struct _Mapping
-    {
-        int  id;
-        int  mask[3];    // TODO: bitmask.
-    };
-
-    void
-    _parseChannelMapping(const Nb::String &channelMapping);
-
-    _Mapping
-    _channelMapping(const Nb::String &channelName) const;
+    MapChannel
+    _mapChannel(PointChannel &pc) const;
 
     void
     _rebuildMesh(const int frame);
@@ -175,25 +508,28 @@ private:
     static void
     _buildMapVerts1i(MeshMap            &map, 
                      const Nb::Buffer1i &buf,
-                     const int           mask[3]);
+                     const PointChannel &pc,
+                     const MapChannel   &mc);
 
     static void
     _buildMapVerts1f(MeshMap            &map, 
                      const Nb::Buffer1f &buf,
-                     const int           mask[3]);
+                     const PointChannel &pc,
+                     const MapChannel   &mc);
 
     static void
     _buildMapVerts3f(MeshMap            &map, 
                      const Nb::Buffer3f &buf,
-                     const int           mask[3]);
+                     const PointChannel &pc,
+                     const MapChannel   &mc);
 
     static void
     _buildMapFaces(MeshMap            &map, 
                    const Nb::Buffer3i &index);
 
     static bool
-    _isBlind(const _Mapping &mapping)
-    { return (mapping.id < 0); }
+    _isBlind(const MapChannel &mc)
+    { return (mc.id < 0); }
 
 private:    // Member variables.
 
@@ -203,8 +539,8 @@ private:    // Member variables.
     int                _meshFrame; 
     BOOL               _validMesh;
 
-    typedef std::map<Nb::String,_Mapping> _MappingsMap;
-    _MappingsMap _channelMappings;
+    typedef std::map<PointChannel,MapChannel> _MappingType;
+    _MappingType _channelMappings;
     std::set<int> _blindIds;
 };
 
@@ -308,110 +644,29 @@ EmpMeshObject::OKtoDisplay()
 
 //------------------------------------------------------------------------------
 
-//! DOCS
-void
-EmpMeshObject::_parseChannelMapping(const Nb::String &channelMapping)
-{
-    using std::string;
-    using std::vector;
-    using std::stringstream;
-    using std::istream_iterator;
-    using std::atoi;
-    using std::size_t;
-    using std::count;
-
-    stringstream ss(channelMapping.str()); // Create a stream from the string.
-
-    // Use stream iterators to copy the stream to the vector 
-    // as whitespace separated strings.
-
-    istream_iterator<string> iter(ss);
-    istream_iterator<string> iend;
-    vector<string> tokens(iter, iend);
-
-    typedef vector<string>::const_iterator TokenIterator;
-    for (TokenIterator token = tokens.begin(); token != tokens.end(); ++token) {
-        const size_t numColons = count(token->begin(), token->end(), ':');
-        if (numColons == 1) {
-            const Nb::String nbToken = *token;
-            const string pointChannel = nbToken.parent(":").str();
-            const string mapChannel = nbToken.child(":").str();
-            if (!pointChannel.empty() && !mapChannel.empty()) {
-                try {
-                    _Mapping mapping;
-                    mapping.id = 
-                        lexical_cast<int>(
-                            string(&mapChannel[0], 1)); // May throw.
-                    if (mapping.id >= 0) {
-                        const size_t mask0 = mapChannel.find_first_of('[');
-                        const size_t mask1 = mapChannel.find_last_of(']');
-                        if (mask0 < mask1 && (mask1 - mask0 - 1 == 3)) {
-                            for (size_t i = mask0 + 1, m = 0; 
-                                 i < mask1; 
-                                 ++i, ++m) {
-                                mapping.mask[m] = 
-                                    lexical_cast<int>(
-                                        string(&mapChannel[i], 1)); // May throw.
-                            }
-                        }
-                        else { // No valid mask provided, use default.
-                            mapping.mask[0] = 1;
-                            mapping.mask[1] = 1;
-                            mapping.mask[2] = 1;
-                        }
-
-                        _channelMappings.insert(
-                            std::make_pair(pointChannel, mapping));
-                        _blindIds.erase(mapping.id);
-                        NB_INFO(
-                            "EmpMeshObject: Point Channel '" << pointChannel << 
-                            "' mapped to Map Channel " << mapping.id << "[" << 
-                            mapping.mask[0] << mapping.mask[1] << 
-                            mapping.mask[2] << "]");
-                    }
-                    else {
-                        NB_WARNING("EmpMeshObject: Invalid Map Channel Id: " << 
-                                   mapping.id << " (must be >= 0)");
-                    }
-                }
-                catch (const std::exception &ex) {
-                    NB_WARNING("EmpMeshObject: Channel mapping parse error: " << 
-                               ex.what());
-                }
-            }
-            else {
-                NB_WARNING("EmpMeshObject: Empty channel token: " << 
-                           "Point Channel: '" << pointChannel << "'" << 
-                           "Map Channel: '" << mapChannel << "'");
-            }
-        }
-        else {
-            NB_WARNING("EmpMeshObject: Invalid token '" << *token 
-                       << "' ignored." << "Tokens must have exactly one ':'");
-        }
-    }
-}
-
-
 //! Returns a mapping for the provided channel name. Id is -1 for blind
 //! mapping channels.
-EmpMeshObject::_Mapping
-EmpMeshObject::_channelMapping(const Nb::String &channelName) const 
+MapChannel
+EmpMeshObject::_mapChannel(PointChannel &pc) const 
 {
-    _Mapping m;
-    m.id      = -1;
-    m.mask[0] =  1;     // All components enabled by default  
-    m.mask[1] =  1;     // even for blind channels.
-    m.mask[2] =  1;
-    const _MappingsMap::const_iterator iter =
-        _channelMappings.find(channelName);
+    MapChannel mc;
+    mc.id      = -1;     // Blind Id
+    mc.comp[0] =  0;     // All components enabled by default,  
+    mc.comp[1] =  1;     // even for blind channels.
+    mc.comp[2] =  2;
+    const _MappingType::const_iterator iter = _channelMappings.find(pc);
     if (iter != _channelMappings.end()) {
-        m.id      = iter->second.id;
-        m.mask[0] = iter->second.mask[0];
-        m.mask[1] = iter->second.mask[1];
-        m.mask[2] = iter->second.mask[2];
+        pc = iter->first;
+        mc = iter->second;
+        //pc.comp[0] = iter->first.comp[0]; // Grab components!
+        //pc.comp[1] = iter->first.comp[1];
+        //pc.comp[2] = iter->first.comp[2];
+        //mc.id      = iter->second.id;
+        //mc.comp[0] = iter->second.comp[0];
+        //mc.comp[1] = iter->second.comp[1];
+        //mc.comp[2] = iter->second.comp[2];
     }
-    return m;
+    return mc;
 }
 
 
@@ -511,56 +766,87 @@ EmpMeshObject::_buildMesh(const Nb::PointShape    &point,
         if (!(chan->name() == "position")) {
             // Ignore position channel, it is dealt with above...
 
-            _Mapping mapping = _channelMapping(chan->name());
-            const bool blind = _isBlind(mapping);
-            if (blind) {
-                if (blindIter == _blindIds.end()) {
-                    NB_WARNING("EmpMeshObject: No more available Map Channels");
+            PointChannel pc;
+            pc.name = chan->name();
+            pc.comp[0] = 0;
+            pc.comp[1] = 1;
+            pc.comp[2] = 2;
+            pc.excluded = false;
+            MapChannel mc = _mapChannel(pc);
+            const bool blind = _isBlind(mc);
+
+            NB_INFO("EmpMeshObject: Point Channel: " << pc.name << 
+                    "', Type: '" << chan->typeName() << 
+                    "', Comp: [" << 
+                    (pc.comp[0] < 0 ? "(" : "") << pc.comp[0] << 
+                    (pc.comp[0] < 0 ? ")" : "") << 
+                    (pc.comp[1] < 0 ? "(" : "") << pc.comp[1] << 
+                    (pc.comp[1] < 0 ? ")" : "") << 
+                    (pc.comp[2] < 0 ? "(" : "") << pc.comp[2] << 
+                    (pc.comp[2] < 0 ? ")" : "") << "]" <<
+                    ", Excluded: " << (pc.excluded ? "true" : "false") << 
+                    ", Map Channel: " << mc.id << (blind ? " (blind)" : "") << 
+                    ", Comp: [" << 
+                    (mc.comp[0] < 0 ? "(" : "") << mc.comp[0] << 
+                    (mc.comp[0] < 0 ? ")" : "") << 
+                    (mc.comp[1] < 0 ? "(" : "") << mc.comp[1] << 
+                    (mc.comp[1] < 0 ? ")" : "") << 
+                    (mc.comp[2] < 0 ? "(" : "") << mc.comp[2] << 
+                    (mc.comp[2] < 0 ? ")" : "") << "]"
+                    ", Excluded: " << (mc.excluded ? "true" : "false"));
+
+            if (!pc.excluded) {
+                if (blind) {
+                    if (blindIter == _blindIds.end()) {
+                        NB_WARNING("EmpMeshObject: No more available Map Channels");
+                        break;
+                    }
+                    mc.id = *blindIter;
+                    ++blindIter;
+                }
+
+                switch (chan->type()) {
+                case Nb::ValueBase::IntType:
+                    {
+                    if (0 == pc.comp[0]) {
+                        const Nb::Buffer1i& buf1i = point.constBuffer1i(pc.name);
+                        this->mesh.setMapSupport(mc.id, TRUE);
+                        MeshMap &meshMap = this->mesh.Map(mc.id);
+                        _buildMapVerts1i(meshMap, buf1i, pc, mc);
+                        _buildMapFaces(meshMap, index);
+                    }
+                    }
+                    break;
+                case Nb::ValueBase::FloatType:
+                    {
+                    if (0 == pc.comp[0]) {
+                        const Nb::Buffer1f& buf1f = point.constBuffer1f(pc.name);
+                        this->mesh.setMapSupport(mc.id, TRUE);
+                        MeshMap &meshMap = this->mesh.Map(mc.id);
+                        _buildMapVerts1f(meshMap, buf1f, pc, mc);
+                        _buildMapFaces(meshMap, index);
+                    }
+                    }
+                    break;
+                case Nb::ValueBase::Vec3fType:
+                    {
+                    if ((0 <= pc.comp[0] && pc.comp[0] <= 2) ||
+                        (0 <= pc.comp[1] && pc.comp[1] <= 2) ||
+                        (0 <= pc.comp[2] && pc.comp[2] <= 2)) {
+                        const Nb::Buffer3f& buf3f = point.constBuffer3f(pc.name);
+                        this->mesh.setMapSupport(mc.id, TRUE);
+                        MeshMap &meshMap = this->mesh.Map(mc.id);
+                        _buildMapVerts3f(meshMap, buf3f, pc, mc);
+                        _buildMapFaces(meshMap, index);
+                    }
+                    }
+                    break;
+                default:
+                    NB_WARNING(
+                        "EmpMeshObject: Point channel type: '"<< chan->typeName() << 
+                        "' not supported yet!");
                     break;
                 }
-                mapping.id = *blindIter;
-                ++blindIter;
-            }
-
-            NB_INFO("EmpMeshObject: point.channel: Name '" << chan->name() << 
-                    "', Type: '" << chan->typeName() << 
-                    "', Map Channel: " << mapping.id << 
-                    (blind ? " (blind)" : "") << ", Mask: [" << 
-                    mapping.mask[0]<<mapping.mask[1]<<mapping.mask[2] << "]");
-
-            switch (chan->type()) {
-            case Nb::ValueBase::IntType:
-                {
-                const Nb::Buffer1i& buf1i = point.constBuffer1i(pc);
-                this->mesh.setMapSupport(mapping.id, TRUE);
-                MeshMap &meshMap = this->mesh.Map(mapping.id);
-                _buildMapVerts1i(meshMap, buf1i, mapping.mask);
-                _buildMapFaces(meshMap, index);
-                }
-                break;
-            case Nb::ValueBase::FloatType:
-                {
-                const Nb::Buffer1f& buf1f = point.constBuffer1f(pc);
-                this->mesh.setMapSupport(mapping.id, TRUE);
-                MeshMap &meshMap = this->mesh.Map(mapping.id);
-                _buildMapVerts1f(meshMap, buf1f, mapping.mask);
-                _buildMapFaces(meshMap, index);
-                }
-                break;
-            case Nb::ValueBase::Vec3fType:
-                {
-                const Nb::Buffer3f& buf3f = point.constBuffer3f(pc);
-                this->mesh.setMapSupport(mapping.id, TRUE);
-                MeshMap &meshMap = this->mesh.Map(mapping.id);
-                _buildMapVerts3f(meshMap, buf3f, mapping.mask);
-                _buildMapFaces(meshMap, index);
-                }
-                break;
-            default:
-                NB_WARNING(
-                    "EmpMeshObject: Point channel type: '"<< chan->typeName() << 
-                    "' not supported yet!");
-                break;
             }
         }
     }
@@ -576,15 +862,16 @@ EmpMeshObject::_buildMesh(const Nb::PointShape    &point,
 void
 EmpMeshObject::_buildMapVerts1i(MeshMap            &map, 
                                 const Nb::Buffer1i &buf,
-                                const int           mask[3])
+                                const PointChannel &pc,
+                                const MapChannel   &mc)
 {
     const int numVerts = static_cast<int>(buf.size());
     map.setNumVerts(numVerts);
     for (int v = 0; v < numVerts; ++v) { // Set map vertices.
         UVVert &uvVert = map.tv[v];
-        for (int i = 0; i < 3; ++i) { // Check mask before setting.
-            if (mask[i] > 0) {
-                uvVert[i] = static_cast<float>(buf[v]);
+        for (int i = 0; i < 3; ++i) { 
+            if (0 <= mc.comp[i] && mc.comp[i] <= 2) { // Check mask.
+                uvVert[mc.comp[i]] = static_cast<float>(buf[v]);
             }
         }
     }
@@ -595,15 +882,16 @@ EmpMeshObject::_buildMapVerts1i(MeshMap            &map,
 void
 EmpMeshObject::_buildMapVerts1f(MeshMap            &map, 
                                 const Nb::Buffer1f &buf,
-                                const int           mask[3])
+                                const PointChannel &pc,
+                                const MapChannel   &mc)
 {
     const int numVerts = static_cast<int>(buf.size());
     map.setNumVerts(numVerts);
     for (int v = 0; v < numVerts; ++v) { // Set map vertices.
         UVVert &uvVert = map.tv[v];
         for (int i = 0; i < 3; ++i) { // Check mask before setting.
-            if (mask[i] > 0) {
-                uvVert[i] = buf[v];
+            if (0 <= mc.comp[i] && mc.comp[i] <= 2) { // Check mask.
+                uvVert[mc.comp[i]] = buf[v];
             }
         }
     }
@@ -614,15 +902,17 @@ EmpMeshObject::_buildMapVerts1f(MeshMap            &map,
 void
 EmpMeshObject::_buildMapVerts3f(MeshMap            &map, 
                                 const Nb::Buffer3f &buf,
-                                const int           mask[3])
+                                const PointChannel &pc,
+                                const MapChannel   &mc)
 {
     const int numVerts = static_cast<int>(buf.size());
     map.setNumVerts(numVerts);
     for (int v = 0; v < numVerts; ++v) { // Set map vertices.
         UVVert &uvVert = map.tv[v];
-        for (int i = 0; i < 3; ++i) { // Check mask before setting.
-            if (mask[i] > 0) {
-                uvVert[i] = buf[v][i];
+        for (int i = 0; i < 3; ++i) { 
+            if (0 <= pc.comp[i] && pc.comp[i] <= 2 &&
+                0 <= mc.comp[i] && mc.comp[i] <= 2) {    // Check masks.
+                uvVert[mc.comp[i]] = buf[v][pc.comp[i]]; // Swizzle!
             }
         }
     }
@@ -771,6 +1061,9 @@ private:
         Nb::String       sequenceName;
         ICustButton     *browseButton;
 
+        ICustEdit       *channelMappingEdit;
+        Nb::String       channelMapping;
+
         ISpinnerControl *paddingSpinner;
         int              padding;
 
@@ -878,6 +1171,11 @@ NaiadBuddy::NaiadBuddy()
     _imp.flipYZ          = true;
 
     _exp.sequenceName    = Nb::String("");
+    _exp.channelMapping  = Nb::String(
+        "0:rgb "
+        "1:uv[110] "
+        "2:velocity"
+        );
     _exp.padding         = 4;
     _exp.flipYZ          = true;
     _exp.selection       = false;
@@ -991,6 +1289,10 @@ NaiadBuddy::Init(HWND hWnd)
     _exp.browseButton = 
         GetICustButton(GetDlgItem(hWnd, IDC_EXP_BROWSE_BUTTON));
 
+    _exp.channelMappingEdit = 
+        GetICustEdit(GetDlgItem(hWnd, IDC_EXP_CHANNEL_MAPPING_EDIT));
+    _exp.channelMappingEdit->SetText(_exp.channelMapping.c_str());
+
     _exp.paddingSpinner = 
         SetupIntSpinner(
             hWnd,                       // Window handle.
@@ -1060,6 +1362,7 @@ void NaiadBuddy::Destroy(HWND hWnd)
     // Export.
 
     ReleaseICustEdit(_exp.sequenceNameEdit);
+    ReleaseICustEdit(_exp.channelMappingEdit);
     ReleaseICustButton(_exp.browseButton);
     ReleaseISpinner(_exp.paddingSpinner);
     ReleaseISpinner(_exp.firstFrameSpinner);
@@ -1172,6 +1475,13 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         }
         break;
     // Import stuff.
+    case IDC_IMP_EMP_SEQUENCE_EDIT:
+        {
+        MSTR sequenceName;
+        _imp.sequenceNameEdit->GetText(sequenceName);
+        _imp.sequenceName = Nb::String(sequenceName.data());
+        }
+        break;
     case IDC_IMP_BROWSE_BUTTON:
         {
         TSTR filename;
@@ -1244,6 +1554,13 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
         Import(); // The import button was pressed, do the import...
         break;
     // Export stuff.
+    case IDC_EXP_EMP_SEQUENCE_EDIT:
+        {
+        MSTR sequenceName;
+        _exp.sequenceNameEdit->GetText(sequenceName);
+        _exp.sequenceName = Nb::String(sequenceName.data());
+        }
+        break;
     case IDC_EXP_BROWSE_BUTTON:
         {
         TSTR filename;
@@ -1264,6 +1581,13 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
             _exp.sequenceName = Nb::String(filename.data());
             _exp.sequenceNameEdit->SetText(_exp.sequenceName.c_str());
         }
+        }
+        break;
+    case IDC_EXP_CHANNEL_MAPPING_EDIT:
+        {
+        MSTR channelMapping;
+        _exp.channelMappingEdit->GetText(channelMapping);
+        _exp.channelMapping = Nb::String(channelMapping.data());
         }
         break;
     case IDC_EXP_FLIP_YZ_CHECK:
@@ -1456,6 +1780,13 @@ NaiadBuddy::Import()
 }
 
 
+
+
+
+
+
+
+
 //! DOCS
 void
 NaiadBuddy::Export()
@@ -1472,6 +1803,8 @@ NaiadBuddy::Export()
     //MessageBox(NULL,"I need to have one and only one object selected !",
     //           "Warning", MB_OK);
 
+    MSTR channelMapping;
+    _exp.channelMappingEdit->GetText(channelMapping);
 
     const int firstFrame = _exp.firstFrameSpinner->GetIVal();
     const int lastFrame = _exp.lastFrameSpinner->GetIVal();
@@ -1535,7 +1868,7 @@ NaiadBuddy::Export()
             NB_INFO("export: "<<numExportedCameraNodes<<" camera node(s)");
             NB_INFO("export: ===== END FRAME " << frame << " =====");
         }
-        catch (std::exception &ex) {
+        catch (const std::exception &ex) {
             NB_ERROR("export: exception: " << ex.what());
         }
         catch (...) {
