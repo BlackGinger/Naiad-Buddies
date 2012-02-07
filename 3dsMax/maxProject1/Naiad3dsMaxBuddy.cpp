@@ -54,38 +54,6 @@
 #define NaiadBuddy_CLASS_ID	   Class_ID(0x59d78e7e, 0x9b2064f2)
 #define EmpMeshObject_CLASS_ID Class_ID(0x311e0e37, 0x10a162b1)
 
-
-//------------------------------------------------------------------------------
-
-void
-getMapChannelName(INode             *node, 
-                    const int          id,
-                    std::string       &name,
-                    const std::string &keyPrefix = std::string("MapChannel"))
-{
-    if (NULL != node) {
-        TSTR key, tname;
-        key.printf("%s:%d", keyPrefix.c_str(), id);
-        node->GetUserPropString(key, tname);
-        //CT2CA tmp(tname);   // Ugly string conversion.
-        //name = std::string(tmp);
-        name = std::string(tname.data());
-    }
-}
-
-void
-setMapChannelName(INode             *node, 
-                    const int          id,
-                    const std::string &name,
-                    const std::string &keyPrefix = std::string("MapChannel"))
-{
-    if (NULL != node) {
-        TSTR key;
-        key.printf("%s:%d", keyPrefix.c_str(), id);
-        node->SetUserPropString(key, TSTR(name.c_str()));
-    }
-}
-
 //------------------------------------------------------------------------------
 
 //! DOCS
@@ -99,6 +67,44 @@ lexical_cast(const std::string &s)
         throw std::bad_cast("bad lexical_cast");
     }
     return result;
+}
+
+//------------------------------------------------------------------------------
+
+//! Grab the name of a Map Channel, as shown in the Map Channel Info dialog
+//! inside 3ds Max.
+void
+getMapChannelName(INode             *node, 
+                  const int          id,
+                  std::string       &name,
+                  const std::string &keyPrefix = std::string("MapChannel"))
+{
+    if (NULL != node) {
+        TSTR key, tname;
+        key.printf("%s:%d", keyPrefix.c_str(), id);
+        node->GetUserPropString(key, tname);
+        name = std::string(tname.data());
+
+        // TODO: Should probably do this ugly string conversion.
+        //CT2CA tmp(tname);   
+        //name = std::string(tmp);
+    }
+}
+
+
+//! Set the name of a Map Channel, as shown in the Map Channel Info dialog
+//! inside 3ds Max.
+void
+setMapChannelName(INode             *node, 
+                  const int          id,
+                  const std::string &name,
+                  const std::string &keyPrefix = std::string("MapChannel"))
+{
+    if (NULL != node) {
+        TSTR key;
+        key.printf("%s:%d", keyPrefix.c_str(), id);
+        node->SetUserPropString(key, TSTR(name.c_str()));
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -156,7 +162,7 @@ private:    // Member variables.
 
 
 //! DOCS [static]
-const NaiadChannel NaiadChannel::blind = NaiadChannel("");
+const NaiadChannel NaiadChannel::blind = NaiadChannel(""); // Empty name.
 
 
 //! Returns true if the provided NaiadChannel is blind.
@@ -234,11 +240,11 @@ private:    // Member variables.
 };
 
 
-//! DOCS [static]
+//! Instance representing an unknown Map Channel. [static]
 const MaxChannel MaxChannel::blind = MaxChannel(-1);
 
 
-//! Returns true if the provided MaxChannel has the blind id.
+//! Returns true if the provided MaxChannel is blind.
 bool
 isBlind(const MaxChannel &mc)
 { return (mc.id() <= MaxChannel::blind.id()); }
@@ -261,6 +267,7 @@ operator<<(std::ostream &os, const MaxChannel &mc)
 
 //------------------------------------------------------------------------------
 
+//! Class describing channel mapping between Naiad and 3ds Max.
 class NaiadToMaxMapping 
 {
 public:
@@ -290,6 +297,8 @@ public:
         naiadChannel() const
         { return _nc; }
 
+        //! Mutable so that we can fill in information for blind channels
+        //! further on.
         MaxChannel&
         maxChannel()
         { return _mc; }
@@ -324,7 +333,7 @@ public:
             (_minId <= mc.id() && mc.id() <= _maxId)) {
             _mapping.insert(MappingType::value_type(nc, mc)); 
             _mappedIds.insert(mc.id());
-            _excluded.erase(nc); // Remove exclusion.
+            _excluded.erase(nc);  
             _blindIds.erase(mc.id());
             return true;
         }
@@ -349,16 +358,12 @@ public:
     bool
     exclude(const NaiadChannel &nc)
     {
-        // Blind channels cannot be excluded.
-
-        if (!isBlind(nc)) {
+        if (!isBlind(nc)) { // Blind channels cannot be excluded.
             const MappingType::const_iterator iter = _mapping.find(nc);
             if (iter != _mapping.end()) {
-                // Remove mapping.
-
                 _mappedIds.erase(iter->second.id());
                 _blindIds.insert(iter->second.id());
-                _mapping.erase(iter);
+                _mapping.erase(iter); // Remove mapping.
             }
             _excluded.insert(nc);
             return true;
@@ -370,7 +375,6 @@ public:
     bool
     excluded(const Nb::String &name) const
     { return (_excluded.find(NaiadChannel(name)) != _excluded.end()); }
-
 
     //! Invalidates ALL iterators!
     void
@@ -469,7 +473,7 @@ operator<<(std::ostream &os, NaiadToMaxMapping &rhs)
 
 //------------------------------------------------------------------------------
 
-//! DOCS
+//! Class describing mapping between 3ds Max Map Channels and Naiad channels.
 class MaxToNaiadMapping 
 {
 public:
@@ -499,6 +503,7 @@ public:
         maxChannel() const
         { return _mc; }
 
+        //! Mutable so that information for blind channels can be added later.
         NaiadChannel&
         naiadChannel()
         { return _nc; }
@@ -530,6 +535,7 @@ public:
         if (!isBlind(mc) && (_minId <= mc.id() && mc.id() <= _maxId) &&
             !isBlind(nc)) {
             _mapping.insert(MappingType::value_type(mc, nc)); 
+            _excluded.erase(mc); // Remove exclusion.
             return true;
         }
         return false;
@@ -541,15 +547,11 @@ public:
     {
         const MaxChannel mc(id);
         const MappingType::const_iterator iter = _mapping.find(mc);
-        if (iter != _mapping.end()) {
-            return Entry(
-                iter->first, 
-                iter->second);
+        if (iter != _mapping.end()) { 
+            return Entry(iter->first, iter->second); // Mapped.
         }
-        else { // Blind.
-            return Entry(        
-                mc,
-                NaiadChannel::blind);
+        else { 
+            return Entry(mc, NaiadChannel::blind); // Blind.
         }
     }
 
@@ -560,7 +562,7 @@ public:
         if (!isBlind(mc)) {
             const MappingType::const_iterator iter = _mapping.find(mc);
             if (iter != _mapping.end()) {
-                _mapping.erase(iter);
+                _mapping.erase(iter); // Remove mapping.
             }
             _excluded.insert(mc);
             return true;
@@ -959,6 +961,7 @@ public:
     setNode(INode *node)
     { _node = node; }
 
+    //! Update channel mapping.
     void
     setChannelMapping(const Nb::String &expr)
     {
@@ -1277,6 +1280,15 @@ EmpMeshObject::_buildMesh(const Nb::PointShape    &point,
     this->mesh.buildBoundingBox();
     this->mesh.InvalidateEdgeList();
     this->mesh.InvalidateGeomCache();
+    this->mesh.InvalidateTopologyCache();
+
+    this->NotifyDependents(FOREVER,PART_ALL,REFMSG_CHANGE);
+    this->NotifyDependents(FOREVER,0,REFMSG_SUBANIM_STRUCTURE_CHANGED);
+
+    if (_node) { // TODO: Good? Update the Node
+        _node->NotifyDependents( FOREVER,PART_ALL,REFMSG_CHANGE );
+        _node->NotifyDependents( FOREVER,0,REFMSG_SUBANIM_STRUCTURE_CHANGED );
+    }
 }
 
 
