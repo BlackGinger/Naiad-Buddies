@@ -45,12 +45,46 @@
 #include <iterator>
 #include <algorithm>
 #include <map>
-#include <Windows.h>
+#include <windows.h>
+#include <string>
+//#include <atlbase.h>
 
 // -----------------------------------------------------------------------------
 
 #define NaiadBuddy_CLASS_ID	   Class_ID(0x59d78e7e, 0x9b2064f2)
 #define EmpMeshObject_CLASS_ID Class_ID(0x311e0e37, 0x10a162b1)
+
+
+//------------------------------------------------------------------------------
+
+void
+getMapChannelName(INode             *node, 
+                    const int          id,
+                    std::string       &name,
+                    const std::string &keyPrefix = std::string("MapChannel"))
+{
+    if (NULL != node) {
+        TSTR key, tname;
+        key.printf("%s:%d", keyPrefix.c_str(), id);
+        node->GetUserPropString(key, tname);
+        //CT2CA tmp(tname);   // Ugly string conversion.
+        //name = std::string(tmp);
+        name = std::string(tname.data());
+    }
+}
+
+void
+setMapChannelName(INode             *node, 
+                    const int          id,
+                    const std::string &name,
+                    const std::string &keyPrefix = std::string("MapChannel"))
+{
+    if (NULL != node) {
+        TSTR key;
+        key.printf("%s:%d", keyPrefix.c_str(), id);
+        node->SetUserPropString(key, TSTR(name.c_str()));
+    }
+}
 
 //------------------------------------------------------------------------------
 
@@ -67,72 +101,534 @@ lexical_cast(const std::string &s)
     return result;
 }
 
+//------------------------------------------------------------------------------
 
 //! DOCS
-struct PointChannel
+class NaiadChannel
 {
-    Nb::String name;
-    int comp[3];
-    bool excluded;
+public:
+
+    static const NaiadChannel blind;
+
+public:
+
+    //! CTOR.
+    explicit
+    NaiadChannel(const Nb::String &name,      
+                 const em::vec3i  &comp = em::vec3i(0, 1, 2))
+        : _name(name)
+        , _comp(comp)
+    {}
+
+public:
+
+    const Nb::String&
+    name() const
+    { return _name; }
+
+    void
+    setName(const Nb::String &name)
+    { _name = name; }
+
+    em::vec3i&
+    components()
+    { return _comp; }
+
+    void
+    setComponents(const em::vec3i &comp)
+    { _comp = comp; }
+
+    //! No bounds checking!
+    int
+    component(const int i) const
+    { return _comp[i]; }
+
+    //! No bounds checking!
+    void
+    setComponent(const int i, const int c)
+    { _comp[i] = c; }
+
+private:    // Member variables.
+
+    Nb::String _name;
+    em::vec3i  _comp;
 };
+
+
+//! DOCS [static]
+const NaiadChannel NaiadChannel::blind = NaiadChannel("");
+
+
+//! Returns true if the provided NaiadChannel is blind.
+bool
+isBlind(const NaiadChannel &pc)
+{ return (pc.name() == NaiadChannel::blind.name()); }
 
 
 //! Compare names only.
 bool
-operator<(const PointChannel &lhs, const PointChannel &rhs)
-{ return lhs.name < rhs.name; }
+operator<(const NaiadChannel &lhs, const NaiadChannel &rhs)
+{ return lhs.name() < rhs.name(); }
 
 
 //! Convenience
 std::ostream&
-operator<<(std::ostream &os, const PointChannel &pc)
+operator<<(std::ostream &os, const NaiadChannel &nc)
 {
-    os << "'" << pc.name.str() << "'"
-       << " [" << pc.comp[0] << pc.comp[1] << pc.comp[2] << "]"
-       << " excluded: " << (pc.excluded ? "true" : "false");
+    os << "'" << nc.name().str() << "'"
+       << "[" << nc.component(0) << nc.component(1) << nc.component(2) << "]";
     return os;
 }
 
+//------------------------------------------------------------------------------
 
 //! DOCS
-struct MapChannel
+class MaxChannel
 {
-    int id;
-    int comp[3];
-    bool excluded;
+public:
+
+    static const MaxChannel blind;
+
+public:
+
+    //! CTOR.
+    explicit
+    MaxChannel(const int        id,      
+               const em::vec3i &comp = em::vec3i(0, 1, 2))
+        : _id(id)
+        , _comp(comp)
+    {}
+
+public:
+
+    int
+    id() const
+    { return _id; }
+
+    void
+    setId(const int id)
+    { _id = id; }
+
+    em::vec3i&
+    components()
+    { return _comp; }
+
+    void
+    setComponents(const em::vec3i &comp)
+    { _comp = comp; }
+
+    //! No bounds checking!
+    int
+    component(const int i) const
+    { return _comp[i]; }
+
+    //! No bounds checking!
+    void
+    setComponent(const int i, const int c)
+    { _comp[i] = c; }
+
+private:    // Member variables.
+
+    int       _id;
+    em::vec3i _comp;
 };
+
+
+//! DOCS [static]
+const MaxChannel MaxChannel::blind = MaxChannel(-1);
+
+
+//! Returns true if the provided MaxChannel has the blind id.
+bool
+isBlind(const MaxChannel &mc)
+{ return (mc.id() <= MaxChannel::blind.id()); }
 
 
 //! Compare Id's only.
 bool
-operator<(const MapChannel &lhs, const MapChannel &rhs)
-{ return lhs.id < rhs.id; }
+operator<(const MaxChannel &lhs, const MaxChannel &rhs)
+{ return lhs.id() < rhs.id(); }
 
 
 //! Convenience
 std::ostream&
-operator<<(std::ostream &os, const MapChannel &mc)
+operator<<(std::ostream &os, const MaxChannel &mc)
 {
-    os << mc.id
-       << "[" << mc.comp[0] << mc.comp[1] << mc.comp[2] << "]"
-       << " excluded: " << (mc.excluded ? "true" : "false");
+    os << mc.id() << ":map"
+       << "[" << mc.component(0) << mc.component(1) << mc.component(2) << "]";
     return os;
 }
 
+//------------------------------------------------------------------------------
+
+class NaiadToMaxMapping 
+{
+public:
+
+    typedef std::map<NaiadChannel,MaxChannel>   MappingType;
+    typedef MappingType::const_iterator         MappingConstIterator;
+    typedef std::set<NaiadChannel>              NaiadChannelSetType;
+    typedef NaiadChannelSetType::const_iterator NaiadChannelConstIterator;
+    typedef std::set<int>                       IdSetType;
+    typedef IdSetType::const_iterator           IdConstIterator;
+
+public:
+
+    //! DOCS
+    class Entry
+    {
+    public:
+
+        //! CTOR.
+        explicit
+        Entry(const NaiadChannel &pc, const MaxChannel &mc)
+            : _nc(pc)
+            , _mc(mc)
+        {}
+
+        const NaiadChannel&
+        naiadChannel() const
+        { return _nc; }
+
+        MaxChannel&
+        maxChannel()
+        { return _mc; }
+
+    private:    // Member variables.
+
+        NaiadChannel _nc;
+        MaxChannel   _mc;
+    };
+
+public:
+
+    //! CTOR.
+    explicit
+    NaiadToMaxMapping(const int minId = 0, 
+                      const int maxId = (MAX_MESHMAPS - 1))
+        : _minId(minId)
+        , _maxId(maxId)
+    {
+        reset();
+    }
+
+public:
+
+    //! DOCS
+    bool
+    map(const NaiadChannel &nc, const MaxChannel &mc)
+    { 
+        // Blind channels cannot be used with mappings.
+
+        if (!isBlind(nc) && !isBlind(mc) && 
+            (_minId <= mc.id() && mc.id() <= _maxId)) {
+            _mapping.insert(MappingType::value_type(nc, mc)); 
+            _mappedIds.insert(mc.id());
+            _excluded.erase(nc); // Remove exclusion.
+            _blindIds.erase(mc.id());
+            return true;
+        }
+        return false;
+    }
+
+    //! DOCS
+    Entry
+    find(const Nb::String &name) const
+    {
+        NaiadChannel nc(name); // Naiad-channel with name + default settings.
+        const MappingType::const_iterator iter = _mapping.find(nc);
+        if (iter != _mapping.end()) {
+            return Entry(iter->first, iter->second);
+        }
+        else {
+            return Entry(nc, MaxChannel::blind);
+        }
+    }
+
+    //! DOCS
+    bool
+    exclude(const NaiadChannel &nc)
+    {
+        // Blind channels cannot be excluded.
+
+        if (!isBlind(nc)) {
+            const MappingType::const_iterator iter = _mapping.find(nc);
+            if (iter != _mapping.end()) {
+                // Remove mapping.
+
+                _mappedIds.erase(iter->second.id());
+                _blindIds.insert(iter->second.id());
+                _mapping.erase(iter);
+            }
+            _excluded.insert(nc);
+            return true;
+        }
+        return false;
+    }
+
+    //! DOCS
+    bool
+    excluded(const Nb::String &name) const
+    { return (_excluded.find(NaiadChannel(name)) != _excluded.end()); }
+
+
+    //! Invalidates ALL iterators!
+    void
+    reset()
+    {
+        _mapping.clear();
+        _mappedIds.clear();
+        _excluded.clear();
+
+        for (int i = _minId; i <= _maxId; ++i) { // All Id's blind initially.
+            _blindIds.insert(i);
+        }
+    }
+
+public:
+
+    int
+    minMappedId() const
+    { return *_mappedIds.begin(); }
+
+    int
+    maxMappedId() const
+    { return *_mappedIds.rbegin(); }
+
+    int
+    numMappedIds() const
+    { return static_cast<int>(_mappedIds.size()); }
+
+public:
+
+    const IdSetType&
+    blindIds() const
+    { return _blindIds; }
+
+    IdConstIterator
+    blindIdBegin() const
+    { return _blindIds.begin(); }
+
+    IdConstIterator
+    blindIdEnd() const
+    { return _blindIds.end(); }
+
+public:
+
+    std::ostream&
+    print(std::ostream &os) const
+    {
+        os << "Valid Id range: [" << _minId << ", " << _maxId << "]\n";
+        for (MappingConstIterator iter = _mapping.begin();
+            iter != _mapping.end(); ++iter) {
+            os << iter->first << " --> " << iter->second << "\n";
+        }
+        os << "Excluded: {";
+        if (!_excluded.empty()) {
+            for (NaiadChannelConstIterator iter = _excluded.begin();
+                iter != _excluded.end(); ++iter) {
+                os << *iter << ((iter != --_excluded.end()) ? ", " : "");
+            }
+        }
+        os << "}\n";
+        os << "Mapped Id's: {";
+        if (!_mappedIds.empty()) {
+            for (IdConstIterator iter = _mappedIds.begin();
+                iter != _mappedIds.end(); ++iter) {
+                os << *iter << ((iter != --_mappedIds.end()) ? "," : "");
+            }
+        }
+        os << "}\n";
+        os << "Blind Id's: {";
+        if (!_blindIds.empty()) {
+            for (IdConstIterator iter = _blindIds.begin();
+                iter != _blindIds.end(); ++iter) {
+                os << *iter << ((iter != --_blindIds.end()) ? "," : "");
+            }
+        }
+        os << "}\n";
+        return os;
+    }
+
+private:    // Member variables.
+
+    int _minId;
+    int _maxId;
+
+    MappingType         _mapping;
+    NaiadChannelSetType _excluded;
+    IdSetType           _mappedIds;
+    IdSetType           _blindIds;
+};
+
+
+//! Print operator.
+std::ostream&
+operator<<(std::ostream &os, NaiadToMaxMapping &rhs)
+{ return rhs.print(os); }
+
+//------------------------------------------------------------------------------
+
+//! DOCS
+class MaxToNaiadMapping 
+{
+public:
+
+    typedef std::map<MaxChannel,NaiadChannel> MappingType;
+    typedef MappingType::const_iterator       MappingConstIterator;
+    typedef std::set<MaxChannel>              MaxChannelSetType;
+    typedef MaxChannelSetType::const_iterator MaxChannelConstIterator;
+
+public:
+
+    //! DOCS
+    class Entry
+    {
+    public:
+
+        //! CTOR.
+        explicit
+        Entry(const MaxChannel &mc, const NaiadChannel &nc)
+            : _mc(mc)
+            , _nc(nc)
+        {}
+
+    public:
+
+        const MaxChannel&
+        maxChannel() const
+        { return _mc; }
+
+        NaiadChannel&
+        naiadChannel()
+        { return _nc; }
+
+    private:    // Member variables.
+
+        MaxChannel   _mc;
+        NaiadChannel _nc;
+    };
+
+public:
+
+    //! CTOR.
+    explicit
+    MaxToNaiadMapping(const int minId = 0, 
+                      const int maxId = (MAX_MESHMAPS - 1))
+        : _minId(minId)
+        , _maxId(maxId)
+    {
+        reset();
+    }
+
+public:
+
+    //! DOCS
+    bool
+    map(const MaxChannel &mc, const NaiadChannel &nc)
+    { 
+        if (!isBlind(mc) && (_minId <= mc.id() && mc.id() <= _maxId) &&
+            !isBlind(nc)) {
+            _mapping.insert(MappingType::value_type(mc, nc)); 
+            return true;
+        }
+        return false;
+    }
+
+    //! DOCS
+    Entry
+    find(const int id) const
+    {
+        const MaxChannel mc(id);
+        const MappingType::const_iterator iter = _mapping.find(mc);
+        if (iter != _mapping.end()) {
+            return Entry(
+                iter->first, 
+                iter->second);
+        }
+        else { // Blind.
+            return Entry(        
+                mc,
+                NaiadChannel::blind);
+        }
+    }
+
+    //! DOCS
+    bool
+    exclude(const MaxChannel &mc)
+    {
+        if (!isBlind(mc)) {
+            const MappingType::const_iterator iter = _mapping.find(mc);
+            if (iter != _mapping.end()) {
+                _mapping.erase(iter);
+            }
+            _excluded.insert(mc);
+            return true;
+        }
+        return false;
+    }
+
+    //! DOCS
+    bool
+    excluded(const int id) const
+    { return (_excluded.find(MaxChannel(id)) != _excluded.end()); }
+
+    //! Invalidates ALL iterators!
+    void
+    reset()
+    {
+        _mapping.clear();
+        _excluded.clear();
+    }
+
+public:
+
+    std::ostream&
+    print(std::ostream &os) const
+    {
+        os << "Valid Id range: [" << _minId << ", " << _maxId << "]\n";
+        for (MappingConstIterator iter = _mapping.begin();
+            iter != _mapping.end(); ++iter) {
+            os << iter->first << " --> " << iter->second << "\n";
+        }
+        os << "Excluded: {";
+        if (!_excluded.empty()) {
+            for (MaxChannelConstIterator iter = _excluded.begin();
+                iter != _excluded.end(); ++iter) {
+                os << *iter << ((iter != --_excluded.end()) ? ", " : "");
+            }
+        }
+        os << "}\n";
+        return os;
+    }
+
+private:    // Member variables.
+
+    int _minId;
+    int _maxId;
+
+    MappingType       _mapping;
+    MaxChannelSetType _excluded;
+};
+
+
+//! Print operator.
+std::ostream&
+operator<<(std::ostream &os, MaxToNaiadMapping &rhs)
+{ return rhs.print(os); }
+
+//------------------------------------------------------------------------------
 
 //! DOCS
 void
-parseComponents(const std::string &expr, int comp[3])
+parseComponents(const std::string &expr, em::vec3i &comp)
 {
     using std::size_t;
     using std::min;
 
-    const size_t size = min<size_t>(expr.size(), 3);
-    for (size_t i = 0; i < expr.size(); ++i) { 
+    const int size = static_cast<int>(min<size_t>(expr.size(), 3));
+    for (int i = 0; i < size; ++i) { 
         switch (expr[i]) {
-        case '-':
-            comp[i] = -1;   // Disable.
-            break;
         case '0':
         case 'r':
         case 'u':
@@ -152,7 +648,7 @@ parseComponents(const std::string &expr, int comp[3])
             comp[i] = 2;
             break;
         default:
-            comp[i] = static_cast<int>(i);
+            comp[i] = i;
             break;
         }
     }
@@ -161,7 +657,7 @@ parseComponents(const std::string &expr, int comp[3])
 
 //! DOCS
 bool
-parsePointChannel(const std::string &expr, PointChannel &pc)
+parseNaiadChannel(const std::string &expr, NaiadChannel &nc)
 {
     using std::size_t;
     using std::string;
@@ -175,17 +671,14 @@ parsePointChannel(const std::string &expr, PointChannel &pc)
     const size_t rb = expr.find_last_of(']');
     const string name = expr.substr(0, lb);
     if (!name.empty()) {
-        pc.name = Nb::String(name);
-        pc.comp[0] = 0;
-        pc.comp[1] = 1;
-        pc.comp[2] = 2;
+        nc.setName(name);
         if (lb < rb) { // Bracket pair present in expression.
-            parseComponents(expr.substr(lb + 1, rb - lb - 1), pc.comp);
+            parseComponents(expr.substr(lb + 1, rb - lb - 1), nc.components());
         }
         return true;    // Success!
     }
     else {
-        NB_WARNING("parse: Empty Point Channel name");
+        NB_WARNING("parse: Empty Naiad Channel name");
         return false; // Failure!
     }
 }
@@ -193,7 +686,7 @@ parsePointChannel(const std::string &expr, PointChannel &pc)
 
 //! DOCS
 bool
-parseMapChannel(const std::string &expr, MapChannel &mc)
+parseMaxChannel(const std::string &expr, MaxChannel &mc)
 {
     using std::size_t;
     using std::string;
@@ -206,35 +699,33 @@ parseMapChannel(const std::string &expr, MapChannel &mc)
     const size_t lb = expr.find_first_of('[');
     const size_t rb = expr.find_last_of(']');
     const string id = expr.substr(0, lb);
-    if (0 < id.size() && id.size() <= 2) {
+    if (1 <= id.size() && id.size() <= 2) {
         try {
-            mc.id = lexical_cast<int>(id); // May throw.
+            mc.setId(lexical_cast<int>(id)); // May throw.
         }
         catch (const exception &ex) {
-            NB_WARNING("parse: Invalid Map Channel Id: '" << id << "':" <<
+            NB_WARNING("parse: Invalid Max Channel Id: '" << id << "':" <<
                         ex.what());
             return false; // Failure!
         }
 
-        if (0 > mc.id || mc.id > (MAX_MESHMAPS - 1)) {
+        if (!(0 <= mc.id() && mc.id() <= (MAX_MESHMAPS - 1))) {
             NB_WARNING(
-                "parse: Invalid Map Channel Id: " << 
-                mc.id << " (must be in the range [0, 100])");
+                "parse: Invalid Max Channel Id: " << 
+                mc.id() << " (must be in the range [0, " 
+                << (MAX_MESHMAPS - 1) << "])");
             return false; // Failure!
         }
 
-        mc.comp[0] = 0;
-        mc.comp[1] = 1;
-        mc.comp[2] = 2;
         if (lb < rb) { // Bracket pair present in expression.
-            parseComponents(expr.substr(lb + 1, rb - lb - 1), mc.comp);
+            parseComponents(expr.substr(lb + 1, rb - lb - 1), mc.components());
         }
 
         return true;    // Success!
     }
     else {
         NB_WARNING(
-            "parse: Invalid Map Channel Id string: '" << 
+            "parse: Invalid Max Channel Id string: '" << 
             id << "' (must have size [1,2])");
         return false; // Failure!
     }
@@ -243,8 +734,7 @@ parseMapChannel(const std::string &expr, MapChannel &mc)
 
 //! DOCS
 void
-parsePointToMap(const std::string                 &expr, 
-                std::map<PointChannel,MapChannel> &mapping)
+parseNaiadToMax(const std::string &expr, NaiadToMaxMapping &mapping)
 {
     using std::string;
     using std::stringstream;
@@ -255,7 +745,7 @@ parsePointToMap(const std::string                 &expr,
     using std::size_t;
     using std::count;
 
-    typedef std::map<PointChannel,MapChannel> MappingType;
+    mapping.reset();
 
     if (expr.empty()) {
         return; // Early exit.
@@ -276,43 +766,39 @@ parsePointToMap(const std::string                 &expr,
         const size_t numCarets = count(token->begin(), token->end(), '^');
         if (numColons == 1) {
             const Nb::String nbToken = *token;
-            const string pointChannel = 
+            const string naiadChannelStr = 
                 nbToken.parent(":").str(); // Left of ':'.
-            const string mapChannel = 
+            const string maxChannelStr = 
                 nbToken.child(":").str(); // Right of ':'.
-            if (!pointChannel.empty() && !mapChannel.empty()) {
-                PointChannel pc;
-                pc.excluded = false;
-                MapChannel mc;
-                mc.excluded = false;
-                if (parsePointChannel(pointChannel, pc) &&
-                    parseMapChannel(mapChannel, mc)) {
-                    NB_INFO("parse: Point Channel: " << pc << " --> " << 
-                            "Map Channel: " << mc);
-                    mapping.insert(MappingType::value_type(pc, mc));
+            if (!naiadChannelStr.empty() && !maxChannelStr.empty()) {
+                NaiadChannel nc = NaiadChannel::blind;
+                MaxChannel mc = MaxChannel::blind;
+                if (parseNaiadChannel(naiadChannelStr, nc) &&
+                    parseMaxChannel(maxChannelStr, mc)) {
+                    NB_INFO("parse: Map: Naiad Channel: " << nc << " --> " << 
+                            "Max Channel: " << mc);
+                    mapping.map(nc, mc);
                 }
             }
             else {
                 NB_WARNING("parse: Empty channel token: " << 
-                           "Point Channel: '" << pointChannel << "'" << 
-                           "Map Channel: '" << mapChannel << "'");
+                           "Naiad Channel: '" << naiadChannelStr << "'" << 
+                           "Max Channel: '" << maxChannelStr << "'");
             }
         }
         else if (numCarets == 1) {
             const Nb::String nbToken = *token;
-            const string pointChannel = 
+            const string naiadChannelStr = 
                 nbToken.child("^").str(); // Right of '^'.
-            if (!pointChannel.empty()) {
-                PointChannel pc;
-                pc.excluded = true;
-                MapChannel mc; // Uninitialized, shouldn't be used.
-                if (parsePointChannel(pointChannel, pc)) {
-                    NB_INFO("parse: Point Channel: " << pc);
-                    mapping.insert(MappingType::value_type(pc, mc));
+            if (!naiadChannelStr.empty()) {
+                NaiadChannel nc = NaiadChannel::blind;
+                if (parseNaiadChannel(naiadChannelStr, nc)) {
+                    NB_INFO("parse: Exclude: Naiad Channel: " << nc);
+                    mapping.exclude(nc);
                 }
             }
             else {
-                NB_WARNING("parse: Empty point channel token");
+                NB_WARNING("parse: Empty Naiad Channel token");
             }
         }
         else {
@@ -325,8 +811,7 @@ parsePointToMap(const std::string                 &expr,
 
 //! DOCS
 void
-parseMapToPoint(const std::string                 &expr, 
-                std::map<MapChannel,PointChannel> &mapping)
+parseMaxToNaiad(const std::string &expr, MaxToNaiadMapping &mapping)
 {
     using std::string;
     using std::stringstream;
@@ -337,7 +822,7 @@ parseMapToPoint(const std::string                 &expr,
     using std::size_t;
     using std::count;
 
-    typedef std::map<MapChannel,PointChannel> MappingType;
+    mapping.reset();
 
     if (expr.empty()) {
         return; // Early exit.
@@ -358,41 +843,39 @@ parseMapToPoint(const std::string                 &expr,
         const size_t numCarets = count(token->begin(), token->end(), '^');
         if (numColons == 1) {
             const Nb::String nbToken = *token;
-            const string mapChannel = 
+            const string maxChannelStr = 
                 nbToken.parent(":").str(); // Left of ':'.
-            const string pointChannel = 
+            const string naiadChannelStr = 
                 nbToken.child(":").str(); // Right of ':'.
-            if (!pointChannel.empty() && !mapChannel.empty()) {
-                MapChannel mc;
-                PointChannel pc;
-                if (parseMapChannel(pointChannel, mc) &&
-                    parsePointChannel(mapChannel, pc)) {
-                    NB_INFO("parse: Map Channel: " << mc << " --> " << 
-                            "Point Channel: " << pc);
-                    mapping.insert(MappingType::value_type(mc, pc));
+            if (!naiadChannelStr.empty() && !maxChannelStr.empty()) {
+                MaxChannel mc = MaxChannel::blind;
+                NaiadChannel nc = NaiadChannel::blind;
+                if (parseMaxChannel(maxChannelStr, mc) &&
+                    parseNaiadChannel(naiadChannelStr, nc)) {
+                    NB_INFO("parse: Map: Max Channel: " << mc << " --> " << 
+                            "Naiad Channel: " << nc);
+                    mapping.map(mc, nc);
                 }
             }
             else {
                 NB_WARNING("parse: Empty channel token: " << 
-                           "Map Channel: '" << mapChannel << "' " << 
-                           "Point Channel: '" << pointChannel << "'");
+                           "Max Channel: '" << maxChannelStr << "' " << 
+                           "Naiad Channel: '" << naiadChannelStr << "'");
             }
         }
         else if (numCarets == 1) {
             const Nb::String nbToken = *token;
-            const string mapChannel = 
+            const string maxChannelStr = 
                 nbToken.child("^").str(); // Right of '^'.
-            if (!mapChannel.empty()) {
-                MapChannel mc;
-                mc.excluded = true;
-                PointChannel pc; // Uninitialized, shouldn't be used.
-                if (parseMapChannel(mapChannel, mc)) {
-                    NB_INFO("parse: Map Channel: " << mc);
-                    mapping.insert(MappingType::value_type(mc, pc));
+            if (!maxChannelStr.empty()) {
+                MaxChannel mc = MaxChannel::blind;
+                if (parseMaxChannel(maxChannelStr, mc)) {
+                    NB_INFO("parse: Exclude: Max Channel: " << mc);
+                    mapping.exclude(mc);
                 }
             }
             else {
-                NB_WARNING("parse: Empty map channel token");
+                NB_WARNING("parse: Empty Max Channel token");
             }
         }
         else {
@@ -473,28 +956,19 @@ public:
     { _flipYZ = flipYZ; }
 
     void
+    setNode(INode *node)
+    { _node = node; }
+
+    void
     setChannelMapping(const Nb::String &expr)
     {
-        _channelMappings.clear();
-        parsePointToMap(expr, _channelMappings);
-
-        for (int i = 0; i < MAX_MESHMAPS; ++i) {
-            _blindIds.insert(i);
-        }
-
-        _MappingType::const_iterator iter = _channelMappings.begin();
-        const _MappingType::const_iterator iend = _channelMappings.end();
-        for (; iter != iend; ++iter) {
-            _blindIds.erase(iter->second.id);
-        }
+        parseNaiadToMax(expr, _mapping);
+        NB_INFO("EmpMeshObject: NaiadToMaxMapping:\n" << _mapping);
     }
 
 private:
 
     static const Nb::String _signature;
-
-    MapChannel
-    _mapChannel(PointChannel &pc) const;
 
     void
     _rebuildMesh(const int frame);
@@ -508,40 +982,34 @@ private:
     static void
     _buildMapVerts1i(MeshMap            &map, 
                      const Nb::Buffer1i &buf,
-                     const PointChannel &pc,
-                     const MapChannel   &mc);
+                     const NaiadChannel &nc,
+                     const MaxChannel   &mc);
 
     static void
     _buildMapVerts1f(MeshMap            &map, 
                      const Nb::Buffer1f &buf,
-                     const PointChannel &pc,
-                     const MapChannel   &mc);
+                     const NaiadChannel &nc,
+                     const MaxChannel   &mc);
 
     static void
     _buildMapVerts3f(MeshMap            &map, 
                      const Nb::Buffer3f &buf,
-                     const PointChannel &pc,
-                     const MapChannel   &mc);
+                     const NaiadChannel &nc,
+                     const MaxChannel   &mc);
 
     static void
     _buildMapFaces(MeshMap            &map, 
                    const Nb::Buffer3i &index);
 
-    static bool
-    _isBlind(const MapChannel &mc)
-    { return (mc.id < 0); }
-
 private:    // Member variables.
 
-    Nb::SequenceReader _seqReader; 
-    Nb::String         _bodyName;  //!< The name of the body this object tracks.
-    bool               _flipYZ;
-    int                _meshFrame; 
-    BOOL               _validMesh;
-
-    typedef std::map<PointChannel,MapChannel> _MappingType;
-    _MappingType _channelMappings;
-    std::set<int> _blindIds;
+    INode              *_node;
+    Nb::SequenceReader  _seqReader; 
+    Nb::String          _bodyName;  //!< The name of the body this object tracks.
+    bool                _flipYZ;
+    int                 _meshFrame; 
+    BOOL                _validMesh;
+    NaiadToMaxMapping   _mapping;
 };
 
 const Nb::String EmpMeshObject::_signature("Mesh");
@@ -602,6 +1070,7 @@ GetEmpMeshObjectDesc()
 //! CTOR.
 EmpMeshObject::EmpMeshObject() 
     : SimpleObject2()
+    , _node(NULL)
     , _bodyName("")
     , _flipYZ(true)
     , _meshFrame(TIME_NegInfinity/GetTicksPerFrame())
@@ -643,32 +1112,6 @@ EmpMeshObject::OKtoDisplay()
 }
 
 //------------------------------------------------------------------------------
-
-//! Returns a mapping for the provided channel name. Id is -1 for blind
-//! mapping channels.
-MapChannel
-EmpMeshObject::_mapChannel(PointChannel &pc) const 
-{
-    MapChannel mc;
-    mc.id      = -1;     // Blind Id
-    mc.comp[0] =  0;     // All components enabled by default,  
-    mc.comp[1] =  1;     // even for blind channels.
-    mc.comp[2] =  2;
-    const _MappingType::const_iterator iter = _channelMappings.find(pc);
-    if (iter != _channelMappings.end()) {
-        pc = iter->first;
-        mc = iter->second;
-        //pc.comp[0] = iter->first.comp[0]; // Grab components!
-        //pc.comp[1] = iter->first.comp[1];
-        //pc.comp[2] = iter->first.comp[2];
-        //mc.id      = iter->second.id;
-        //mc.comp[0] = iter->second.comp[0];
-        //mc.comp[1] = iter->second.comp[1];
-        //mc.comp[2] = iter->second.comp[2];
-    }
-    return mc;
-}
-
 
 //! DOCS
 void
@@ -757,96 +1200,75 @@ EmpMeshObject::_buildMesh(const Nb::PointShape    &point,
         }
     }
 
-    const int pointChannelCount = point.channelCount();
-    this->mesh.setNumMaps(pointChannelCount - 1); // position alread handled.
+    // Import Max-channels from Naiad-channels.
 
-    std::set<int>::const_iterator blindIter = _blindIds.begin();
+    NaiadToMaxMapping::IdConstIterator blindIdIter = _mapping.blindIdBegin();
+    const int pointChannelCount = point.channelCount();
     for (int pc = 0; pc < pointChannelCount; ++pc) {
         const Nb::Channel *chan = point.channel(pc)();
-        if (!(chan->name() == "position")) {
-            // Ignore position channel, it is dealt with above...
+        const Nb::String channelName = chan->name();
+        if (!(channelName == "position")) { // Ignore position channel.
+            if (!_mapping.excluded(channelName)) {
+                NaiadToMaxMapping::Entry entry = _mapping.find(channelName);
+                const NaiadChannel &nc = entry.naiadChannel();
+                MaxChannel &mc = entry.maxChannel();
 
-            PointChannel pc;
-            pc.name = chan->name();
-            pc.comp[0] = 0;
-            pc.comp[1] = 1;
-            pc.comp[2] = 2;
-            pc.excluded = false;
-            MapChannel mc = _mapChannel(pc);
-            const bool blind = _isBlind(mc);
-
-            NB_INFO("EmpMeshObject: Point Channel: " << pc.name << 
-                    "', Type: '" << chan->typeName() << 
-                    "', Comp: [" << 
-                    (pc.comp[0] < 0 ? "(" : "") << pc.comp[0] << 
-                    (pc.comp[0] < 0 ? ")" : "") << 
-                    (pc.comp[1] < 0 ? "(" : "") << pc.comp[1] << 
-                    (pc.comp[1] < 0 ? ")" : "") << 
-                    (pc.comp[2] < 0 ? "(" : "") << pc.comp[2] << 
-                    (pc.comp[2] < 0 ? ")" : "") << "]" <<
-                    ", Excluded: " << (pc.excluded ? "true" : "false") << 
-                    ", Map Channel: " << mc.id << (blind ? " (blind)" : "") << 
-                    ", Comp: [" << 
-                    (mc.comp[0] < 0 ? "(" : "") << mc.comp[0] << 
-                    (mc.comp[0] < 0 ? ")" : "") << 
-                    (mc.comp[1] < 0 ? "(" : "") << mc.comp[1] << 
-                    (mc.comp[1] < 0 ? ")" : "") << 
-                    (mc.comp[2] < 0 ? "(" : "") << mc.comp[2] << 
-                    (mc.comp[2] < 0 ? ")" : "") << "]"
-                    ", Excluded: " << (mc.excluded ? "true" : "false"));
-
-            if (!pc.excluded) {
+                const bool blind = isBlind(mc);
                 if (blind) {
-                    if (blindIter == _blindIds.end()) {
-                        NB_WARNING("EmpMeshObject: No more available Map Channels");
-                        break;
+                    if (blindIdIter == _mapping.blindIdEnd()) {
+                        NB_WARNING(
+                            "EmpMeshObject: No more available Map Channels");
+                        continue; // There might be mapped channels after this.
                     }
-                    mc.id = *blindIter;
-                    ++blindIter;
+                    mc.setId(*blindIdIter++);
                 }
+                    
+                NB_INFO("EmpMeshObject: Naiad Channel<" 
+                        << chan->typeName() << ">: " 
+                        << nc << " --> Max Channel: " << mc << 
+                        (blind ? " (blind)" : ""));  
 
                 switch (chan->type()) {
                 case Nb::ValueBase::IntType:
                     {
-                    if (0 == pc.comp[0]) {
-                        const Nb::Buffer1i& buf1i = point.constBuffer1i(pc.name);
-                        this->mesh.setMapSupport(mc.id, TRUE);
-                        MeshMap &meshMap = this->mesh.Map(mc.id);
-                        _buildMapVerts1i(meshMap, buf1i, pc, mc);
-                        _buildMapFaces(meshMap, index);
-                    }
+                    const Nb::Buffer1i &b1i = point.constBuffer1i(nc.name());
+                    this->mesh.setMapSupport(mc.id(), TRUE);
+                    MeshMap &meshMap = this->mesh.Map(mc.id());
+                    _buildMapVerts1i(meshMap, b1i, nc, mc);
+                    _buildMapFaces(meshMap, index);
+                    setMapChannelName(_node, mc.id(), nc.name());
                     }
                     break;
                 case Nb::ValueBase::FloatType:
                     {
-                    if (0 == pc.comp[0]) {
-                        const Nb::Buffer1f& buf1f = point.constBuffer1f(pc.name);
-                        this->mesh.setMapSupport(mc.id, TRUE);
-                        MeshMap &meshMap = this->mesh.Map(mc.id);
-                        _buildMapVerts1f(meshMap, buf1f, pc, mc);
-                        _buildMapFaces(meshMap, index);
-                    }
+                    const Nb::Buffer1f &b1f = point.constBuffer1f(nc.name());
+                    this->mesh.setMapSupport(mc.id(), TRUE);
+                    MeshMap &meshMap = this->mesh.Map(mc.id());
+                    _buildMapVerts1f(meshMap, b1f, nc, mc);
+                    _buildMapFaces(meshMap, index);
+                    setMapChannelName(_node, mc.id(), nc.name());
                     }
                     break;
                 case Nb::ValueBase::Vec3fType:
                     {
-                    if ((0 <= pc.comp[0] && pc.comp[0] <= 2) ||
-                        (0 <= pc.comp[1] && pc.comp[1] <= 2) ||
-                        (0 <= pc.comp[2] && pc.comp[2] <= 2)) {
-                        const Nb::Buffer3f& buf3f = point.constBuffer3f(pc.name);
-                        this->mesh.setMapSupport(mc.id, TRUE);
-                        MeshMap &meshMap = this->mesh.Map(mc.id);
-                        _buildMapVerts3f(meshMap, buf3f, pc, mc);
-                        _buildMapFaces(meshMap, index);
-                    }
+                    const Nb::Buffer3f &b3f = point.constBuffer3f(nc.name());
+                    this->mesh.setMapSupport(mc.id(), TRUE);
+                    MeshMap &meshMap = this->mesh.Map(mc.id());
+                    _buildMapVerts3f(meshMap, b3f, nc, mc);
+                    _buildMapFaces(meshMap, index);
+                    setMapChannelName(_node, mc.id(), nc.name());
                     }
                     break;
                 default:
                     NB_WARNING(
-                        "EmpMeshObject: Point channel type: '"<< chan->typeName() << 
-                        "' not supported yet!");
+                        "EmpMeshObject: Naiad Channel type: <" << 
+                        chan->typeName() << "> not supported yet!");
                     break;
                 }
+            }
+            else {
+                NB_INFO("EmpMeshObject: Excluded Naiad Channel<" 
+                        << chan->typeName() << ">: '" << channelName << "'");  
             }
         }
     }
@@ -862,17 +1284,15 @@ EmpMeshObject::_buildMesh(const Nb::PointShape    &point,
 void
 EmpMeshObject::_buildMapVerts1i(MeshMap            &map, 
                                 const Nb::Buffer1i &buf,
-                                const PointChannel &pc,
-                                const MapChannel   &mc)
+                                const NaiadChannel &nc,
+                                const MaxChannel   &mc)
 {
     const int numVerts = static_cast<int>(buf.size());
     map.setNumVerts(numVerts);
     for (int v = 0; v < numVerts; ++v) { // Set map vertices.
         UVVert &uvVert = map.tv[v];
         for (int i = 0; i < 3; ++i) { 
-            if (0 <= mc.comp[i] && mc.comp[i] <= 2) { // Check mask.
-                uvVert[mc.comp[i]] = static_cast<float>(buf[v]);
-            }
+            uvVert[mc.component(i)] = static_cast<float>(buf[v]); // Swizzle!
         }
     }
 }
@@ -882,17 +1302,15 @@ EmpMeshObject::_buildMapVerts1i(MeshMap            &map,
 void
 EmpMeshObject::_buildMapVerts1f(MeshMap            &map, 
                                 const Nb::Buffer1f &buf,
-                                const PointChannel &pc,
-                                const MapChannel   &mc)
+                                const NaiadChannel &nc,
+                                const MaxChannel   &mc)
 {
     const int numVerts = static_cast<int>(buf.size());
     map.setNumVerts(numVerts);
     for (int v = 0; v < numVerts; ++v) { // Set map vertices.
         UVVert &uvVert = map.tv[v];
-        for (int i = 0; i < 3; ++i) { // Check mask before setting.
-            if (0 <= mc.comp[i] && mc.comp[i] <= 2) { // Check mask.
-                uvVert[mc.comp[i]] = buf[v];
-            }
+        for (int i = 0; i < 3; ++i) { 
+            uvVert[mc.component(i)] = buf[v]; // Swizzle!
         }
     }
 }
@@ -902,18 +1320,15 @@ EmpMeshObject::_buildMapVerts1f(MeshMap            &map,
 void
 EmpMeshObject::_buildMapVerts3f(MeshMap            &map, 
                                 const Nb::Buffer3f &buf,
-                                const PointChannel &pc,
-                                const MapChannel   &mc)
+                                const NaiadChannel &nc,
+                                const MaxChannel   &mc)
 {
     const int numVerts = static_cast<int>(buf.size());
     map.setNumVerts(numVerts);
     for (int v = 0; v < numVerts; ++v) { // Set map vertices.
         UVVert &uvVert = map.tv[v];
         for (int i = 0; i < 3; ++i) { 
-            if (0 <= pc.comp[i] && pc.comp[i] <= 2 &&
-                0 <= mc.comp[i] && mc.comp[i] <= 2) {    // Check masks.
-                uvVert[mc.comp[i]] = buf[v][pc.comp[i]]; // Swizzle!
-            }
+            uvVert[mc.component(i)] = buf[v][nc.component(i)]; // Swizzle!
         }
     }
 }
@@ -1008,18 +1423,20 @@ public:
     virtual void
     ExportNode(INode *node, int frame, 
                bool flipYZ, bool selectedOnly, 
+               const MaxToNaiadMapping &mapping,
                Nb::EmpWriter &emp,
                int &numExportedNodes, int &numExportedMeshNodes,
                int &numExportedParticleNodes, int &numExportedCameraNodes);
 
-public:     // Member variables (!?)
-
-    // These are the handles to the custom controls in the rollup page.
-    // Public and ugly just like a "proper" plug-in...
-
+    void
+    ExportMapChannel(const MaxChannel   &mc, 
+                     const NaiadChannel &pc, 
+                     /* const */ Mesh   &mesh, 
+                     Nb::PointShape     &point);
 
 private:
 
+    //! DOCS
     struct _General
     {
         ICustEdit   *projectPathEdit;
@@ -1030,6 +1447,7 @@ private:
         ICustButton *showLogButton;
     };
 
+    //! DOCS
     struct _Import
     {
         ICustEdit       *sequenceNameEdit;
@@ -1055,6 +1473,7 @@ private:
         ICustStatus     *importStatus;
     };
 
+    //! DOCS
     struct _Export
     {
         ICustEdit       *sequenceNameEdit;
@@ -1164,8 +1583,8 @@ NaiadBuddy::NaiadBuddy()
     _imp.bodyNameFilter  = Nb::String("*");
     _imp.channelMapping  = Nb::String(
         "rgb:0 "
-        "uv:1[110] "
-        "velocity:2"
+        "uv[uvv]:1[uvv] "
+        "velocity[xyz]:2[xzy]"
         );
     _imp.frameOffset     = 0;
     _imp.flipYZ          = true;
@@ -1173,8 +1592,8 @@ NaiadBuddy::NaiadBuddy()
     _exp.sequenceName    = Nb::String("");
     _exp.channelMapping  = Nb::String(
         "0:rgb "
-        "1:uv[110] "
-        "2:velocity"
+        "1[uvv]:uv[uvv] "
+        "2[xyz]:velocity[xzy]"
         );
     _exp.padding         = 4;
     _exp.flipYZ          = true;
@@ -1385,93 +1804,93 @@ NaiadBuddy::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
     // General stuff.
     case IDC_GEN_PROJECT_PATH_BROWSE_BUTTON:
         {
-            MSTR dir;
-            Interface9 *i9 = GetCOREInterface9();
-            if (0 != i9 && 
-                i9->DoMaxBrowseForFolder(
-                    hWnd, 
-                    _T("Choose Shot Path..."),
-                    dir)) {
-                _gen.projectPath = Nb::String(dir.data());
-                _gen.projectPathEdit->SetText(_gen.projectPath.c_str());
-            }
+        MSTR dir;
+        Interface9 *i9 = GetCOREInterface9();
+        if (0 != i9 && 
+            i9->DoMaxBrowseForFolder(
+                hWnd, 
+                _T("Choose Shot Path..."),
+                dir)) {
+            _gen.projectPath = Nb::String(dir.data());
+            _gen.projectPathEdit->SetText(_gen.projectPath.c_str());
+        }
         }
         break;
     case IDC_GEN_PROJECT_PATH_EDIT:
         {
-            MSTR projectPath;
-            _gen.projectPathEdit->GetText(projectPath);
-            _gen.projectPath = Nb::String(projectPath.data());
+        MSTR projectPath;
+        _gen.projectPathEdit->GetText(projectPath);
+        _gen.projectPath = Nb::String(projectPath.data());
         }
         break;
     case IDC_GEN_SHOW_LOG_BUTTON:
         {
-            try {
-                em::close_log(); // Close to flush any contents to disk.
+        try {
+            em::close_log(); // Close to flush any contents to disk.
 
-                // Read log contents so that we can restore them later.
+            // Read log contents so that we can restore them later.
 
-                const std::string logFileName = GetLogFileName();
-                std::string logContents;
-                FILE *fptr(std::fopen(logFileName.c_str(), "r"));
-                if (0 != fptr) {
-                    std::fseek(fptr, 0, SEEK_END);
-                    const int length(std::ftell(fptr));
-                    logContents.resize(length + 1);
-                    std::fseek(fptr, 0, SEEK_SET);
-                    std::fread(&logContents[0], length, 1, fptr);
-                    std::fclose(fptr);
-                    logContents[length] = '\n';
-                }
-
-                // Some API initialization stuff...
-
-                STARTUPINFO si;
-                PROCESS_INFORMATION pi;
-                ZeroMemory(&si, sizeof(si));
-                si.cb = sizeof(si);
-                ZeroMemory(&pi, sizeof(pi));
-
-                // Create command line.
-
-                const std::string cmdline(
-                    "\"notepad.exe\" \"" + logFileName + "\"");
-                LPTSTR szCmdline = _tcsdup(TEXT(cmdline.c_str()));
-
-                // Start the child process. 
-
-                if (CreateProcess(
-                        NULL,      // No module name (use command line)
-                        szCmdline, // Command line
-                        NULL,      // Process handle not inheritable
-                        NULL,      // Thread handle not inheritable
-                        FALSE,     // Set handle inheritance to FALSE
-                        0,         // No creation flags
-                        NULL,      // Use parent's environment block
-                        NULL,      // Use parent's starting directory 
-                        &si,       // Pointer to STARTUPINFO structure
-                        &pi)) {    // Pointer to PROCESS_INFORMATION structure
-                    // Wait until child process exits.
-
-                    WaitForSingleObject(pi.hProcess, INFINITE);
-
-                    // Close process and thread handles. 
-
-                    CloseHandle(pi.hProcess);
-                    CloseHandle(pi.hThread);
-                }
-                else {
-                    std::stringstream ss;
-                    ss << "\nCreateProcess failed: " << GetLastError() << "\n";
-                    logContents += ss.str();
-                }
-
-                em::open_log(logFileName);   // Open Log again, may throw.
-                em::output_log(logContents); // Restore Log contents.
+            const std::string logFileName = GetLogFileName();
+            std::string logContents;
+            FILE *fptr(std::fopen(logFileName.c_str(), "r"));
+            if (0 != fptr) {
+                std::fseek(fptr, 0, SEEK_END);
+                const int length(std::ftell(fptr));
+                logContents.resize(length + 1);
+                std::fseek(fptr, 0, SEEK_SET);
+                std::fread(&logContents[0], length, 1, fptr);
+                std::fclose(fptr);
+                logContents[length] = '\n';
             }
-            catch (...) {
-                // Something bad happened, but there is nowhere to report it!
+
+            // Some API initialization stuff...
+
+            STARTUPINFO si;
+            PROCESS_INFORMATION pi;
+            ZeroMemory(&si, sizeof(si));
+            si.cb = sizeof(si);
+            ZeroMemory(&pi, sizeof(pi));
+
+            // Create command line.
+
+            const std::string cmdline(
+                "\"notepad.exe\" \"" + logFileName + "\"");
+            LPTSTR szCmdline = _tcsdup(TEXT(cmdline.c_str()));
+
+            // Start the child process. 
+
+            if (CreateProcess(
+                    NULL,      // No module name (use command line)
+                    szCmdline, // Command line
+                    NULL,      // Process handle not inheritable
+                    NULL,      // Thread handle not inheritable
+                    FALSE,     // Set handle inheritance to FALSE
+                    0,         // No creation flags
+                    NULL,      // Use parent's environment block
+                    NULL,      // Use parent's starting directory 
+                    &si,       // Pointer to STARTUPINFO structure
+                    &pi)) {    // Pointer to PROCESS_INFORMATION structure
+                // Wait until child process exits.
+
+                WaitForSingleObject(pi.hProcess, INFINITE);
+
+                // Close process and thread handles. 
+
+                CloseHandle(pi.hProcess);
+                CloseHandle(pi.hThread);
             }
+            else {
+                std::stringstream ss;
+                ss << "\nCreateProcess failed: " << GetLastError() << "\n";
+                logContents += ss.str();
+            }
+
+            em::open_log(logFileName);   // Open Log again, may throw.
+            em::output_log(logContents); // Restore Log contents.
+        }
+        catch (...) {
+            // Something bad happened, but there is nowhere to report it!
+        }
         }
         break;
     // Import stuff.
@@ -1724,6 +2143,7 @@ NaiadBuddy::Import()
                         MSTR nodeName = _M(empMeshObj->bodyName().c_str());
                         ip->MakeNameUnique(nodeName);
                         node->SetName(nodeName);
+                        empMeshObj->setNode(node);
                         ++numCreatedMeshNodes;
                         ++numCreatedNodes;
                     }
@@ -1805,11 +2225,11 @@ NaiadBuddy::Export()
 
     MSTR channelMapping;
     _exp.channelMappingEdit->GetText(channelMapping);
+    MaxToNaiadMapping mapping;
+    parseMaxToNaiad(std::string(channelMapping.data()), mapping);
 
     const int firstFrame = _exp.firstFrameSpinner->GetIVal();
     const int lastFrame = _exp.lastFrameSpinner->GetIVal();
-
-
     if (firstFrame >= lastFrame) {
         _exp.exportStatus->SetText(_T("ERROR!"));
         _exp.exportStatus->SetTooltip(true, _T("Invalid frame range"));
@@ -1829,6 +2249,7 @@ NaiadBuddy::Export()
     NB_INFO("export: Last Frame: " << lastFrame);
     NB_INFO("export: Flip YZ: " << (flipYZ ? "true" : "false"));
     NB_INFO("export: Selected Only: " << (selectedOnly ? "true" : "false"));
+    NB_INFO("export: MaxToNaiadMapping:\n" << mapping);
 
     int numExportedFrames = 0;
     for (int frame = firstFrame; frame <= lastFrame; ++frame) {
@@ -1854,6 +2275,7 @@ NaiadBuddy::Export()
             for (int i = 0; i < root->NumberOfChildren(); ++i) {
                 ExportNode(root->GetChildNode(i), frame, 
                            flipYZ, selectedOnly, 
+                           mapping,
                            emp,
                            numExportedNodes, numExportedMeshNodes,
                            numExportedParticleNodes, numExportedCameraNodes);
@@ -1886,15 +2308,16 @@ NaiadBuddy::Export()
 
 //! DOCS
 void
-NaiadBuddy::ExportNode(INode         *node, 
-                       const int      frame, 
-                       const bool     flipYZ, 
-                       const bool     selectedOnly,
-                       Nb::EmpWriter &emp,
-                       int           &numExportedNodes,
-                       int           &numExportedMeshNodes,
-                       int           &numExportedParticleNodes,
-                       int           &numExportedCameraNodes)
+NaiadBuddy::ExportNode(INode                   *node, 
+                       const int                frame, 
+                       const bool               flipYZ, 
+                       const bool               selectedOnly,
+                       const MaxToNaiadMapping &mapping,
+                       Nb::EmpWriter           &emp,
+                       int                     &numExportedNodes,
+                       int                     &numExportedMeshNodes,
+                       int                     &numExportedParticleNodes,
+                       int                     &numExportedCameraNodes)
 {
     if (!selectedOnly || (selectedOnly && 0 != node->Selected())) {
         const ObjectState &os = node->EvalWorldState(frame*GetTicksPerFrame());
@@ -1922,15 +2345,14 @@ NaiadBuddy::ExportNode(INode         *node,
                             ", Class: " << className);
                     NB_INFO("export: Vertex Count: " << numVerts << 
                             ", Face Count: " << numFaces <<
-                            //", VData Count: " << numVData << 
                             ", Map Count: " << numMaps);
 
                     // Matrix3 is actually a 4x3 matrix. Order of 
                     // multiplication with vertex is irrelevant (?!).
 
                     const Matrix3 tm = 
-                        //node->GetNodeTM(frame*GetTicksPerFrame());
                         node->GetObjTMAfterWSM(frame*GetTicksPerFrame());
+                    //node->GetNodeTM(frame*GetTicksPerFrame());
 
                     try {
                         std::auto_ptr<Nb::Body> body(
@@ -1949,6 +2371,8 @@ NaiadBuddy::ExportNode(INode         *node,
                         Nb::Buffer3i &indices = 
                             triangles.mutableBuffer3i("index");
 
+                        // Export vertex positions. [required]
+
                         positions.resize(numVerts);
                         for (int v = 0; v < numVerts; ++v) {
                             const Point3 vtx = tm*tri->mesh.verts[v];
@@ -1964,6 +2388,8 @@ NaiadBuddy::ExportNode(INode         *node,
                             }
                         }
 
+                        // Export triangle faces. [required]
+
                         indices.resize(numFaces);
                         for (int f = 0; f < numFaces; ++f) {
                             indices[f][0] = tri->mesh.faces[f].v[0];
@@ -1975,40 +2401,41 @@ NaiadBuddy::ExportNode(INode         *node,
 
                         for (int m = 0; m < numMaps; ++m) {
                             if (tri->mesh.mapSupport(m)) {
-                                std::stringstream ss;
-                                ss << "Point.mapChannel" << m;
-                                const std::string channelName = ss.str();
-                                NB_INFO(
-                                   "export: Mesh Channel '" << m << ":map" << 
-                                   "' to Body Channel '" << channelName << "'");
-                                body->guaranteeChannel3f(channelName);
-                                MeshMap &meshMap = tri->mesh.Map(m);
-                                Nb::Buffer3f &buf = 
-                                    points.mutableBuffer3f(channelName);
-                                buf.resize(meshMap.getNumVerts());
-                                const int numFaces = meshMap.getNumFaces();
-                                for (int f = 0; f < numFaces; ++f) {
-                                    TVFace &face = meshMap.tf[f];
-                                    for (int i = 0; i < 3; ++i) {
-                                        UVVert &uv = meshMap.tv[face.t[i]];
-                                        if (flipYZ) {
-                                            buf[face.t[i]][0] = uv[0];
-                                            buf[face.t[i]][1] = uv[2];
-                                            buf[face.t[i]][2] = uv[1];
+                                if (!mapping.excluded(m)) {
+                                    MaxToNaiadMapping::Entry entry = 
+                                        mapping.find(m);
+                                    const MaxChannel &mc = entry.maxChannel();
+                                    NaiadChannel &nc = entry.naiadChannel();
+                                    const bool blind = isBlind(nc);
+                                    if (blind) {
+                                        std::string name;
+                                        getMapChannelName(node, m, name);
+                                        if (name.empty()) {
+                                            std::stringstream ss;
+                                            ss << "map" << m;
+                                            name = ss.str();
                                         }
-                                        else {
-                                            buf[face.t[i]][0] = uv[0];
-                                            buf[face.t[i]][1] = uv[1];
-                                            buf[face.t[i]][2] = uv[2];
-                                        }
+                                        nc.setName(name);
                                     }
+
+                                    NB_INFO("export: Max Channel: " << mc << 
+                                            " --> Naiad Channel: " << nc << 
+                                            (blind ? " (blind)" : ""));  
+
+                                    ExportMapChannel(
+                                        mc,
+                                        nc,
+                                        tri->mesh,
+                                        points);
+                                }
+                                else {
+                                    NB_INFO("export: Excluded Max Channel: " << 
+                                            MaxChannel(m));
                                 }
                             }
                         }
-
                         NB_INFO("export: Writing body '" << body->name() << 
                                 "' to file '" << emp.fileName() << "'");
-
                         emp.write(body.get(), "*.*"); // All shapes & channels.
                         ++numExportedNodes;
                         ++numExportedMeshNodes;
@@ -2047,9 +2474,41 @@ NaiadBuddy::ExportNode(INode         *node,
     for (int i = 0; i < node->NumberOfChildren(); ++i) {
         ExportNode(node->GetChildNode(i), frame, 
                    flipYZ, selectedOnly, 
+                   mapping,
                    emp,
                    numExportedNodes, numExportedMeshNodes,
                    numExportedParticleNodes, numExportedCameraNodes); 
+    }
+}
+
+
+
+void
+NaiadBuddy::ExportMapChannel(const MaxChannel   &mc, 
+                             const NaiadChannel &nc, 
+                             /* const */ Mesh   &mesh, 
+                             Nb::PointShape     &point)
+{
+    if (mesh.mapSupport(mc.id()) && !nc.name().empty()) {
+        MeshMap &meshMap = mesh.Map(mc.id());
+        point.guaranteeChannel3f(nc.name());
+        Nb::Buffer3f &b3f = point.mutableBuffer3f(nc.name());
+        b3f.resize(meshMap.getNumVerts());
+        const int numFaces = meshMap.getNumFaces();
+        for (int f = 0; f < numFaces; ++f) { // Map faces.
+            TVFace &face = meshMap.tf[f];   
+            for (int i = 0; i < 3; ++i) { // Map face-vertices.
+                UVVert    &uvw = meshMap.tv[face.t[i]];
+                em::vec3f &pnt = b3f[face.t[i]];
+                for (int j = 0; j < 3; ++j) { // Components.
+                    pnt[nc.component(j)] = uvw[mc.component(j)]; // Swizzle!
+                }
+            }
+        }
+    }
+    else {
+        NB_WARNING("export: Failed exporting: Max Channel: " << mc 
+                   << " --> Naiad Channel: " << nc);
     }
 }
 
