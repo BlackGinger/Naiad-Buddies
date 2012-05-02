@@ -154,6 +154,11 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 	for (int i = 0; i < numBodies; i++)
 	{
 		pBody = empReader->cloneBody(i);
+
+    if (pBody == NULL)
+    {
+      continue;
+    }
 		//std::cout << i << ":" << pBody->name() << std::endl;
 		//std::cout << "number of shapes: " << pBody->shape_count() << std::endl;
 		/*	
@@ -178,6 +183,9 @@ Geo2Emp::ErrorCode Geo2Emp::loadEmpBodies(std::string filen, int frame)
 		{
 			loadMeshShape(pBody);
 		}
+
+    // Delete the cloned body
+    delete pBody;
 	}
 
 	if ( empReader )
