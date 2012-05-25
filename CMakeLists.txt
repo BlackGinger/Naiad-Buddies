@@ -102,4 +102,4 @@ endif()
 MESSAGE("postfix is " ${CMAKE_DEBUG_POSTFIX})
 endif (WIN32)
 
-subdirs (arnold houdini maya krakatoa renderman)
+subdirs (arnold houdini maya krakatoa renderman vray)
