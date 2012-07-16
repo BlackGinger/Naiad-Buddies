@@ -380,12 +380,11 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Nb::Body* pBody )
 	}	
 
 	//The channel values for particle shapes are stored in blocks/tiles.
-	const Nb::TileLayout& layout = pBody->constLayout();
-	unsigned int numBlocks = layout.fineTileCount();
 	unsigned int absPtNum = 0;
 
 	//Get the block array for the positions channel
 	const em::block3_array3f& positionBlocks( pShape->constBlocks3f("position") );	
+	unsigned int numBlocks = positionBlocks.block_count();
 	unsigned int bsize;
 	float dec_accumulator = 0.0f;
 	float dec = (1.0f - (_decimation)/100.0f);
@@ -397,7 +396,7 @@ Geo2Emp::ErrorCode Geo2Emp::loadParticleShape( const Nb::Body* pBody )
 		//Get a single block from the position blocks
 		const em::block3vec3f& posBlock = positionBlocks(blockIndex);
 
-		if ( blockIndex % 100 )
+		if ( blockIndex % 100 == 0 )
 			LogDebug() << "Block: " << blockIndex << "/" << numBlocks << std::endl;
 		//Iterate over all the points/particles in the position block
 		bsize = posBlock.size();
